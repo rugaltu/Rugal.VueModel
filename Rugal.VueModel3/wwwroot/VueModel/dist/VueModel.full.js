@@ -429,7 +429,7 @@ class DomEditor {
     //#endregion
 }
 /**
- *  VueModel.js v3.0.0
+ *  VueModel.js v3.0.2
  *  From Rugal Tu
  * */
 
