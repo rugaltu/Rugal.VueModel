@@ -1,8 +1,8 @@
-/// <binding BeforeBuild='copy-lib' />
+/// <binding BeforeBuild='clean, copy-lib' />
 const gulp = require('gulp');
 
 const SourceRoot = 'node_modules';
-const TargetRoot = 'wwwroot/lib';
+const TargetRoot = 'wwwroot/npm';
 
 const SourcePaths = {
     vue: 'vue/dist/vue.global.prod.js',
@@ -21,6 +21,10 @@ for (let i = 0; i < Keys.length; i++) {
         Target,
     });
 }
+
+gulp.task('clean', function () {
+    return del.deleteAsync(`${TargetRoot}`, { force: true });
+});
 
 let Tasks = AllSource.map(Item => {
     gulp.task(Item.Key, done => {
