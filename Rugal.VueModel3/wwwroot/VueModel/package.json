@@ -1,7 +1,7 @@
 {
-  "version": "1.0.0",
-  "name": "vuemodel",
-  "private": true,
+  "name": "rugal-vuemodel",
+  "version": "3.0.0",
   "devDependencies": {
+    "vue": "^3.3.8"
   }
 }
