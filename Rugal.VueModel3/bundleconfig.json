@@ -1,0 +1,16 @@
+[
+  {
+    "outputFileName": "wwwroot/VueModel/dist/VueModel.full.js",
+    "inputFiles": [
+      "wwwroot/VueModel/src/CommonFunc.js",
+      "wwwroot/VueModel/src/DomEditor.js",
+      "wwwroot/VueModel/src/VueModel.js",
+      "wwwroot/VueModel/src/VcController.js"
+    ],
+    "minify": {
+      "enabled": true,
+      "commentMode": "all"
+    },
+    "sourceMap": true
+  }
+]

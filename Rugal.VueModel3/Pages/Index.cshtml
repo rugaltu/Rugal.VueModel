@@ -1,0 +1,15 @@
+﻿@page
+@{
+    ViewData["Title"] = "Home page";
+}
+
+<div class="text-center">
+    <h1 class="display-4">Welcome</h1>
+    <p>Learn about <a v-text="GetTest2.value" href="https://docs.microsoft.com/aspnet/core"></a>.</p>
+    <input v-model="GetTest2.value" />
+    <button v-on:click="TestClick()">Click</button>
+</div>
+
+<script src="/lib/vue/vue.global.prod.js"></script>
+@* <script src="/VueModel3/dist/VueModel.full.min.js"></script> *@
+<script src="~/js/site.js"></script>

@@ -1,0 +1,9 @@
+{
+  "version": "1.0.0",
+  "name": "asp.net",
+  "private": true,
+  "dependencies": {
+    "gulp": "^4.0.2",
+    "vue": "^3.3.8"
+  }
+}
