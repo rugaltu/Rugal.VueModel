@@ -5,7 +5,7 @@ const SourceRoot = 'node_modules';
 const TargetRoot = 'wwwroot/npm';
 
 const SourcePaths = {
-    vue: 'vue/dist/vue.global.prod.js',
+    vue: 'vue/dist/*',
 };
 
 let AllSource = [];

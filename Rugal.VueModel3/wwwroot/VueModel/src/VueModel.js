@@ -1,5 +1,5 @@
 ﻿/**
- *  VueModel.js v3.0.2
+ *  VueModel.js v3.0.3
  *  From Rugal Tu
  * */
 
@@ -175,7 +175,7 @@ class VueModel extends CommonFunc {
     //#endregion
 
     //#region Input
-    AddV_Input(DomId, StoreKey = null, Option = { VModelKey: null }) {
+    AddV_Input(DomId, StoreKey = null, Option = { VModelKey: null, IsReCombineStore: true }) {
         this.AddVdom_Input(
             this.Dom.WithId(DomId),
             StoreKey ?? DomId,
@@ -183,7 +183,7 @@ class VueModel extends CommonFunc {
         );
         return this;
     }
-    AddVq_Input(QueryString, StoreKey = null, Option = { VModelKey: null }) {
+    AddVq_Input(QueryString, StoreKey = null, Option = { VModelKey: null, IsReCombineStore: true }) {
         this.AddVdom_Input(
             this.Dom.WithCustom(QueryString),
             StoreKey,
@@ -191,7 +191,7 @@ class VueModel extends CommonFunc {
         );
         return this;
     }
-    AddVcol_Input(ColName, StoreKey = null, Option = { VModelKey: null }) {
+    AddVcol_Input(ColName, StoreKey = null, Option = { VModelKey: null, IsReCombineStore: true }) {
         this.AddVdom_Input(
             this.Dom.WithAttr('vc-col', ColName),
             StoreKey ?? ColName,
@@ -199,9 +199,11 @@ class VueModel extends CommonFunc {
         );
         return this;
     }
-    AddVdom_Input(Dom, StoreKey, Option = { VModelKey: null }) {
+    AddVdom_Input(Dom, StoreKey, Option = { VModelKey: null, IsReCombineStore: true }) {
         let GetDom = this._BaseCheck_DomEditor(Dom);
-        StoreKey = this._ReCombineStoreKey(StoreKey);
+
+        if (Option.IsReCombineStore)
+            StoreKey = this._ReCombineStoreKey(StoreKey);
 
         this.AddStore(StoreKey, null);
         GetDom.ForEach(Item => {
@@ -233,6 +235,7 @@ class VueModel extends CommonFunc {
         OptionId: null,
         Display: null,
         Value: null,
+        Default: null,
     }) {
         let SelectQuery = this.Dom._QueryString_Id(Option.SelectId);
         let OptionQuery = this.Dom._QueryString_Id(Option.OptionId);
@@ -254,6 +257,7 @@ class VueModel extends CommonFunc {
         To: null,
         Display: null,
         Value: null,
+        Default: null,
     }) {
         Option.From = Option.From ?? Option.SelectCol;
         Option.To = Option.To ?? Option.SelectCol;
@@ -277,11 +281,11 @@ class VueModel extends CommonFunc {
         OptionQuery: null,
         Display: null,
         Value: null,
+        Default: null,
     }) {
-
-        this.AddStore(Option.To, null);
+        this.AddStore(this._ReCombineStoreKey(Option.To), Option.Default);
         this.UpdateStore([], Option.From, true);
-        let SelectDom = this.Dom
+        this.Dom
             .WithCustom(Option.SelectQuery)
             .ForEach(Item => {
                 if (Option.From.toLowerCase() != '-html') {
@@ -320,7 +324,11 @@ class VueModel extends CommonFunc {
     //#endregion
 
     //#region Checkbox
-    AddV_Checkbox(DomId, StoreKey = null, Option = { ValueKey: null }) {
+    AddV_Checkbox(DomId, StoreKey = null, Option = {
+        Value: null,
+        Multi: false,
+        IsChecked: false,
+    }) {
         this.AddVdom_Checkbox(
             this.Dom.WithId(DomId),
             StoreKey ?? DomId,
@@ -328,7 +336,11 @@ class VueModel extends CommonFunc {
         );
         return this;
     }
-    AddVq_Checkbox(QueryString, StoreKey = null, Option = { ValueKey: null }) {
+    AddVq_Checkbox(QueryString, StoreKey = null, Option = {
+        Value: null,
+        Multi: false,
+        IsChecked: false,
+    }) {
         this.AddVdom_Checkbox(
             this.Dom.WithCustom(QueryString),
             StoreKey,
@@ -336,7 +348,11 @@ class VueModel extends CommonFunc {
         );
         return this;
     }
-    AddVcol_Checkbox(ColName, StoreKey = null, Option = { ValueKey: null }) {
+    AddVcol_Checkbox(ColName, StoreKey = null, Option = {
+        Value: null,
+        Multi: false,
+        IsChecked: false,
+    }) {
         this.AddVdom_Checkbox(
             this.Dom.WithAttr('vc-col', ColName),
             StoreKey ?? ColName,
@@ -344,12 +360,73 @@ class VueModel extends CommonFunc {
         );
         return this;
     }
-    AddVdom_Checkbox(Dom, StoreKey, Option = { ValueKey: null }) {
-        this.AddStore(StoreKey, []);
-        this.AddVdom_Input(Dom, StoreKey);
-        this.AddVdom_Bind(Dom, 'value', Option.ValueKey);
+    AddVdom_Checkbox(Dom, StoreKey, Option = {
+        Value: null,
+        Multi: false,
+        IsChecked: false,
+    }) {
+        let GetDom = this._BaseCheck_DomEditor(Dom);
+
+        let DefaultValue = Option.Multi ? [] : Option.IsChecked;
+        this.AddStore(StoreKey, DefaultValue);
+        this.AddVdom_Input(Dom, StoreKey, {
+            IsReCombineStore: false,
+        });
+
+        let BindValue = Option.Value;
+        if (Option.Multi) {
+            GetDom.ForEach(Item => {
+
+                if (BindValue == null) {
+                    let IsHtmlEmpty = Item.value == 'on' || this._IsNullOrEmpty(Item.value);
+                    if (IsHtmlEmpty)
+                        BindValue = `"${Item.getAttribute('vc-col')}"`;
+                }
+
+                this.AddVdom_Bind(new DomEditor(Item), 'value', BindValue);
+
+                if (Option.IsChecked) {
+                    let GetStore = this.Store[StoreKey];
+                    let AddValue = BindValue
+                        .replaceAll('"', '')
+                        .replaceAll("'", '');
+
+                    if (!GetStore.includes(AddValue))
+                        GetStore.push(AddValue);
+                }
+            });
+
+        }
+        else if (BindValue != null)
+            this.AddVdom_Bind(GetDom, 'value', BindValue);
+
         return this;
     }
+    //#endregion
+
+    //#region for-checkbox
+    //'m:for-checkbox; f:Datas; of:MyDiv; To:ChkResult; val:Id; dis:Name; lbl:MySpan',
+    AddVfor_Checkbox(Option = {
+        Checkbox: null,
+        From: null,
+        To: null,
+        Value: null,
+        Display: null,
+        Of: null,
+        Label: null,
+    }) {
+        let Display = this._ReCombineItemKey(Option.Display);
+        let Value = this._ReCombineItemKey(Option.Value);
+
+        this.AddVcol_Checkbox(Option.Checkbox, Option.To, {
+            Value: Value,
+            Multi: true,
+        });
+        this.AddVcol_For(Option.Of, Option.From);
+        this.AddVcol_Text(Option.Label, Display);
+        return this;
+    }
+
     //#endregion
 
     //#region For
@@ -603,6 +680,9 @@ class VueModel extends CommonFunc {
         this.AddStore(StoreKey, null);
         GetDom.ForEach(Item => {
             let VModelCommand = 'v-model';
+            if (!this._IsNullOrEmpty(Option.VModelKey))
+                VModelCommand += `:${Option.VModelKey}`;
+
             switch (Item.type) {
                 case 'datetime':
                 case 'datetime-local':
@@ -793,7 +873,7 @@ class VueModel extends CommonFunc {
             return null;
 
         if (!StoreKey.includes('.'))
-            return this.Store[StoreKey];
+            return FindStore[StoreKey];
 
         let FirstKey = StoreKey.split('.')[0];
         let NextKey = StoreKey.replaceAll(`${FirstKey}.`, '');

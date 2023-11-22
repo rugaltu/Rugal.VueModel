@@ -1,5 +1,5 @@
 ﻿/**
- *  VcController.js v3.0.0
+ *  VcController.js v3.0.3
  *  From Rugal Tu
  *  Based on VueModel.js
  * */
@@ -11,7 +11,13 @@ class VcController extends CommonFunc {
 
         this.Configs = {};
         this.IsConfigDone = false;
-        this.CommandNameProp = ['mode', 'column', 'from', 'to', 'select', 'option', 'display', 'value', 'bind', 'key'];
+        this.CommandNameProp = [
+            'column', 'mode', 'default',
+            'from', 'value', 'of', 'to', 'display',
+            'key', 'bind',
+            'select', 'option',
+            'multi', 'checked', 'label'];
+
         this.DefaultVcName = 'Default';
         this.IsUseQueryWhere_VcName = false;
 
@@ -134,34 +140,56 @@ class VcController extends CommonFunc {
         let From = ColumnSet['from'];
         let Mode = ColumnSet['mode'];
         let To = ColumnSet['to'];
+        let Of = ColumnSet['of'];
         let Key = ColumnSet['key'];
-
         let Value = ColumnSet['value'];
+        let Default = ColumnSet['default'];
+        let Display = ColumnSet['display'];
 
-        let SetStoreKey = From;
-
-        let SkipChar = ['.', '(', ')'];
-        if (SkipChar.filter(Item => SetStoreKey.includes(Item)).length == 0)
-            SetStoreKey = `${StoreKey}.${From}`;
+        let Store_VcCol = Column;
+        if (Store_VcCol != null) {
+            let SkipChar = ['.', '(', ')'];
+            if (SkipChar.filter(Item => Store_VcCol.includes(Item)).length == 0) {
+                Store_VcCol = `${StoreKey}.${Column}`;
+            }
+        }
 
         let GetDoms = this._DomsWhere_VcCol(VcName, Column);
         switch (Mode) {
             case 'text':
-                this.Model.AddVdom_Text(GetDoms, SetStoreKey);
+                From ??= Store_VcCol;
+                this.Model.AddVdom_Text(GetDoms, From);
                 break;
             case 'input':
-                this.Model.AddVdom_Input(GetDoms, SetStoreKey, {
+                From ??= Store_VcCol;
+                this.Model.AddVdom_Input(GetDoms, From, {
                     VModelKey: Key,
                 });
                 break;
             case 'checkbox':
-                this.Model.AddVdom_Checkbox(GetDoms, SetStoreKey, {
-                    ValueKey: Value,
+                let Multi = ColumnSet['multi'] ?? false;
+                let IsChecked = ColumnSet['checked'] ?? false;
+                From ??= Multi == true ? StoreKey : Store_VcCol;
+                this.Model.AddVdom_Checkbox(GetDoms, From, {
+                    Value,
+                    Multi,
+                    IsChecked,
+                });
+                break;
+            case 'for-checkbox':
+                let Label = ColumnSet['label'];
+                this.Model.AddVfor_Checkbox({
+                    Checkbox: Column,
+                    From,
+                    To,
+                    Value,
+                    Display,
+                    Of,
+                    Label,
                 });
                 break;
             case 'select':
                 let Option = ColumnSet['option'];
-                let Display = ColumnSet['display'];
                 let SelectQuery = this.IsUseQueryWhere_VcName ?
                     Dom._QueryString_Attr_WithVcName(VcName, 'vc-col', Column) :
                     Dom._QueryString_Attr('vc-col', Column);
@@ -177,7 +205,8 @@ class VcController extends CommonFunc {
                     OptionQuery,
                     Display,
                     Value,
-                })
+                    Default,
+                });
                 break;
             case 'for':
                 this.Model.AddVdom_For(GetDoms, From, Key);
@@ -391,20 +420,11 @@ class VcController extends CommonFunc {
     }
     _CheckRequired_CommandInfo(CommandInfo, StoreKey) {
 
-        if (CommandInfo['mode'] == 'select' || CommandInfo['mode'] == 'for') {
-            if (CommandInfo['from'] == null) {
-                CommandInfo['from'] = StoreKey;
-            }
-        }
-
         if (CommandInfo['mode'] == 'select') {
             if (CommandInfo['to'] == null) {
                 CommandInfo['to'] = CommandInfo['column']
             }
         }
-
-        if (CommandInfo['from'] == null)
-            CommandInfo['from'] = CommandInfo['column'];
 
         if ('column' in CommandInfo === false)
             this._Throw('「column」command is required, at least one of the param needs to be set')
@@ -433,7 +453,17 @@ class VcController extends CommonFunc {
                 throw new Error('「key」command is required for「bind」mode');
         }
 
+        if (CommandInfo['multi'] != null) {
+            let Multi = CommandInfo['multi'];
+            Multi = `${Multi}`.toLowerCase() == 'true';
+            CommandInfo['multi'] = Multi;
+        }
 
+        if (CommandInfo['checked'] != null) {
+            let Checked = CommandInfo['checked'];
+            Checked = `${Checked}`.toLowerCase() == 'true';
+            CommandInfo['checked'] = Checked;
+        }
 
         return CommandInfo;
     }
@@ -441,6 +471,7 @@ class VcController extends CommonFunc {
         switch (Mode) {
             case 'input':
             case 'checkbox':
+            case 'for-checkbox':
             case 'text':
             case 'select':
             case 'for':
@@ -502,14 +533,23 @@ class VcController extends CommonFunc {
             case 'val':
                 CommandName = 'value';
                 break;
+
+            case 'default':
+            case 'def':
+                CommandName = 'default';
+                break;
+
+            case 'of':
+                CommandName = 'of';
+                break;
+
+            case 'display':
+            case 'dis':
+                CommandName = 'display';
+                break;
             //#endregion
 
             //#region Select
-            case 'select':
-            case 'sel':
-                CommandName = 'select';
-                break;
-
             case 'option':
             case 'opt':
                 CommandName = 'option';
@@ -518,10 +558,23 @@ class VcController extends CommonFunc {
             case 'to':
                 CommandName = 'to';
                 break;
+            //#endregion
 
-            case 'display':
-            case 'dis':
-                CommandName = 'display';
+            //#region Checkbox
+            case 'multi':
+            case 'mul':
+                CommandName = 'multi';
+                break;
+            case 'checked':
+            case 'chk':
+                CommandName = 'checked';
+                break;
+            //#endregion
+
+            //#region for-Checkbox
+            case 'label':
+            case 'lbl':
+                CommandName = 'label';
                 break;
             //#endregion
 
