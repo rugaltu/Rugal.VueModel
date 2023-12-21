@@ -449,12 +449,13 @@ class VueModel extends CommonFunc {
             methods: {},
             components: {},
         };
+        this.VueProxy = null;
+        this.Vue = null;
+        this.VueUse = [];
 
         this.BindElementId = 'BindApp';
         this.DefaultStoreKey = 'Default';
         this.WithDefaultStore(this.DefaultStoreKey);
-        this.VueProxy = null;
-        this.Vue = null;
 
         this.IsInited = false;
 
@@ -512,6 +513,9 @@ class VueModel extends CommonFunc {
                 },
             };
             this.Vue = createApp(SetVueOption);
+            for (let Item of this.VueUse) {
+                this.Vue.use(Item);
+            }
             this.VueProxy = this.Vue.mount(`#${this.BindElementId}`);
             this.IsInited = true;
         }
@@ -572,6 +576,12 @@ class VueModel extends CommonFunc {
         this.FileExtensionCheckOption.IsAlert = Option.IsAlert;
         if (!this._IsNullOrEmpty(Option.ErrorMessage))
             this.FileExtensionCheckOption.ErrorMessage = Option.ErrorMessage;
+        return this;
+    }
+    WithVueUse(...UsePackage) {
+        for (let Item of UsePackage) {
+            this.VueUse.push(Item);
+        }
         return this;
     }
     Using(UseFunc = () => { }) {
