@@ -1,5 +1,5 @@
 ﻿/**
- *  VueModel.js v3.0.3
+ *  VueModel.js v3.0.5
  *  From Rugal Tu
  * */
 
@@ -11,7 +11,7 @@ class VueModel extends CommonFunc {
 
     constructor() {
         super();
-        this.Store = {
+        this._Store = {
             FileStore: {},
         };
         this.ApiStore = {}
@@ -70,12 +70,17 @@ class VueModel extends CommonFunc {
     get FileStore() {
         return this.Store.FileStore;
     }
+    get Store() {
+        let GetStore = this.VueProxy?.$data;
+        GetStore ??= this._Store;
+        return GetStore;
+    }
     //#endregion
 
     //#region Init
     Init() {
         if (!this.IsInited) {
-            let GetStore = this.Store;
+            let GetStore = this._Store;
             let SetVueOption = {
                 ...this.VueOption,
                 data() {
