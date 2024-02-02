@@ -429,7 +429,7 @@ class DomEditor {
     //#endregion
 }
 /**
- *  VueModel.js v3.0.5
+ *  VueModel.js v3.0.6
  *  From Rugal Tu
  * */
 
@@ -460,16 +460,7 @@ class VueModel extends CommonFunc {
         this.IsInited = false;
 
         this.GetToken = null;
-
-        this.AcceptAutoBindTag_Input = ['input', 'textarea'];
-        this.AcceptAutoBindTag_Text = ['div', 'label', 'span'];
-        this.AcceptAutoBindTag_Select = ['select'];
-        this.AcceptAutoBindTag_File = ['input'];
-
-        this.AcceptAutoBindType_File = ['file'];
-
-        this.ExceptAutoBindType_Input = ['file'];
-
+         
         this.FuncKey_FormatDate = 'Format_Date';
         this._Domain = null;
         this._Token = null;
@@ -1145,126 +1136,28 @@ class VueModel extends CommonFunc {
     //#endregion
 
     //#endregion
-
-    //#region AutoBind
-
-    //#region AutoBind Text
-    AddVq_AutoBind_Text(QueryString, BindFrom, StoreKey) {
-        this.AddVdom_AutoBind_Text(this.Dom.WithCustom(QueryString), BindFrom, StoreKey);
+     
+    //#region Attr Control
+    SetAttr(DomId, AttrName, AttrValue) {
+        this.SetAttr(this.Dom.WithId(DomId), AttrName, AttrValue);
         return this;
     }
-    AddVdom_AutoBind_Text(Dom, BindFrom, StoreKey) {
-        StoreKey = StoreKey ?? this.DefaultStoreKey;
+
+    SetAttrQ(QueryString) {
+        this.SetAttr(this.Dom.WithCustom(QueryString), AttrName, AttrValue);
+        return this;
+    }
+
+    SetAttrCol(ColName) {
+        this.SetAttr(this.Dom.WithAttr('vc-col', ColName), AttrName, AttrValue);
+        return this;
+    }
+
+    SetAttrDom(Dom, AttrName, AttrValue) {
         let GetDom = this._BaseCheck_DomEditor(Dom);
-        GetDom.ForEach(Item => {
-            let TagName = Item.tagName.toLowerCase();
-            if (!this.AcceptAutoBindTag_Text.includes(TagName))
-                return;
-
-            let SetStoreKey = this._Analyze_AutoBind_From(Item, BindFrom);
-            if (this._IsClearSotreKey(SetStoreKey))
-                SetStoreKey = `${StoreKey}.${SetStoreKey}`;
-
-            this.AddVdom_Text(GetDom.NewWithElement(Item), SetStoreKey);
-        });
+        GetDom.SetAttr(AttrName, AttrValue);
         return this;
     }
-    //#endregion
-
-    //#region AutoBind Input
-    AddVq_AutoBind_Input(QueryString, BindFrom, StoreKey) {
-        this.AddVdom_AutoBind_Input(this.Dom.WithCustom(QueryString), BindFrom, StoreKey);
-        return this;
-    }
-    AddVdom_AutoBind_Input(Dom, BindFrom, StoreKey) {
-        StoreKey = StoreKey ?? this.DefaultStoreKey;
-        let GetDom = this._BaseCheck_DomEditor(Dom);
-        GetDom.ForEach(Item => {
-            let TagName = Item['tagName'].toLowerCase();
-            if (!this.AcceptAutoBindTag_Input.includes(TagName))
-                return;
-
-            let Type = Item['type'].toLowerCase();
-            if (this.ExceptAutoBindType_Input.includes(Type))
-                return;
-
-            let SetStoreKey = this._Analyze_AutoBind_From(Item, BindFrom);
-            if (this._IsClearSotreKey(SetStoreKey))
-                SetStoreKey = `${StoreKey}.${SetStoreKey}`;
-            this.AddVdom_Input(GetDom.NewWithElement(Item), SetStoreKey);
-        });
-        return this;
-    }
-    //#endregion
-
-    //#region AutoBind Select-Html
-    AddVq_AutoBind_SelectHtml(QueryString, BindFrom, StoreKey) {
-        this.AddVdom_AutoBind_SelectHtml(this.Dom.WithCustom(QueryString), BindFrom, StoreKey);
-        return this;
-    }
-    AddVdom_AutoBind_SelectHtml(Dom, BindFrom, StoreKey) {
-        StoreKey = StoreKey ?? this.DefaultStoreKey;
-        let GetDom = this._BaseCheck_DomEditor(Dom);
-        GetDom.ForEach(Item => {
-            let TagName = Item.tagName.toLowerCase();
-            if (!this.AcceptAutoBindTag_Select.includes(TagName))
-                return;
-
-            let SetStoreKey = this._Analyze_AutoBind_From(Item, BindFrom);
-            if (this._IsClearSotreKey(SetStoreKey))
-                SetStoreKey = `${StoreKey}.${SetStoreKey}`;
-            this.AddVdom_SelectHtml(GetDom.NewWithElement(Item), SetStoreKey);
-        });
-        return this;
-    }
-    //#endregion
-
-    //#region AutoBind File
-    AddVq_AutoBind_File(QueryString) {
-        this.AddVdom_AutoBind_File(this.Dom.WithCustom(QueryString));
-        return this;
-    }
-    AddVdom_AutoBind_File(Dom) {
-        let GetDom = this._BaseCheck_DomEditor(Dom);
-        GetDom.ForEach(Item => {
-            let TagName = Item['tagName'].toLowerCase();
-            if (!this.AcceptAutoBindTag_File.includes(TagName))
-                return;
-
-            let Type = Item['type'].toLowerCase();
-            if (!this.AcceptAutoBindType_File.includes(Type))
-                return;
-
-            let ColName = GetDom.GetElement_Attr(Item, 'vc-col');
-            this.AddVdom_File(GetDom.NewWithElement(Item), ColName);
-        });
-        return this;
-    }
-    //#endregion
-
-    //#region Common Func
-    _Analyze_AutoBind_From(Element, BindFrom) {
-
-        let MatchChar = /(\{.+?\})/;
-        let FromArray = BindFrom
-            .split(MatchChar)
-            .filter(Item => !this._IsNullOrEmpty(Item));
-
-        let FormatArray = FromArray
-            .map(Item => {
-                if (Item.match(MatchChar) == null)
-                    return Item;
-
-                let GetAttrName = Item.replace(/{(.+?)}/g, '$1');
-                let AttrValue = Dom.GetElement_Attr(Element, GetAttrName);
-                return AttrValue;
-            });
-
-        let ClearBind = FormatArray.join('');
-        return ClearBind;
-    }
-    //#endregion
-
     //#endregion
 
     //#region Base Add Vue Command
@@ -1704,7 +1597,7 @@ function VerifyVueJs() {
     }
 }
 /**
- *  VcController.js v3.0.3
+ *  VcController.js v3.0.6
  *  From Rugal Tu
  *  Based on VueModel.js
  * */
@@ -1748,7 +1641,7 @@ class VcController extends CommonFunc {
     //#endregion
 
     //#region Add Setting
-    AddVc_Config(_Config = { VcName: null, Api: {}, Bind: {}, AutoBind: {} }) {
+    AddVc_Config(_Config = { VcName: null, Api: {}, Bind: {} }) {
         let VcName = _Config['VcName'] ?? this.DefaultVcName;
         this._Create_Config(VcName);
         this._DeepObjectExtend(this.Configs[VcName], _Config);
@@ -1771,13 +1664,6 @@ class VcController extends CommonFunc {
         this._ClearConfig(VcName);
         return this;
     }
-
-    AddVc_Config_AutoBind(VcName, _AutoBind) {
-        this._Create_Config(VcName);
-        this._DeepObjectExtend(this.Configs[VcName]['AutoBind'], _AutoBind);
-        this._ClearConfig(VcName);
-        return this;
-    }
     //#endregion
 
     //#region Query Setting
@@ -1795,7 +1681,6 @@ class VcController extends CommonFunc {
     Init() {
         if (!this.IsConfigDone) {
             this._SetApi();
-            this._SetAutoBind();
             this._SetBind();
             this.IsConfigDone = true;
         }
@@ -1924,44 +1809,6 @@ class VcController extends CommonFunc {
                 break;
         }
     }
-
-    _SetAutoBind() {
-        this._ForEachKeyValue(this.Configs, (VcName, Config) => {
-            this._ForEachKeyValue(Config['AutoBind'], (StoreKey, BindSet) => {
-                let BindArray = BindSet;
-                if (!Array.isArray(BindSet))
-                    BindArray = [BindSet];
-
-                BindArray.forEach(Item => {
-                    this._VueModel_AutoBindSet(VcName, StoreKey, Item);
-                });
-            });
-        });
-        return this;
-    }
-    _VueModel_AutoBindSet(VcName, StoreKey, BindSet) {
-        let Query = BindSet['query'] ?? `[vc-col]`;
-        let From = BindSet['from'] ?? `{vc-col}`;
-        let Mode = BindSet['mode'] ?? 'text';
-
-        let Doms = this._DomsWhere(VcName, Query);
-        switch (Mode) {
-            case 'text':
-                this.Model.AddVdom_AutoBind_Text(Doms, From, StoreKey);
-                break;
-            case 'input':
-                this.Model.AddVdom_AutoBind_Input(Doms, From, StoreKey);
-                break;
-            case 'select':
-                this.Model.AddVdom_AutoBind_SelectHtml(Doms, From, StoreKey);
-                break;
-            case 'file':
-                Doms.WhereAttr('type', 'file');
-                this.Model.AddVdom_AutoBind_File(Doms);
-                break;
-        }
-        return;
-    }
     //#endregion
 
     //#region Config Review
@@ -1980,10 +1827,7 @@ class VcController extends CommonFunc {
 
         if (!('Bind' in GetConfig))
             GetConfig['Bind'] = {};
-
-        if (!('AutoBind' in GetConfig))
-            GetConfig['AutoBind'] = {};
-
+             
         return this;
     }
     _ClearConfig(_VcName = null) {
@@ -1999,9 +1843,6 @@ class VcController extends CommonFunc {
 
             let Bind = GetConfig['Bind'];
             this._ClearConfig_Bind(Bind);
-
-            let AutoBind = GetConfig['AutoBind'];
-            this._ClearConfig_AutoBind(AutoBind);
         });
         return this;
     }
@@ -2026,14 +1867,6 @@ class VcController extends CommonFunc {
                     };
                     this.AddVc_Config_Bind(VcName, AddBind);
                 }
-                else if (ContentKey == 'AutoBind') {
-                    if (!this._HasAnyKeys(Item))
-                        return;
-                    let AddAutoBind = {};
-                    AddAutoBind[ApiKey] = Item;
-                    this.AddVc_Config_AutoBind(VcName, AddAutoBind);
-                }
-
             })
         });
         return Api;
@@ -2080,37 +1913,6 @@ class VcController extends CommonFunc {
             });
         });
         return Bind;
-    }
-    _ClearConfig_AutoBind(AutoBind) {
-        if (AutoBind == null)
-            return null;
-
-        this._ForEachKeyValue(AutoBind, (StoreKey, BindSet) => {
-            AutoBind[StoreKey] = null;
-
-            let CommandGroups = [];
-            if (Array.isArray(BindSet))
-                CommandGroups = BindSet;
-            else
-                CommandGroups = [BindSet];
-
-            CommandGroups.forEach(Command => {
-                let AutoBindInfo = this._Analyze_AutoBindInfo(Command);
-
-                let GetBind = AutoBind[StoreKey];
-                if (GetBind == null)
-                    AutoBind[StoreKey] = AutoBindInfo;
-                else {
-                    if (Array.isArray(GetBind))
-                        GetBind.push(AutoBindInfo);
-                    else {
-                        AutoBind[StoreKey] = [GetBind, AutoBindInfo];
-                    }
-                }
-            });
-        });
-
-        return AutoBind;
     }
     //#endregion
 
@@ -2288,14 +2090,7 @@ class VcController extends CommonFunc {
                 CommandName = 'key';
                 break;
             //#endregion
-
-            //#region AutoBind
-            case 'query':
-            case 'q':
-                CommandName = 'query';
-                break;
-            //#endregion
-
+             
             default:
                 throw new Error(`error CommandName of「${CommandName}」`);
         }
@@ -2333,25 +2128,6 @@ class VcController extends CommonFunc {
         })
 
         return CommandInfos;
-    }
-    _Analyze_AutoBindInfo(Command) {
-        Command = this._Convert_CommandInfo_CommandString(Command);
-
-        let CommandArray = Command
-            .replaceAll(' ', '')
-            .split(';')
-            .filter(Item => !this._IsNullOrEmpty(Item));
-
-        let AutoBindInfo = {};
-        CommandArray.forEach(Command => {
-            if (!Command.includes(':'))
-                this._Throw('CommandName is a required parameter in CommandLine mode.');
-
-            let CommandInfo = this._Analyze_CommandInfo(Command);
-            AutoBindInfo[CommandInfo.CommandName] = CommandInfo.CommandValue;
-        });
-
-        return AutoBindInfo;
     }
     //#endregion
 

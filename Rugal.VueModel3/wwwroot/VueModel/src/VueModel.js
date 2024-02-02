@@ -1,5 +1,5 @@
 ﻿/**
- *  VueModel.js v3.0.5
+ *  VueModel.js v3.0.6
  *  From Rugal Tu
  * */
 
@@ -30,16 +30,7 @@ class VueModel extends CommonFunc {
         this.IsInited = false;
 
         this.GetToken = null;
-
-        this.AcceptAutoBindTag_Input = ['input', 'textarea'];
-        this.AcceptAutoBindTag_Text = ['div', 'label', 'span'];
-        this.AcceptAutoBindTag_Select = ['select'];
-        this.AcceptAutoBindTag_File = ['input'];
-
-        this.AcceptAutoBindType_File = ['file'];
-
-        this.ExceptAutoBindType_Input = ['file'];
-
+         
         this.FuncKey_FormatDate = 'Format_Date';
         this._Domain = null;
         this._Token = null;
@@ -715,126 +706,28 @@ class VueModel extends CommonFunc {
     //#endregion
 
     //#endregion
-
-    //#region AutoBind
-
-    //#region AutoBind Text
-    AddVq_AutoBind_Text(QueryString, BindFrom, StoreKey) {
-        this.AddVdom_AutoBind_Text(this.Dom.WithCustom(QueryString), BindFrom, StoreKey);
+     
+    //#region Attr Control
+    SetAttr(DomId, AttrName, AttrValue) {
+        this.SetAttr(this.Dom.WithId(DomId), AttrName, AttrValue);
         return this;
     }
-    AddVdom_AutoBind_Text(Dom, BindFrom, StoreKey) {
-        StoreKey = StoreKey ?? this.DefaultStoreKey;
+
+    SetAttrQ(QueryString) {
+        this.SetAttr(this.Dom.WithCustom(QueryString), AttrName, AttrValue);
+        return this;
+    }
+
+    SetAttrCol(ColName) {
+        this.SetAttr(this.Dom.WithAttr('vc-col', ColName), AttrName, AttrValue);
+        return this;
+    }
+
+    SetAttrDom(Dom, AttrName, AttrValue) {
         let GetDom = this._BaseCheck_DomEditor(Dom);
-        GetDom.ForEach(Item => {
-            let TagName = Item.tagName.toLowerCase();
-            if (!this.AcceptAutoBindTag_Text.includes(TagName))
-                return;
-
-            let SetStoreKey = this._Analyze_AutoBind_From(Item, BindFrom);
-            if (this._IsClearSotreKey(SetStoreKey))
-                SetStoreKey = `${StoreKey}.${SetStoreKey}`;
-
-            this.AddVdom_Text(GetDom.NewWithElement(Item), SetStoreKey);
-        });
+        GetDom.SetAttr(AttrName, AttrValue);
         return this;
     }
-    //#endregion
-
-    //#region AutoBind Input
-    AddVq_AutoBind_Input(QueryString, BindFrom, StoreKey) {
-        this.AddVdom_AutoBind_Input(this.Dom.WithCustom(QueryString), BindFrom, StoreKey);
-        return this;
-    }
-    AddVdom_AutoBind_Input(Dom, BindFrom, StoreKey) {
-        StoreKey = StoreKey ?? this.DefaultStoreKey;
-        let GetDom = this._BaseCheck_DomEditor(Dom);
-        GetDom.ForEach(Item => {
-            let TagName = Item['tagName'].toLowerCase();
-            if (!this.AcceptAutoBindTag_Input.includes(TagName))
-                return;
-
-            let Type = Item['type'].toLowerCase();
-            if (this.ExceptAutoBindType_Input.includes(Type))
-                return;
-
-            let SetStoreKey = this._Analyze_AutoBind_From(Item, BindFrom);
-            if (this._IsClearSotreKey(SetStoreKey))
-                SetStoreKey = `${StoreKey}.${SetStoreKey}`;
-            this.AddVdom_Input(GetDom.NewWithElement(Item), SetStoreKey);
-        });
-        return this;
-    }
-    //#endregion
-
-    //#region AutoBind Select-Html
-    AddVq_AutoBind_SelectHtml(QueryString, BindFrom, StoreKey) {
-        this.AddVdom_AutoBind_SelectHtml(this.Dom.WithCustom(QueryString), BindFrom, StoreKey);
-        return this;
-    }
-    AddVdom_AutoBind_SelectHtml(Dom, BindFrom, StoreKey) {
-        StoreKey = StoreKey ?? this.DefaultStoreKey;
-        let GetDom = this._BaseCheck_DomEditor(Dom);
-        GetDom.ForEach(Item => {
-            let TagName = Item.tagName.toLowerCase();
-            if (!this.AcceptAutoBindTag_Select.includes(TagName))
-                return;
-
-            let SetStoreKey = this._Analyze_AutoBind_From(Item, BindFrom);
-            if (this._IsClearSotreKey(SetStoreKey))
-                SetStoreKey = `${StoreKey}.${SetStoreKey}`;
-            this.AddVdom_SelectHtml(GetDom.NewWithElement(Item), SetStoreKey);
-        });
-        return this;
-    }
-    //#endregion
-
-    //#region AutoBind File
-    AddVq_AutoBind_File(QueryString) {
-        this.AddVdom_AutoBind_File(this.Dom.WithCustom(QueryString));
-        return this;
-    }
-    AddVdom_AutoBind_File(Dom) {
-        let GetDom = this._BaseCheck_DomEditor(Dom);
-        GetDom.ForEach(Item => {
-            let TagName = Item['tagName'].toLowerCase();
-            if (!this.AcceptAutoBindTag_File.includes(TagName))
-                return;
-
-            let Type = Item['type'].toLowerCase();
-            if (!this.AcceptAutoBindType_File.includes(Type))
-                return;
-
-            let ColName = GetDom.GetElement_Attr(Item, 'vc-col');
-            this.AddVdom_File(GetDom.NewWithElement(Item), ColName);
-        });
-        return this;
-    }
-    //#endregion
-
-    //#region Common Func
-    _Analyze_AutoBind_From(Element, BindFrom) {
-
-        let MatchChar = /(\{.+?\})/;
-        let FromArray = BindFrom
-            .split(MatchChar)
-            .filter(Item => !this._IsNullOrEmpty(Item));
-
-        let FormatArray = FromArray
-            .map(Item => {
-                if (Item.match(MatchChar) == null)
-                    return Item;
-
-                let GetAttrName = Item.replace(/{(.+?)}/g, '$1');
-                let AttrValue = Dom.GetElement_Attr(Element, GetAttrName);
-                return AttrValue;
-            });
-
-        let ClearBind = FormatArray.join('');
-        return ClearBind;
-    }
-    //#endregion
-
     //#endregion
 
     //#region Base Add Vue Command
