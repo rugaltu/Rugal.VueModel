@@ -429,7 +429,7 @@ class DomEditor {
     //#endregion
 }
 /**
- *  VueModel.js v3.0.7
+ *  VueModel.js v3.0.8
  *  From Rugal Tu
  * */
 
@@ -1139,17 +1139,17 @@ class VueModel extends CommonFunc {
      
     //#region Attr Control
     SetAttr(DomId, AttrName, AttrValue) {
-        this.SetAttr(this.Dom.WithId(DomId), AttrName, AttrValue);
+        this.SetAttrDom(this.Dom.WithId(DomId), AttrName, AttrValue);
         return this;
     }
 
     SetAttrQ(QueryString, AttrName, AttrValue) {
-        this.SetAttr(this.Dom.WithCustom(QueryString), AttrName, AttrValue);
+        this.SetAttrDom(this.Dom.WithCustom(QueryString), AttrName, AttrValue);
         return this;
     }
 
     SetAttrCol(ColName, AttrName, AttrValue) {
-        this.SetAttr(this.Dom.WithAttr('vc-col', ColName), AttrName, AttrValue);
+        this.SetAttrDom(this.Dom.WithAttr('vc-col', ColName), AttrName, AttrValue);
         return this;
     }
 
