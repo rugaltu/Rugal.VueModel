@@ -1,5 +1,5 @@
 ﻿/**
- *  VueModel.js v3.0.6
+ *  VueModel.js v3.0.7
  *  From Rugal Tu
  * */
 
@@ -713,12 +713,12 @@ class VueModel extends CommonFunc {
         return this;
     }
 
-    SetAttrQ(QueryString) {
+    SetAttrQ(QueryString, AttrName, AttrValue) {
         this.SetAttr(this.Dom.WithCustom(QueryString), AttrName, AttrValue);
         return this;
     }
 
-    SetAttrCol(ColName) {
+    SetAttrCol(ColName, AttrName, AttrValue) {
         this.SetAttr(this.Dom.WithAttr('vc-col', ColName), AttrName, AttrValue);
         return this;
     }
