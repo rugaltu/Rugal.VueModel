@@ -30,7 +30,7 @@ class VueModel extends CommonFunc {
         this.IsInited = false;
 
         this.GetToken = null;
-         
+
         this.FuncKey_FormatDate = 'Format_Date';
         this._Domain = null;
         this._Token = null;
@@ -45,6 +45,10 @@ class VueModel extends CommonFunc {
     }
 
     //#region Property
+    get Function() {
+        let Result = this.VueProxy?.$options?.methods ?? this.VueOption.methods;
+        return Result;
+    }
     get Dom() {
         return new DomEditor();
     }
@@ -665,10 +669,14 @@ class VueModel extends CommonFunc {
     AddVdom_Click(Dom, ClickFunc, FuncParam = null) {
         if (ClickFunc == null)
             this._Throw('Click function cannot be null');
+
         let GetDom = this._BaseCheck_DomEditor(Dom);
 
-        let FuncName = this._GetRandomFuncName('Func')
-        this.AddV_Function(FuncName, ClickFunc);
+        let FuncName = ClickFunc;
+        if (typeof ClickFunc === 'function') {
+            FuncName = this._GetRandomFuncName('Func');
+            this.AddV_Function(FuncName, ClickFunc);
+        }
 
         let SetFuncKey = FuncName;
         if (FuncParam != null)
@@ -706,7 +714,7 @@ class VueModel extends CommonFunc {
     //#endregion
 
     //#endregion
-     
+
     //#region Attr Control
     SetAttr(DomId, AttrName, AttrValue) {
         this.SetAttrDom(this.Dom.WithId(DomId), AttrName, AttrValue);

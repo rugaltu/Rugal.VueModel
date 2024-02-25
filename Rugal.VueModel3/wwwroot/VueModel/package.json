@@ -1,10 +1,10 @@
 {
   "name": "@rugal.tu/vuemodel",
-  "version": "3.0.8",
+  "version": "3.0.9",
   "dependencies": {
-    "vue": "^3.3.13"
+    "vue": "^3.4.19"
   },
   "devDependencies": {
-    "vue": "^3.3.13"
+    "vue": "^3.4.19"
   }
 }
