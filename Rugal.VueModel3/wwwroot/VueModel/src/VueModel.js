@@ -1,5 +1,5 @@
 ﻿/**
- *  VueModel.js v3.0.8
+ *  VueModel.js v3.0.9
  *  From Rugal Tu
  * */
 
