@@ -429,7 +429,7 @@ class DomEditor {
     //#endregion
 }
 /**
- *  VueModel.js v3.0.9
+ *  VueModel.js v3.0.12
  *  From Rugal Tu
  * */
 
@@ -438,7 +438,6 @@ VerifyVueJs();
 const { createApp } = Vue;
 const Dom = new DomEditor();
 class VueModel extends CommonFunc {
-
     constructor() {
         super();
         this._Store = {
@@ -466,6 +465,7 @@ class VueModel extends CommonFunc {
         this._Token = null;
 
         this._Func_ConvertTo_FormParam = [];
+        this._Funcs_Mounted = [];
 
         this.FileExtensionCheckOption = {
             IsCheck: false,
@@ -482,7 +482,6 @@ class VueModel extends CommonFunc {
     get Dom() {
         return new DomEditor();
     }
-
     get Domain() {
         if (this._Domain == null)
             return null;
@@ -491,7 +490,6 @@ class VueModel extends CommonFunc {
     set Domain(_Domain) {
         this._Domain = this._GetClearDomain(_Domain);
     }
-
     get FileStore() {
         return this.Store.FileStore;
     }
@@ -506,11 +504,16 @@ class VueModel extends CommonFunc {
     Init() {
         if (!this.IsInited) {
             let GetStore = this._Store;
+            let MountedFunc = this._Funcs_Mounted;
             let SetVueOption = {
                 ...this.VueOption,
                 data() {
                     return GetStore;
                 },
+                mounted: () => {
+                    for (let Func of MountedFunc)
+                        Func();
+                }
             };
             this.Vue = createApp(SetVueOption);
             for (let Item of this.VueUse) {
@@ -543,12 +546,7 @@ class VueModel extends CommonFunc {
         return this;
     }
     WithMounted(MountedFunc = () => { }) {
-        this.VueOption = this._DeepObjectExtend(this.VueOption, {
-            ...this.VueOption,
-            mounted: () => {
-                MountedFunc();
-            }
-        });
+        this._Func_Mounted.push(MountedFunc);
         return this;
     }
     WithDomain(_Domain) {
