@@ -546,7 +546,7 @@ class VueModel extends CommonFunc {
         return this;
     }
     WithMounted(MountedFunc = () => { }) {
-        this._Func_Mounted.push(MountedFunc);
+        this._Funcs_Mounted.push(MountedFunc);
         return this;
     }
     WithDomain(_Domain) {
