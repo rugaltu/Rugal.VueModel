@@ -1,5 +1,5 @@
 ﻿/**
- *  VueModel.js v3.0.13
+ *  VueModel.js v3.0.14
  *  From Rugal Tu
  * */
 
@@ -852,27 +852,55 @@ class VueModel extends CommonFunc {
     //#endregion
 
     //#region Api Store Controller
-    AddApi_Get(_ApiKey, _Url, _OnSuccess = null, _OnComplete = null, _OnError = null) {
-        this._Add_Api(_ApiKey, _Url, 'GET', _OnSuccess, _OnComplete, _OnError);
+    AddApi_Get(ApiKey, Option = {
+        Url: null,
+        Param: {
+            Query: null,
+        },
+        OnSuccess: null,
+        OnError: null,
+        OnComplete: null,
+    }) {
+        Option.Method = 'GET';
+        this._Add_Api(ApiKey, Option);
         return this;
     }
 
-    AddApi_Post(_ApiKey, _Url, _OnSuccess = null, _OnComplete = null, _OnError = null) {
-        this._Add_Api(_ApiKey, _Url, 'POST', _OnSuccess, _OnComplete, _OnError);
+    AddApi_Post(ApiKey, Option = {
+        Url: null,
+        Param: {
+            Query: null,
+            Body: null,
+            Form: null,
+            File: null,
+        },
+        OnSuccess: null,
+        OnError: null,
+        OnComplete: null,
+    }) {
+        Option.Method = 'POST';
+        this._Add_Api(ApiKey, Option);
         return this;
     }
 
-    ApiCall(_ApiKey, _Param = { Query: null, Body: null }, _OnSuccess = null, _OnComplete = null, _OnError = null) {
-        let Api = this.ApiStore[_ApiKey];
+    ApiCall(ApiKey, Option = {
+        Param = {
+            Query: null,
+            Body: null
+        },
+        OnSuccess = null, OnComplete = null, OnError = null
+    }) {
+
+        let Api = this.ApiStore[ApiKey];
         if (Api == null)
-            this._Throw(`Api setting not found of「${_ApiKey}」`);
+            this._Throw(`Api setting not found of「${ApiKey}」`);
 
-        let Url = this._ConvertTo_DomainUrl(Api.Url, _Param?.Query);
+        let Query = Option?.Param?.Query;
+        Query ??= Api.Param?.Query;
+        let Url = this._ConvertTo_DomainUrl(Api.Url, Query);
 
-        let SendBody = null;
-        if (_Param?.Body != null) {
-            SendBody = _Param.Body;
-        }
+        let SendBody = Option?.Param?.Body;
+        SendBody ??= Api.Body;
 
         let FetchParam = {
             method: Api.Method,
@@ -890,40 +918,50 @@ class VueModel extends CommonFunc {
                 if (!ApiRet.ok)
                     throw ApiRet;
 
-                let ConvertRet = await this._ProcessApiReturn(ApiRet);
+                let ConvertResult = await this._ProcessApiReturn(ApiRet);
                 let StoreKey = Api['ApiKey'];
-                this.UpdateStore(ConvertRet, StoreKey, true);
+                this.UpdateStore(ConvertResult, StoreKey, true);
 
-                Api.OnSuccess?.call(this, ConvertRet);
-                _OnSuccess?.call(this, ConvertRet);
-                return ConvertRet;
+                Api.OnSuccess?.call(this, ConvertResult);
+                Option?.OnSuccess?.call(this, ConvertResult);
+                return ConvertResult;
             })
             .catch(async ex => {
                 Api.OnError?.call(this, ex);
-                _OnError?.call(this, ex);
+                Option?.OnError?.call(this, ex);
                 this._Throw(ex.message)
             })
-            .then(async ConvertRet => {
-                _OnComplete?.call(this, ConvertRet);
-                Api.OnComplete?.call(this, ConvertRet);
+            .then(async ConvertResult => {
+                Api.OnComplete?.call(this, ConvertResult);
+                Option?.OnComplete?.call(this, ConvertResult);
             });
 
         return this;
     }
 
-    ApiCall_Form(_ApiKey, _Param = { Query: null, Form: null, File: null }, _OnSuccess = null, _OnComplete = null, _OnError = null) {
-        let Api = this.ApiStore[_ApiKey];
+    ApiCall_Form(ApiKey, Option = {
+        Param = {
+            Query: null,
+            Form: null,
+            File: null
+        },
+        OnSuccess = null, OnComplete = null, OnError = null
+    }) {
+        let Api = this.ApiStore[ApiKey];
 
-        let Url = this._ConvertTo_DomainUrl(Api.Url, _Param?.Query);
+        let Query = Option?.Param?.Query;
+        Query ??= Api.Param?.Query;
+        let Url = this._ConvertTo_DomainUrl(Api.Url, Query);
 
         let SendForm = null;
-        if (_Param?.Form != null) {
-            SendForm = this._ConvertTo_FormParam(_Param.Form, SendForm);
-        }
 
-        if (_Param?.File != null) {
-            SendForm = this._ConvertTo_FormFile(_Param.File, SendForm);
-        }
+        let FormParam = Option?.Param?.Form;
+        FormParam ??= Api.Param?.Form;
+        SendForm = this._ConvertTo_FormParam(FormParam, SendForm);
+
+        let FileParam = Option?.Param?.File;
+        FileParam ??= Api.Param?.File;
+        SendForm = this._ConvertTo_FormFile(FileParam, SendForm);
 
         let FetchParam = {
             method: 'POST',
@@ -934,36 +972,42 @@ class VueModel extends CommonFunc {
         };
 
         fetch(Url, FetchParam)
-            .then(async ApiRet => {
-                if (!ApiRet.ok)
-                    throw ApiRet;
+            .then(async ApiResult => {
+                if (!ApiResult.ok)
+                    throw ApiResult;
 
-                let ConvertRet = await this._ProcessApiReturn(ApiRet);
+                let ConvertResult = await this._ProcessApiReturn(ApiResult);
 
-                Api.OnSuccess?.call(this, ConvertRet);
-                _OnSuccess?.call(this, ConvertRet);
-                return ConvertRet;
+                Api.OnSuccess?.call(this, ConvertResult);
+                Option.OnSuccess?.call(this, ConvertResult);
+                return ConvertResult;
             })
             .catch(async ex => {
                 Api.OnError?.call(this, ex);
-                _OnError?.call(this, ex);
+                Option.OnError?.call(this, ex);
             })
-            .then(async ConvertRet => {
-                _OnComplete?.call(this, ConvertRet);
-                Api.OnComplete?.call(this, ConvertRet);
+            .then(async ConvertResult => {
+                Api.OnComplete?.call(this, ConvertResult);
+                Option.OnComplete?.call(this, ConvertResult);
             });
 
         return this;
     }
 
-    _Add_Api(_ApiKey, _Url, _Method, _OnSuccess = null, _OnComplete = null, _OnError = null) {
+    _Add_Api(ApiKey, Option = {
+        Url,
+        Param,
+        Method,
+        OnSuccess, OnError, OnComplete
+    }) {
         let SetStore = {
-            ApiKey: _ApiKey,
-            Url: _Url,
-            OnSuccess: _OnSuccess,
-            OnComplete: _OnComplete,
-            OnError: _OnError,
-            Method: _Method,
+            ApiKey,
+            Url: Option.Url,
+            Method: Option.Method,
+            Param: Option.Param,
+            OnSuccess: Option.OnSuccess,
+            OnError: Option.OnError,
+            OnComplete: Option.OnComplete,
         };
         this.ApiStore[_ApiKey] = SetStore;
         this.AddStore(_ApiKey);
@@ -1006,6 +1050,9 @@ class VueModel extends CommonFunc {
     }
     _ConvertTo_FormParam(FormParam, Form = null) {
 
+        if (FormParam == null)
+            return Form;
+
         Form ??= new FormData();
 
         this._Func_ConvertTo_FormParam.forEach(Func => {
@@ -1021,6 +1068,9 @@ class VueModel extends CommonFunc {
         return Form;
     }
     _ConvertTo_FormFile(FileParam, Form = null) {
+        if (FileParam == null)
+            return Form;
+
         Form ??= new FormData();
 
         let DefaultKey = 'Files';

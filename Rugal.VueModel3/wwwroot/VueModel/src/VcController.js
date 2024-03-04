@@ -1,5 +1,5 @@
 ﻿/**
- *  VcController.js v3.0.6
+ *  VcController.js v3.0.7
  *  From Rugal Tu
  *  Based on VueModel.js
  * */
@@ -103,9 +103,9 @@ class VcController extends CommonFunc {
         let Url = ApiContent.Url;
         let MethodType = ApiContent['Type'].toLocaleUpperCase();
         if (MethodType == 'GET')
-            this.Model.AddApi_Get(ApiKey, Url);
+            this.Model.AddApi_Get(ApiKey, ApiContent);
         else if (MethodType == 'POST')
-            this.Model.AddApi_Post(ApiKey, Url);
+            this.Model.AddApi_Post(ApiKey, ApiContent);
         else
             throw new Error('error MethodType');
     }
@@ -250,7 +250,7 @@ class VcController extends CommonFunc {
     }
     _ClearConfig_Api(VcName, Api) {
         this._ForEachKeyValue(Api, (ApiKey, ApiContent) => {
-            let ApiProp = ['Url', 'Type'];
+            let ApiProp = ['Url', 'Type', 'Param'];
 
             this._ForEachKeyValue(ApiContent, (ContentKey, Item) => {
                 if (ApiProp.includes(ContentKey))
