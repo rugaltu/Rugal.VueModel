@@ -1,5 +1,5 @@
 ﻿/**
- *  VueModel.js v3.0.15
+ *  VueModel.js v3.0.16
  *  From Rugal Tu
  * */
 
@@ -886,11 +886,11 @@ class VueModel extends CommonFunc {
     }
 
     ApiCall(ApiKey, Option = {
-        Param = {
+        Param: {
             Query: null,
             Body: null
         },
-        OnCalling: null, OnSuccess = null, OnComplete = null, OnError = null
+        OnCalling: null, OnSuccess: null, OnComplete: null, OnError: null
     }) {
 
         let Api = this.ApiStore[ApiKey];
@@ -944,12 +944,12 @@ class VueModel extends CommonFunc {
     }
 
     ApiCall_Form(ApiKey, Option = {
-        Param = {
+        Param: {
             Query: null,
             Form: null,
             File: null
         },
-        OnCalling: null, OnSuccess = null, OnComplete = null, OnError = null
+        OnCalling: null, OnSuccess: null, OnComplete: null, OnError: null
     }) {
         let Api = this.ApiStore[ApiKey];
 
