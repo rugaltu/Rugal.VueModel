@@ -429,7 +429,7 @@ class DomEditor {
     //#endregion
 }
 /**
- *  VueModel.js v3.0.14
+ *  VueModel.js v3.0.15
  *  From Rugal Tu
  * */
 
@@ -1287,6 +1287,7 @@ class VueModel extends CommonFunc {
         Param: {
             Query: null,
         },
+        OnCalling: null,
         OnSuccess: null,
         OnError: null,
         OnComplete: null,
@@ -1304,6 +1305,7 @@ class VueModel extends CommonFunc {
             Form: null,
             File: null,
         },
+        OnCalling: null,
         OnSuccess: null,
         OnError: null,
         OnComplete: null,
@@ -1318,7 +1320,7 @@ class VueModel extends CommonFunc {
             Query: null,
             Body: null
         },
-        OnSuccess = null, OnComplete = null, OnError = null
+        OnCalling: null, OnSuccess = null, OnComplete = null, OnError = null
     }) {
 
         let Api = this.ApiStore[ApiKey];
@@ -1343,6 +1345,8 @@ class VueModel extends CommonFunc {
         if (Api.Method.toUpperCase() == 'POST')
             FetchParam['body'] = JSON.stringify(SendBody ?? {})
 
+        Api.OnCalling?.call(this, FetchParam);
+        Option.OnCalling?.call(this, FetchParam);
         fetch(Url, FetchParam)
             .then(async ApiRet => {
                 if (!ApiRet.ok)
@@ -1359,7 +1363,7 @@ class VueModel extends CommonFunc {
             .catch(async ex => {
                 Api.OnError?.call(this, ex);
                 Option?.OnError?.call(this, ex);
-                this._Throw(ex.message)
+                this._Throw(ex.message);
             })
             .then(async ConvertResult => {
                 Api.OnComplete?.call(this, ConvertResult);
@@ -1375,7 +1379,7 @@ class VueModel extends CommonFunc {
             Form: null,
             File: null
         },
-        OnSuccess = null, OnComplete = null, OnError = null
+        OnCalling: null, OnSuccess = null, OnComplete = null, OnError = null
     }) {
         let Api = this.ApiStore[ApiKey];
 
@@ -1401,6 +1405,8 @@ class VueModel extends CommonFunc {
             },
         };
 
+        Api.OnCalling?.call(this, FetchParam);
+        Option.OnCalling?.call(this, FetchParam);
         fetch(Url, FetchParam)
             .then(async ApiResult => {
                 if (!ApiResult.ok)
@@ -1439,8 +1445,8 @@ class VueModel extends CommonFunc {
             OnError: Option.OnError,
             OnComplete: Option.OnComplete,
         };
-        this.ApiStore[_ApiKey] = SetStore;
-        this.AddStore(_ApiKey);
+        this.ApiStore[ApiKey] = SetStore;
+        this.AddStore(ApiKey);
         return SetStore;
     }
     _ProcessApiReturn(ApiRet) {
