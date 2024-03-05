@@ -241,7 +241,7 @@ function AddTaskLoop(TaskFunc, Delay = 1000) {
     return LoopId;
 }
 /**
- *  DomEditor.js v1.0.0
+ *  DomEditor.js v1.0.1
  *  From Rugal Tu
  * */
 
@@ -254,6 +254,13 @@ class DomEditor {
             Doms: [],
         };
         this.Doms = _Doms;
+    }
+    get NodeList() {
+        let Result = [];
+        for (let Item of [...document.children])
+            this._RCS_Visit(Item, Result);
+
+        return Result;
     }
 
     get Doms() {
@@ -310,7 +317,8 @@ class DomEditor {
             throw new Error('query params is empty');
 
         let QueryString = this.QueryParams.join(' ');
-        this.Doms = [...document.querySelectorAll(QueryString)];
+
+        this.Doms = this.NodeList.filter(Item => Item.matches(QueryString))
         this.QueryParams = [];
         return this;
     }
@@ -426,10 +434,23 @@ class DomEditor {
             (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
         );
     }
+
+    _RCS_Visit(TargetNode, Result) {
+        Result.push(TargetNode);
+        let Children = TargetNode.children;
+        if (TargetNode.tagName == 'TEMPLATE') {
+            Children = TargetNode.content.children;
+        }
+
+        if (Children) {
+            for (let Item of [...Children])
+                this._RCS_Visit(Item, Result);
+        }
+    }
     //#endregion
 }
 /**
- *  VueModel.js v3.0.16
+ *  VueModel.js v3.0.19
  *  From Rugal Tu
  * */
 
@@ -1659,7 +1680,7 @@ function VerifyVueJs() {
     }
 }
 /**
- *  VcController.js v3.0.7
+ *  VcController.js v3.0.9
  *  From Rugal Tu
  *  Based on VueModel.js
  * */
@@ -1703,26 +1724,26 @@ class VcController extends CommonFunc {
     //#endregion
 
     //#region Add Setting
-    AddVc_Config(_Config = { VcName: null, Api: {}, Bind: {} }) {
-        let VcName = _Config['VcName'] ?? this.DefaultVcName;
+    AddVc_Config(Config = { VcName: null, Api: {}, Bind: {} }) {
+        let VcName = Config['VcName'] ?? this.DefaultVcName;
         this._Create_Config(VcName);
-        this._DeepObjectExtend(this.Configs[VcName], _Config);
+        this._DeepObjectExtend(this.Configs[VcName], Config);
 
         this._ClearConfig();
         return this;
     }
 
-    AddVc_Config_Api(_Api) {
-        let VcName = _Config['VcName'] ?? this.DefaultVcName;
+    AddVc_Config_Api(Api) {
+        let VcName = Api['VcName'] ?? this.DefaultVcName;
         this._Create_Config(VcName);
-        this._DeepObjectExtend(this.Configs[VcName]['Api'], _Api);
+        this._DeepObjectExtend(this.Configs[VcName]['Api'], Api);
         this._ClearConfig(VcName);
         return this;
     }
 
-    AddVc_Config_Bind(VcName, _Bind) {
+    AddVc_Config_Bind(VcName, Bind) {
         this._Create_Config(VcName);
-        this._DeepObjectExtend(this.Configs[VcName]['Bind'], _Bind);
+        this._DeepObjectExtend(this.Configs[VcName]['Bind'], Bind);
         this._ClearConfig(VcName);
         return this;
     }

@@ -1,5 +1,5 @@
 ﻿/**
- *  VcController.js v3.0.7
+ *  VcController.js v3.0.9
  *  From Rugal Tu
  *  Based on VueModel.js
  * */
@@ -43,26 +43,26 @@ class VcController extends CommonFunc {
     //#endregion
 
     //#region Add Setting
-    AddVc_Config(_Config = { VcName: null, Api: {}, Bind: {} }) {
-        let VcName = _Config['VcName'] ?? this.DefaultVcName;
+    AddVc_Config(Config = { VcName: null, Api: {}, Bind: {} }) {
+        let VcName = Config['VcName'] ?? this.DefaultVcName;
         this._Create_Config(VcName);
-        this._DeepObjectExtend(this.Configs[VcName], _Config);
+        this._DeepObjectExtend(this.Configs[VcName], Config);
 
         this._ClearConfig();
         return this;
     }
 
-    AddVc_Config_Api(_Api) {
-        let VcName = _Config['VcName'] ?? this.DefaultVcName;
+    AddVc_Config_Api(Api) {
+        let VcName = Api['VcName'] ?? this.DefaultVcName;
         this._Create_Config(VcName);
-        this._DeepObjectExtend(this.Configs[VcName]['Api'], _Api);
+        this._DeepObjectExtend(this.Configs[VcName]['Api'], Api);
         this._ClearConfig(VcName);
         return this;
     }
 
-    AddVc_Config_Bind(VcName, _Bind) {
+    AddVc_Config_Bind(VcName, Bind) {
         this._Create_Config(VcName);
-        this._DeepObjectExtend(this.Configs[VcName]['Bind'], _Bind);
+        this._DeepObjectExtend(this.Configs[VcName]['Bind'], Bind);
         this._ClearConfig(VcName);
         return this;
     }

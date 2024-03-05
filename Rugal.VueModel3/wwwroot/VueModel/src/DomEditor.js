@@ -1,5 +1,5 @@
 ﻿/**
- *  DomEditor.js v1.0.0
+ *  DomEditor.js v1.0.1
  *  From Rugal Tu
  * */
 
@@ -12,6 +12,13 @@ class DomEditor {
             Doms: [],
         };
         this.Doms = _Doms;
+    }
+    get NodeList() {
+        let Result = [];
+        for (let Item of [...document.children])
+            this._RCS_Visit(Item, Result);
+
+        return Result;
     }
 
     get Doms() {
@@ -68,7 +75,8 @@ class DomEditor {
             throw new Error('query params is empty');
 
         let QueryString = this.QueryParams.join(' ');
-        this.Doms = [...document.querySelectorAll(QueryString)];
+
+        this.Doms = this.NodeList.filter(Item => Item.matches(QueryString))
         this.QueryParams = [];
         return this;
     }
@@ -183,6 +191,19 @@ class DomEditor {
         return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c =>
             (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
         );
+    }
+
+    _RCS_Visit(TargetNode, Result) {
+        Result.push(TargetNode);
+        let Children = TargetNode.children;
+        if (TargetNode.tagName == 'TEMPLATE') {
+            Children = TargetNode.content.children;
+        }
+
+        if (Children) {
+            for (let Item of [...Children])
+                this._RCS_Visit(Item, Result);
+        }
     }
     //#endregion
 }
