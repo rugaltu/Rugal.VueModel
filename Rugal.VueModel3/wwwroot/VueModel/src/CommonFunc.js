@@ -1,5 +1,5 @@
 ﻿/**
- *  CommonFunc.js v1.0.0
+ *  CommonFunc.js v1.0.1
  *  From Rugal Tu
  * */
 class CommonFunc {
@@ -36,6 +36,9 @@ class CommonFunc {
     }
     _Throw(Message) {
         throw new Error(Message);
+    }
+    _Error(Message) {
+        console.log(Message);
     }
     _GenerateId() {
         return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c =>
@@ -204,7 +207,7 @@ class CommonFunc {
         }
         return Func;
     }
- 
+
     //#region Web Page Controller
     NavigateTo(Url = [], UrlParam = null) {
 

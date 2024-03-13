@@ -1,5 +1,5 @@
 ﻿/**
- *  VueModel.js v3.0.19
+ *  VueModel.js v3.0.20
  *  From Rugal Tu
  * */
 
@@ -933,7 +933,7 @@ class VueModel extends CommonFunc {
             .catch(async ex => {
                 Api.OnError?.call(this, ex);
                 Option?.OnError?.call(this, ex);
-                this._Throw(ex.message);
+                this._Error(ex.message);
             })
             .then(async ConvertResult => {
                 Api.OnComplete?.call(this, ConvertResult);
