@@ -1,5 +1,5 @@
 /**
- *  CommonFunc.js v1.0.1
+ *  CommonFunc.js v1.0.2
  *  From Rugal Tu
  * */
 class CommonFunc {
@@ -233,12 +233,6 @@ class CommonFunc {
     //#endregion
 
 }
-
-var DefaultData;
-function Init(_DefaultData) {
-    DefaultData = JSON.parse(_DefaultData);
-};
-
 function AddTaskLoop(TaskFunc, Delay = 1000) {
     let LoopId = setInterval(TaskFunc, Delay);
     return LoopId;
@@ -453,7 +447,7 @@ class DomEditor {
     //#endregion
 }
 /**
- *  VueModel.js v3.0.20
+ *  VueModel.js v3.1.0
  *  From Rugal Tu
  * */
 
@@ -1138,6 +1132,27 @@ class VueModel extends CommonFunc {
         return this;
     }
     //#endregion
+
+    //#region Slot
+    AddV_Slot(DomId, SlotKey, SlotValue) {
+        this.AddVdom_Slot(this.Dom.WithId(DomId), SlotKey, SlotValue);
+        return this;
+    }
+    AddVcol_Slot(ColName, SlotKey, SlotValue) {
+        this.AddVdom_Slot(this.Dom.WithAttr('vc-col', ColName), SlotKey, SlotValue);
+        return this;
+    }
+    AddVq_Slot(QueryString, SlotKey, SlotValue) {
+        this.AddVdom_Slot(this.Dom.WithCustom(QueryString), SlotKey, SlotValue);
+        return this;
+    }
+    AddVdom_Slot(Dom, SlotKey, SlotValue) {
+        let GetDom = this._BaseCheck_DomEditor(Dom);
+        GetDom.SetAttr(`v-slot:${SlotKey}`, SlotValue);
+        return this;
+    }
+    //#endregion
+
 
     //#region Add Base Vue Command
     AddVdom_Model(Dom, StoreKey, Option = { VModelKey: null }) {

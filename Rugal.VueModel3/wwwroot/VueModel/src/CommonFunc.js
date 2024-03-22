@@ -1,5 +1,5 @@
 ﻿/**
- *  CommonFunc.js v1.0.1
+ *  CommonFunc.js v1.0.2
  *  From Rugal Tu
  * */
 class CommonFunc {
@@ -233,12 +233,6 @@ class CommonFunc {
     //#endregion
 
 }
-
-var DefaultData;
-function Init(_DefaultData) {
-    DefaultData = JSON.parse(_DefaultData);
-};
-
 function AddTaskLoop(TaskFunc, Delay = 1000) {
     let LoopId = setInterval(TaskFunc, Delay);
     return LoopId;
