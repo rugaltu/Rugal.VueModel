@@ -447,7 +447,7 @@ class DomEditor {
     //#endregion
 }
 /**
- *  VueModel.js v3.1.0
+ *  VueModel.js v3.2.1
  *  From Rugal Tu
  * */
 
@@ -465,6 +465,7 @@ class VueModel extends CommonFunc {
         this.VueOption = {
             methods: {},
             components: {},
+            watch: {},
         };
         this.VueProxy = null;
         this.Vue = null;
@@ -994,11 +995,24 @@ class VueModel extends CommonFunc {
     }
     //#endregion
 
-    //#region Add Function Format
+    //#region Vue Option Set
     AddV_Function(FuncKey, Func) {
         this.VueOption.methods[FuncKey] = Func;
         return this;
     }
+
+    AddV_Watch(WatchPath, Func, Deep = false, Option = {}) {
+        let SetWatch = {
+            handler: Func,
+            deep: Deep,
+            ...Option,
+        };
+        this.VueOption.watch[WatchPath] = SetWatch;
+        return this;
+    }
+    //#endregion
+
+    //#region Add Format
     AddV_Format(DomId, FuncKey, ...Params) {
         this.AddVdom_Format(this.Dom.WithId(DomId), FuncKey, Params ?? DomId);
         return this;
@@ -1698,7 +1712,7 @@ function VerifyVueJs() {
     }
 }
 /**
- *  VcController.js v3.0.9
+ *  VcController.js v3.0.10
  *  From Rugal Tu
  *  Based on VueModel.js
  * */
@@ -1799,7 +1813,6 @@ class VcController extends CommonFunc {
         return this;
     }
     _VueModel_AddApi(ApiKey, ApiContent) {
-        let Url = ApiContent.Url;
         let MethodType = ApiContent['Type'].toLocaleUpperCase();
         if (MethodType == 'GET')
             this.Model.AddApi_Get(ApiKey, ApiContent);

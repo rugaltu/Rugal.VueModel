@@ -1,5 +1,5 @@
 ﻿/**
- *  VcController.js v3.0.9
+ *  VcController.js v3.0.10
  *  From Rugal Tu
  *  Based on VueModel.js
  * */
@@ -100,7 +100,6 @@ class VcController extends CommonFunc {
         return this;
     }
     _VueModel_AddApi(ApiKey, ApiContent) {
-        let Url = ApiContent.Url;
         let MethodType = ApiContent['Type'].toLocaleUpperCase();
         if (MethodType == 'GET')
             this.Model.AddApi_Get(ApiKey, ApiContent);
