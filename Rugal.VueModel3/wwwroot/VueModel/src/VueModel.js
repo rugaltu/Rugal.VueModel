@@ -1,5 +1,5 @@
 ﻿/**
- *  VueModel.js v3.2.2
+ *  VueModel.js v3.3.1
  *  From Rugal Tu
  * */
 
@@ -919,7 +919,6 @@ class VueModel extends CommonFunc {
     }) {
         Option.Method = 'POST';
         Option.IsUpdateStore ??= false;
-
         this._Add_Api(ApiKey, Option);
         return this;
     }
@@ -930,7 +929,7 @@ class VueModel extends CommonFunc {
             Body: null
         },
         OnCalling: null, OnSuccess: null, OnComplete: null, OnError: null,
-        UpdateStore: null,
+        IsUpdateStore: null,
     }) {
 
         let Api = this.ApiStore[ApiKey];
@@ -944,7 +943,7 @@ class VueModel extends CommonFunc {
         let SendBody = Option?.Param?.Body;
         SendBody ??= Api.Body;
 
-        let IsUpdateStore = Option.UpdateStore ?? Api.UpdateStore ?? true;
+        let IsUpdateStore = Option.IsUpdateStore ?? Api.IsUpdateStore ?? true;
 
         let FetchParam = {
             method: Api.Method,
@@ -1048,7 +1047,8 @@ class VueModel extends CommonFunc {
         Url,
         Param,
         Method,
-        OnSuccess, OnError, OnComplete
+        OnSuccess, OnError, OnComplete,
+        IsUpdateStore,
     }) {
         let SetStore = {
             ApiKey,
@@ -1058,6 +1058,7 @@ class VueModel extends CommonFunc {
             OnSuccess: Option.OnSuccess,
             OnError: Option.OnError,
             OnComplete: Option.OnComplete,
+            IsUpdateStore: Option.IsUpdateStore,
         };
         this.ApiStore[ApiKey] = SetStore;
         this.AddStore(ApiKey);

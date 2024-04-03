@@ -447,7 +447,7 @@ class DomEditor {
     //#endregion
 }
 /**
- *  VueModel.js v3.2.2
+ *  VueModel.js v3.3.1
  *  From Rugal Tu
  * */
 
@@ -1367,7 +1367,6 @@ class VueModel extends CommonFunc {
     }) {
         Option.Method = 'POST';
         Option.IsUpdateStore ??= false;
-
         this._Add_Api(ApiKey, Option);
         return this;
     }
@@ -1378,7 +1377,7 @@ class VueModel extends CommonFunc {
             Body: null
         },
         OnCalling: null, OnSuccess: null, OnComplete: null, OnError: null,
-        UpdateStore: null,
+        IsUpdateStore: null,
     }) {
 
         let Api = this.ApiStore[ApiKey];
@@ -1392,7 +1391,7 @@ class VueModel extends CommonFunc {
         let SendBody = Option?.Param?.Body;
         SendBody ??= Api.Body;
 
-        let IsUpdateStore = Option.UpdateStore ?? Api.UpdateStore ?? true;
+        let IsUpdateStore = Option.IsUpdateStore ?? Api.IsUpdateStore ?? true;
 
         let FetchParam = {
             method: Api.Method,
@@ -1496,7 +1495,8 @@ class VueModel extends CommonFunc {
         Url,
         Param,
         Method,
-        OnSuccess, OnError, OnComplete
+        OnSuccess, OnError, OnComplete,
+        IsUpdateStore,
     }) {
         let SetStore = {
             ApiKey,
@@ -1506,6 +1506,7 @@ class VueModel extends CommonFunc {
             OnSuccess: Option.OnSuccess,
             OnError: Option.OnError,
             OnComplete: Option.OnComplete,
+            IsUpdateStore: Option.IsUpdateStore,
         };
         this.ApiStore[ApiKey] = SetStore;
         this.AddStore(ApiKey);
@@ -1721,7 +1722,7 @@ function VerifyVueJs() {
     }
 }
 /**
- *  VcController.js v3.0.10
+ *  VcController.js v3.1.0
  *  From Rugal Tu
  *  Based on VueModel.js
  * */
@@ -1950,7 +1951,7 @@ class VcController extends CommonFunc {
 
         if (!('Bind' in GetConfig))
             GetConfig['Bind'] = {};
-             
+
         return this;
     }
     _ClearConfig(_VcName = null) {
@@ -1971,7 +1972,7 @@ class VcController extends CommonFunc {
     }
     _ClearConfig_Api(VcName, Api) {
         this._ForEachKeyValue(Api, (ApiKey, ApiContent) => {
-            let ApiProp = ['Url', 'Type', 'Param'];
+            let ApiProp = ['Url', 'Type', 'Param', 'IsUpdateStore'];
 
             this._ForEachKeyValue(ApiContent, (ContentKey, Item) => {
                 if (ApiProp.includes(ContentKey))
@@ -2213,7 +2214,7 @@ class VcController extends CommonFunc {
                 CommandName = 'key';
                 break;
             //#endregion
-             
+
             default:
                 throw new Error(`error CommandName of「${CommandName}」`);
         }

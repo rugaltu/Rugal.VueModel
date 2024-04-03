@@ -1,5 +1,5 @@
 ﻿/**
- *  VcController.js v3.0.10
+ *  VcController.js v3.1.0
  *  From Rugal Tu
  *  Based on VueModel.js
  * */
@@ -228,7 +228,7 @@ class VcController extends CommonFunc {
 
         if (!('Bind' in GetConfig))
             GetConfig['Bind'] = {};
-             
+
         return this;
     }
     _ClearConfig(_VcName = null) {
@@ -249,7 +249,7 @@ class VcController extends CommonFunc {
     }
     _ClearConfig_Api(VcName, Api) {
         this._ForEachKeyValue(Api, (ApiKey, ApiContent) => {
-            let ApiProp = ['Url', 'Type', 'Param'];
+            let ApiProp = ['Url', 'Type', 'Param', 'IsUpdateStore'];
 
             this._ForEachKeyValue(ApiContent, (ContentKey, Item) => {
                 if (ApiProp.includes(ContentKey))
@@ -491,7 +491,7 @@ class VcController extends CommonFunc {
                 CommandName = 'key';
                 break;
             //#endregion
-             
+
             default:
                 throw new Error(`error CommandName of「${CommandName}」`);
         }
