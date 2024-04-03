@@ -1,5 +1,5 @@
 ﻿/**
- *  VueModel.js v3.2.1
+ *  VueModel.js v3.2.2
  *  From Rugal Tu
  * */
 
@@ -896,6 +896,7 @@ class VueModel extends CommonFunc {
         OnSuccess: null,
         OnError: null,
         OnComplete: null,
+        IsUpdateStore: true,
     }) {
         Option.Method = 'GET';
         this._Add_Api(ApiKey, Option);
@@ -914,8 +915,11 @@ class VueModel extends CommonFunc {
         OnSuccess: null,
         OnError: null,
         OnComplete: null,
+        IsUpdateStore: false,
     }) {
         Option.Method = 'POST';
+        Option.IsUpdateStore ??= false;
+
         this._Add_Api(ApiKey, Option);
         return this;
     }
@@ -925,7 +929,8 @@ class VueModel extends CommonFunc {
             Query: null,
             Body: null
         },
-        OnCalling: null, OnSuccess: null, OnComplete: null, OnError: null
+        OnCalling: null, OnSuccess: null, OnComplete: null, OnError: null,
+        UpdateStore: null,
     }) {
 
         let Api = this.ApiStore[ApiKey];
@@ -938,6 +943,8 @@ class VueModel extends CommonFunc {
 
         let SendBody = Option?.Param?.Body;
         SendBody ??= Api.Body;
+
+        let IsUpdateStore = Option.UpdateStore ?? Api.UpdateStore ?? true;
 
         let FetchParam = {
             method: Api.Method,
@@ -958,8 +965,10 @@ class VueModel extends CommonFunc {
                     throw ApiRet;
 
                 let ConvertResult = await this._ProcessApiReturn(ApiRet);
-                let StoreKey = Api['ApiKey'];
-                this.UpdateStore(ConvertResult, StoreKey, true);
+                if (IsUpdateStore) {
+                    let StoreKey = Api['ApiKey'];
+                    this.UpdateStore(ConvertResult, StoreKey, true);
+                }
 
                 Api.OnSuccess?.call(this, ConvertResult);
                 Option?.OnSuccess?.call(this, ConvertResult);
