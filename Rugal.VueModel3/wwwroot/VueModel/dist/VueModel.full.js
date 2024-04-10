@@ -1232,9 +1232,8 @@ class VueModel extends CommonFunc {
     UpdateStore(StoreData, StoreKey, IsReplace = false) {
         StoreKey = this._TryGetStoreKey(StoreKey);
 
-        StoreData ??= {};
-
-        StoreData = this._TryToJson(StoreData);
+        if (StoreData != null)
+            StoreData = this._TryToJson(StoreData);
 
         this._RCS_SetStore(StoreKey, StoreData, this.Store, IsReplace);
         this._UpdateVueStore();
