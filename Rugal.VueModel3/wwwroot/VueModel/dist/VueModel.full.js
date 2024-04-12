@@ -447,7 +447,7 @@ class DomEditor {
     //#endregion
 }
 /**
- *  VueModel.js v3.3.1
+ *  VueModel.js v3.3.3
  *  From Rugal Tu
  * */
 
@@ -1377,21 +1377,25 @@ class VueModel extends CommonFunc {
         },
         OnCalling: null, OnSuccess: null, OnComplete: null, OnError: null,
         IsUpdateStore: null,
+        _IsDefault: true,
     }) {
 
         let Api = this.ApiStore[ApiKey];
         if (Api == null)
             this._Throw(`Api setting not found of「${ApiKey}」`);
 
-        let Query = Option?.Param?.Query;
-        Query ??= Api.Param?.Query;
-        let Url = this._ConvertTo_DomainUrl(Api.Url, Query);
+        if (Option._IsDefault == true)
+            Option = {};
 
-        let SendBody = Option?.Param?.Body;
-        SendBody ??= Api.Body;
+        let Param = Option?.Param ?? Api.Param;
+        if (typeof Param === 'function')
+            Param = Param();
 
+        let Query = Param?.Query;
+        let SendBody = Param?.Body;
         let IsUpdateStore = Option.IsUpdateStore ?? Api.IsUpdateStore ?? true;
 
+        let Url = this._ConvertTo_DomainUrl(Api.Url, Query);
         let FetchParam = {
             method: Api.Method,
             headers: {
@@ -1439,18 +1443,26 @@ class VueModel extends CommonFunc {
             Form: null,
             File: null
         },
-        OnCalling: null, OnSuccess: null, OnComplete: null, OnError: null
+        OnCalling: null, OnSuccess: null, OnComplete: null, OnError: null,
+        IsUpdateStore: null,
+        _IsDefault: true,
     }) {
         let Api = this.ApiStore[ApiKey];
+        if (Api == null)
+            this._Throw(`Api setting not found of「${ApiKey}」`);
 
-        let Query = Option?.Param?.Query;
-        Query ??= Api.Param?.Query;
-        let Url = this._ConvertTo_DomainUrl(Api.Url, Query);
+        if (Option._IsDefault == true)
+            Option = {};
+
+        let Param = Option?.Param ?? Api.Param;
+        if (typeof Param === 'function')
+            Param = Param();
+
+        let Query = Param?.Query;
+        let FormParam = Param?.Form;
 
         let SendForm = null;
-
-        let FormParam = Option?.Param?.Form;
-        FormParam ??= Api.Param?.Form;
+        let Url = this._ConvertTo_DomainUrl(Api.Url, Query);
         SendForm = this._ConvertTo_FormParam(FormParam, SendForm);
 
         let FileParam = Option?.Param?.File;
@@ -1721,7 +1733,7 @@ function VerifyVueJs() {
     }
 }
 /**
- *  VcController.js v3.1.0
+ *  VcController.js v3.1.1
  *  From Rugal Tu
  *  Based on VueModel.js
  * */
@@ -1971,7 +1983,10 @@ class VcController extends CommonFunc {
     }
     _ClearConfig_Api(VcName, Api) {
         this._ForEachKeyValue(Api, (ApiKey, ApiContent) => {
-            let ApiProp = ['Url', 'Type', 'Param', 'IsUpdateStore'];
+            let ApiProp = [
+                'Url', 'Type', 'Param',
+                'IsUpdateStore',
+                'OnCalling', 'OnSuccess', 'OnComplete', 'OnError'];
 
             this._ForEachKeyValue(ApiContent, (ContentKey, Item) => {
                 if (ApiProp.includes(ContentKey))

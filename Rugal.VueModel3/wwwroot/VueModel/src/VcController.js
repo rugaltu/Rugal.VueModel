@@ -1,5 +1,5 @@
 ﻿/**
- *  VcController.js v3.1.0
+ *  VcController.js v3.1.1
  *  From Rugal Tu
  *  Based on VueModel.js
  * */
@@ -249,7 +249,10 @@ class VcController extends CommonFunc {
     }
     _ClearConfig_Api(VcName, Api) {
         this._ForEachKeyValue(Api, (ApiKey, ApiContent) => {
-            let ApiProp = ['Url', 'Type', 'Param', 'IsUpdateStore'];
+            let ApiProp = [
+                'Url', 'Type', 'Param',
+                'IsUpdateStore',
+                'OnCalling', 'OnSuccess', 'OnComplete', 'OnError'];
 
             this._ForEachKeyValue(ApiContent, (ContentKey, Item) => {
                 if (ApiProp.includes(ContentKey))
