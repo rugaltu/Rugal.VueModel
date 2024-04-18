@@ -1,5 +1,5 @@
 ﻿/**
- *  VueModel.js v3.3.3
+ *  VueModel.js v3.3.4
  *  From Rugal Tu
  * */
 
@@ -633,8 +633,11 @@ class VueModel extends CommonFunc {
 
         let GetDom = this._BaseCheck_DomEditor(Dom);
 
-        let FuncName = this._GetRandomFuncName(EventKey)
-        this.AddV_Function(FuncName, EventFunc);
+        let FuncName = EventFunc;
+        if (typeof EventFunc === 'function') {
+            FuncName = this._GetRandomFuncName('Func');
+            this.AddV_Function(FuncName, EventFunc);
+        }
 
         let SetFuncKey = FuncName;
         if (FuncParam != null)
@@ -682,19 +685,7 @@ class VueModel extends CommonFunc {
         if (ClickFunc == null)
             this._Throw('Click function cannot be null');
 
-        let GetDom = this._BaseCheck_DomEditor(Dom);
-
-        let FuncName = ClickFunc;
-        if (typeof ClickFunc === 'function') {
-            FuncName = this._GetRandomFuncName('Func');
-            this.AddV_Function(FuncName, ClickFunc);
-        }
-
-        let SetFuncKey = FuncName;
-        if (FuncParam != null)
-            SetFuncKey = `${SetFuncKey}(${FuncParam})`;
-
-        GetDom.SetAttr(`v-on:click`, SetFuncKey);
+        this.AddVdom_On(Dom, 'click', ClickFunc, FuncParam);
         return this;
     }
     //#endregion
