@@ -1,5 +1,5 @@
 ﻿/**
- *  VueModel.js v3.3.5
+ *  VueModel.js v3.3.6
  *  From Rugal Tu
  * */
 
@@ -1128,7 +1128,8 @@ class VueModel extends CommonFunc {
 
         let DefaultKey = 'Files';
         if (Array.isArray(FileParam)) {
-            FileParam.forEach(GetFile => {
+            FileParam.forEach(FileItem => {
+                let GetFile = this._ExtractFileData(FileItem);
                 Form.append(DefaultKey, GetFile);
             });
         }
@@ -1136,14 +1137,15 @@ class VueModel extends CommonFunc {
             Form.append(DefaultKey, FileParam);
         }
         else {
-            this._ForEachKeyValue(FileParam, (Key, GetFile) => {
+            this._ForEachKeyValue(FileParam, (Key, FileData) => {
                 if (Array.isArray(GetFile)) {
-                    GetFile.forEach(File => {
-                        Form.append(Key, File);
+                    GetFile.forEach(FileItem => {
+                        let GetFile = this._ExtractFileData(FileItem);
+                        Form.append(Key, GetFile);
                     });
                 }
                 else
-                    Form.append(Key, GetFile);
+                    Form.append(Key, this._ExtractFileData(FileData));
             });
         }
         return Form;
@@ -1262,6 +1264,12 @@ class VueModel extends CommonFunc {
 
             this._Throw(ErroeMessage);
         }
+    }
+    _ExtractFileData(FileData) {
+        if (FileData['File'] != null)
+            return FileData['File'];
+
+        return FileData;
     }
     //#endregion
 }
