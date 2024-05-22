@@ -1,5 +1,5 @@
 ﻿/**
- *  VueModel.js v3.3.4
+ *  VueModel.js v3.3.5
  *  From Rugal Tu
  * */
 
@@ -35,7 +35,7 @@ class VueModel extends CommonFunc {
         this._Domain = null;
         this._Token = null;
 
-        this._Func_ConvertTo_FormParam = [];
+        this._Func_ConvertTo_FormData = [];
         this._Funcs_Mounted = [];
 
         this.FileExtensionCheckOption = {
@@ -128,14 +128,14 @@ class VueModel extends CommonFunc {
         this._Token = _Token;
         return this;
     }
-    WithConvertTo_FormParam(ConvertToFunc = (FormParam, Form) => { }) {
-        this._Func_ConvertTo_FormParam.push(ConvertToFunc);
+    WithConvertTo_FormParam(ConvertToFunc = (FormData, Form) => { }) {
+        this._Func_ConvertTo_FormData.push(ConvertToFunc);
         return this;
     }
-    WithJsonFormParam(JsonKey = 'Result') {
-        this.WithConvertTo_FormParam((FormParam, Form) => {
+    WithFormDataJsonBody(JsonBodyKey = 'Body') {
+        this.WithConvertTo_FormParam((FormDataBody, Form) => {
             let ConvertParam = {};
-            ConvertParam[JsonKey] = JSON.stringify(FormParam);
+            ConvertParam[JsonBodyKey] = JSON.stringify(FormDataBody);
             return ConvertParam;
         });
         return this;
@@ -1002,11 +1002,11 @@ class VueModel extends CommonFunc {
             Param = Param();
 
         let Query = Param?.Query;
-        let FormParam = Param?.Form;
+        let ConvertFormData = Param?.Form;
 
         let SendForm = null;
         let Url = this._ConvertTo_DomainUrl(Api.Url, Query);
-        SendForm = this._ConvertTo_FormParam(FormParam, SendForm);
+        SendForm = this._ConvertTo_FormData(ConvertFormData, SendForm);
 
         let FileParam = Option?.Param?.File;
         FileParam ??= Api.Param?.File;
@@ -1101,21 +1101,21 @@ class VueModel extends CommonFunc {
         let QueryString = AllParam.join('&');
         return QueryString;
     }
-    _ConvertTo_FormParam(FormParam, Form = null) {
+    _ConvertTo_FormData(ConvertFormData, Form = null) {
 
-        if (FormParam == null)
+        if (ConvertFormData == null)
             return Form;
 
         Form ??= new FormData();
 
-        this._Func_ConvertTo_FormParam.forEach(Func => {
-            FormParam = Func(FormParam, Form);
+        this._Func_ConvertTo_FormData.forEach(Func => {
+            ConvertFormData = Func(ConvertFormData, Form);
         });
 
-        if (FormParam instanceof FormData)
-            return FormParam;
+        if (ConvertFormData instanceof FormData)
+            return ConvertFormData;
 
-        this._ForEachKeyValue(FormParam, (Key, Value) => {
+        this._ForEachKeyValue(ConvertFormData, (Key, Value) => {
             Form.append(Key, Value);
         });
         return Form;
