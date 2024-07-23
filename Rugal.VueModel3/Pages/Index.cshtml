@@ -4,46 +4,18 @@
 }
 
 <div class="text-center">
-    @*   <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a v-text="GetTest2.value" href="https://docs.microsoft.com/aspnet/core"></a>.</p>
-    <input v-model="GetTest2.value" />
-    <button v-on:click="TestClick()">Click</button>
-    *@
+    <section>
+        <input v-model="A1.A2.A3.TestValue" />
+        <input v-model="B1.Value" />
+        <input v-model="C1" />
+        <label vc-col="Test"></label>
 
-    <select vc-col="MySelect">
-        <option value="0">請選擇XXX</option>
-        <option vc-col="MyOption"></option>
-    </select>
-
-    <br />
-
-    <!--for-->
-    <div vc-col="MyDiv">
-        <label>
-            <!--vc-col to、from-->
-            <input type="checkbox" vc-col="MyCheckbox" />
-            <!--dis-->
-            <span vc-col="MySpan"></span>
-        </label>
-    </div>
-
-    <div>
-        <input type="radio" name="A" />
-        <input type="radio" name="A" />
-    </div>
-
-    <template>
-        <div vc-col="AAA">
-        </div>
-    </template>
-    
-
+    </section>
 </div>
 
-<script src="/npm/vue/vue.global.js"></script>
+<script src="/npm/vue/vue.global.prod.js"></script>
 @* <script src="/VueModel/dist/VueModel.full.js"></script> *@
 <script src="/VueModel/src/CommonFunc.js"></script>
 <script src="/VueModel/src/DomEditor.js"></script>
 <script src="/VueModel/src/VueModel.js"></script>
-<script src="/VueModel/src/VcController.js"></script>
 <script src="~/js/site.js"></script>

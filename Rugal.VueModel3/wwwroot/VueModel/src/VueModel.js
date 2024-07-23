@@ -1,43 +1,42 @@
 ﻿/**
- *  VueModel.js v3.3.6
+ *  VueModel.js v3.4.4
  *  From Rugal Tu
  * */
 
 VerifyVueJs();
 
-const { createApp } = Vue;
+const { createApp, reactive } = Vue;
 const Dom = new DomEditor();
 class VueModel extends CommonFunc {
     constructor() {
         super();
-        this._Store = {
+
+        this.IsInited = false;
+        this.$Store = {
             FileStore: {},
         };
-        this.ApiStore = {}
+        this.BindElementId = 'BindApp';
+        this.DefaultStoreKey = 'Default';
+        this.DefaultQueryAttribute = 'vc-col';
+        this.WithDefaultStoreKey(this.DefaultStoreKey);
+
         this.VueOption = {
             methods: {},
             components: {},
             watch: {},
+            computed: {},
         };
         this.VueProxy = null;
         this.Vue = null;
         this.VueUse = [];
+        this.MountedFuncs = [];
 
-        this.BindElementId = 'BindApp';
-        this.DefaultStoreKey = 'Default';
-        this.WithDefaultStore(this.DefaultStoreKey);
-
-        this.IsInited = false;
-
-        this.GetToken = null;
+        this.ApiStore = {}
+        this.$ApiDomain = null;
+        this.ApiToken = null;
 
         this.FuncKey_FormatDate = 'Format_Date';
-        this._Domain = null;
-        this._Token = null;
-
         this._Func_ConvertTo_FormData = [];
-        this._Funcs_Mounted = [];
-
         this.FileExtensionCheckOption = {
             IsCheck: false,
             IsAlert: false,
@@ -45,7 +44,7 @@ class VueModel extends CommonFunc {
         };
     }
 
-    //#region Property
+    //#region Get/Set Property
     get Function() {
         let Result = this.VueProxy?.$options?.methods ?? this.VueOption.methods;
         return Result;
@@ -53,29 +52,30 @@ class VueModel extends CommonFunc {
     get Dom() {
         return new DomEditor();
     }
-    get Domain() {
-        if (this._Domain == null)
+    get ApiDomain() {
+        if (this.$ApiDomain == null)
             return null;
-        return this._GetClearDomain(this._Domain);
+        return this._ClearUrl(this.$ApiDomain);
     }
-    set Domain(_Domain) {
-        this._Domain = this._GetClearDomain(_Domain);
+    set ApiDomain(ApiDomain) {
+        this.$ApiDomain = this._ClearUrl(ApiDomain);
     }
     get FileStore() {
         return this.Store.FileStore;
     }
     get Store() {
-        let GetStore = this.VueProxy?.$data;
-        GetStore ??= this._Store;
+        let GetStore = this.VueProxy;
+        GetStore ??= this.$Store;
         return GetStore;
     }
     //#endregion
 
-    //#region Init
+    //#region Public Init Method
     Init() {
         if (!this.IsInited) {
-            let GetStore = this._Store;
-            let MountedFunc = this._Funcs_Mounted;
+            this.$Store = reactive(this.$Store);
+            let GetStore = this.$Store;
+            let MountedFunc = this.MountedFuncs;
             let SetVueOption = {
                 ...this.VueOption,
                 data() {
@@ -95,39 +95,62 @@ class VueModel extends CommonFunc {
         }
         return this;
     }
-    WithDefaultStore(_DefaultStoreKey) {
+    Using(UseFunc = () => { }) {
+        UseFunc();
+        return this;
+    }
+    //#endregion
+
+    //#region VueModel Option
+    WithDefaultStoreKey(_DefaultStoreKey) {
         this.DefaultStoreKey = _DefaultStoreKey;
         this.Store[this.DefaultStoreKey] ??= {};
         return this;
     }
-    WithStoreData(_StoreData) {
-        this.Store = _StoreData;
+    WithDefaultStore(_Store) {
+        this.$Store = this._DeepObjectExtend(this.$Store, _Store);
         return this;
     }
     WithRootId(_BindElementId = 'BindApp') {
         this.BindElementId = _BindElementId;
         return this;
     }
+    WithApiDomain(ApiDomain) {
+        this.ApiDomain = ApiDomain;
+        return this;
+    }
+    WithApiToken(ApiToken) {
+        this.ApiToken = ApiToken;
+        return this;
+    }
+    WithQueryAttribute(AttributeName) {
+        this.DefaultQueryAttribute = AttributeName;
+        return this;
+    }
+    //#endregion
+
+    //#region With Vue Option
     WithVueOption(_VueOption = {}) {
         this.VueOption = this._DeepObjectExtend(this.VueOption, _VueOption);
+        return this;
+    }
+    WithMounted(MountedFunc = () => { }) {
+        this.MountedFuncs.push(MountedFunc);
         return this;
     }
     WithComponent(Component = {}) {
         this.VueOption.components = this._DeepObjectExtend(this.VueOption.components, Component);
         return this;
     }
-    WithMounted(MountedFunc = () => { }) {
-        this._Funcs_Mounted.push(MountedFunc);
+    WithVueUse(...UsePackage) {
+        for (let Item of UsePackage) {
+            this.VueUse.push(Item);
+        }
         return this;
     }
-    WithDomain(_Domain) {
-        this.Domain = _Domain;
-        return this;
-    }
-    WithToken(_Token) {
-        this._Token = _Token;
-        return this;
-    }
+    //#endregion
+
+    //#region With Process Function
     WithConvertTo_FormParam(ConvertToFunc = (FormData, Form) => { }) {
         this._Func_ConvertTo_FormData.push(ConvertToFunc);
         return this;
@@ -147,328 +170,129 @@ class VueModel extends CommonFunc {
             this.FileExtensionCheckOption.ErrorMessage = Option.ErrorMessage;
         return this;
     }
-    WithVueUse(...UsePackage) {
-        for (let Item of UsePackage) {
-            this.VueUse.push(Item);
+    //#endregion
+
+    //#region Add Vue Option
+    AddV_Function(FuncKey, Func) {
+        this.VueOption.methods[FuncKey] = Func;
+        return this;
+    }
+    AddProperty(PropertyPath, Option = {
+        Value: null,
+        Target: null,
+        Bind: [],
+    }) {
+        let SetStore = this.Store;
+        let PropertyKey = PropertyPath;
+        if (PropertyPath.includes('.')) {
+            let PropertyPaths = PropertyPath.split('.');
+            PropertyKey = PropertyPaths.pop();
+            let FindPath = PropertyPaths.join('.');
+            SetStore = this.GetStore(FindPath, {
+                CreateIfNull: true
+            });
+        }
+        let SetProperty = this._BaseAddProperty(SetStore, PropertyKey, Option);
+        if (Option.Bind) {
+            if (!Array.isArray(Option.Bind))
+                Option.Bind = [Option.Bind];
+
+            for (let BindPath of Option.Bind) {
+                this.AddProperty(BindPath, {
+                    Target: PropertyPath,
+                });
+            }
+            SetProperty['Bind'] = Option.Bind;
         }
         return this;
     }
-    Using(UseFunc = () => { }) {
-        UseFunc();
-        return this;
+    _BaseAddProperty(PropertyStore, PropertyKey, Option = {
+        Target: null,
+        Value: null,
+    }) {
+        let ThisModel = this;
+        let PropertyContent = {
+            get() {
+                if (Option.Target == null)
+                    return this[`$${PropertyKey}`];
+
+                return ThisModel.GetStore(Option.Target);
+            },
+            set(Value) {
+                if (Option.Target == null)
+                    this[`$${PropertyKey}`] = Value;
+                else
+                    ThisModel.SetStore(Option.Target, Value);
+            }
+        };
+        let SetProperty = Object.defineProperty(PropertyStore, PropertyKey, PropertyContent);
+        if (Option.Value != null) {
+            if (Option.Target == null)
+                SetProperty[`$${PropertyKey}`] = Option.Value;
+            else
+                this.SetStore(Option.Target, Option.Value);
+        }
+
+        return SetProperty;
     }
     //#endregion
 
     //#region Add Vue Command
-
-    //#region Text
-    AddV_Text(DomId, StoreKey = null) {
-        this.AddVdom_Text(this.Dom.WithId(DomId), StoreKey ?? DomId);
+    //#region v-text
+    AddV_Text(DomName, StoreKey = null) {
+        StoreKey ??= this._ReCombineStoreKey(DomName);
+        this._BaseAddVdom_Text(
+            this.Dom.WithAttr(this.DefaultQueryAttribute, DomName),
+            StoreKey);
         return this;
     }
-    AddVq_Text(QueryString, StoreKey = null) {
-        this.AddVdom_Text(this.Dom.WithCustom(QueryString), StoreKey);
-        return this;
-    }
-    AddVcol_Text(ColName, StoreKey = null) {
-        this.AddVdom_Text(this.Dom.WithAttr('vc-col', ColName), StoreKey ?? ColName);
-        return this;
-    }
-    AddVdom_Text(Dom, StoreKey) {
+    _BaseAddVdom_Text(Dom, StoreKey) {
         let GetDom = this._BaseCheck_DomEditor(Dom);
-        StoreKey = this._ReCombineStoreKey(StoreKey);
         this.AddStore(StoreKey, null);
         GetDom.SetAttr('v-text', StoreKey);
         return this;
     }
     //#endregion
 
-    //#region Input
-    AddV_Input(DomId, StoreKey = null, Option = { VModelKey: null, IsReCombineStore: true }) {
-        this.AddVdom_Input(
-            this.Dom.WithId(DomId),
-            StoreKey ?? DomId,
-            Option
-        );
-        return this;
-    }
-    AddVq_Input(QueryString, StoreKey = null, Option = { VModelKey: null, IsReCombineStore: true }) {
-        this.AddVdom_Input(
-            this.Dom.WithCustom(QueryString),
+    //#region v-model
+    AddV_Model(ColName, StoreKey = null, Option = { VModelKey: null }) {
+        this.AddVdom_Model(
+            this.Dom.WithAttr(this.DefaultQueryAttribute, ColName),
             StoreKey,
             Option
         );
         return this;
     }
-    AddVcol_Input(ColName, StoreKey = null, Option = { VModelKey: null, IsReCombineStore: true }) {
-        this.AddVdom_Input(
-            this.Dom.WithAttr('vc-col', ColName),
-            StoreKey ?? ColName,
-            Option
-        );
-        return this;
-    }
-    AddVdom_Input(Dom, StoreKey, Option = { VModelKey: null, IsReCombineStore: true }) {
+    AddVdom_Model(Dom, StoreKey, Option = { VModelKey: null }) {
         let GetDom = this._BaseCheck_DomEditor(Dom);
-
-        if (Option.IsReCombineStore)
-            StoreKey = this._ReCombineStoreKey(StoreKey);
-
+        StoreKey ??= this._ReCombineStoreKey(StoreKey);
         this.AddStore(StoreKey, null);
         GetDom.ForEach(Item => {
             let VModelCommand = 'v-model';
             if (!this._IsNullOrEmpty(Option.VModelKey))
-                VModelCommand += `:${Option.VModelKey}`
+                VModelCommand += `:${Option.VModelKey}`;
 
-            switch (Item.type) {
-                case 'datetime':
-                case 'datetime-local':
-                case 'date':
-                    this.AddVdom_Format(GetDom, this.FuncKey_FormatDate, StoreKey, `'${StoreKey}'`);
-                    break;
-                case 'number':
-                    VModelCommand = 'v-model.number';
-                    break;
-            }
             GetDom.SetElement_Attr(Item, VModelCommand, StoreKey);
         });
         return this;
     }
     //#endregion
 
-    //#region Select
-    AddV_Select(Option = {
-        SelectId: null,
-        From: null,
-        To: null,
-        OptionId: null,
-        Display: null,
-        Value: null,
-        Default: null,
-    }) {
-        let SelectQuery = this.Dom._QueryString_Id(Option.SelectId);
-        let OptionQuery = this.Dom._QueryString_Id(Option.OptionId);
-
-        this.AddVq_Select({
-            SelectQuery,
-            OptionQuery,
-            From: Option.From,
-            To: Option.To,
-            Display: Option.Display,
-            Value: Option.Value,
-        });
-        return this;
-    }
-    AddVcol_Select(Option = {
-        SelectCol: null,
-        OptionCol: null,
-        From: null,
-        To: null,
-        Display: null,
-        Value: null,
-        Default: null,
-    }) {
-        Option.From = Option.From ?? Option.SelectCol;
-        Option.To = Option.To ?? Option.SelectCol;
-
-        let SelectQuery = this.Dom._QueryString_VcCol(Option.SelectCol);
-        let OptionQuery = this.Dom._QueryString_VcCol(Option.OptionCol);
-        this.AddVq_Select({
-            SelectQuery,
-            OptionQuery,
-            From: Option.From,
-            To: Option.To,
-            Display: Option.Display,
-            Value: Option.Value,
-        });
-        return this;
-    }
-    AddVq_Select(Option = {
-        SelectQuery: null,
-        From: null,
-        To: null,
-        OptionQuery: null,
-        Display: null,
-        Value: null,
-        Default: null,
-    }) {
-        this.AddStore(this._ReCombineStoreKey(Option.To), Option.Default);
-        this.UpdateStore([], Option.From, true);
-        this.Dom
-            .WithCustom(Option.SelectQuery)
-            .ForEach(Item => {
-                if (Option.From.toLowerCase() != '-html') {
-                    let Display = this._ReCombineItemKey(Option.Display);
-                    let Value = this._ReCombineItemKey(Option.Value);
-
-                    this.Dom.NewWithElement([...Item.children])
-                        .WhereCustom(Option.OptionQuery)
-                        .SetAttr('v-text', Display)
-                        .SetAttr(':value', Value)
-                        .SetAttr('v-for', `(Item, Idx) in ${Option.From}`);
-                }
-                let StoreKey = this._ReCombineStoreKey(Option.To);
-                this.Dom.SetElement_Attr(Item, 'v-model', StoreKey);
-            })
-        return this;
-    }
-    //#endregion
-
-    //#region Select Html
-    AddV_SelectHtml(SelectId, To) {
-        this.AddVdom_SelectHtml(this.Dom.WithId(SelectId), To ?? SelectId);
-        return this;
-    }
-    AddVq_SelectHtml(QueryString, To) {
-        this.AddVdom_SelectHtml(this.Dom.WithCustom(QueryString), To);
-        return this;
-    }
-    AddVdom_SelectHtml(Dom, To) {
-        To = this._ReCombineStoreKey(To);
-        this.AddStore(To, null);
-        let GetDom = this._BaseCheck_DomEditor(Dom);
-        GetDom.SetAttr('v-model', To);
-        return this;
-    }
-    //#endregion
-
-    //#region Checkbox
-    AddV_Checkbox(DomId, StoreKey = null, Option = {
-        Value: null,
-        Multi: false,
-        IsChecked: false,
-    }) {
-        this.AddVdom_Checkbox(
-            this.Dom.WithId(DomId),
-            StoreKey ?? DomId,
-            Option
-        );
-        return this;
-    }
-    AddVq_Checkbox(QueryString, StoreKey = null, Option = {
-        Value: null,
-        Multi: false,
-        IsChecked: false,
-    }) {
-        this.AddVdom_Checkbox(
-            this.Dom.WithCustom(QueryString),
-            StoreKey,
-            Option
-        );
-        return this;
-    }
-    AddVcol_Checkbox(ColName, StoreKey = null, Option = {
-        Value: null,
-        Multi: false,
-        IsChecked: false,
-    }) {
-        this.AddVdom_Checkbox(
-            this.Dom.WithAttr('vc-col', ColName),
-            StoreKey ?? ColName,
-            Option
-        );
-        return this;
-    }
-    AddVdom_Checkbox(Dom, StoreKey, Option = {
-        Value: null,
-        Multi: false,
-        IsChecked: false,
-    }) {
-        let GetDom = this._BaseCheck_DomEditor(Dom);
-
-        let DefaultValue = Option.Multi ? [] : Option.IsChecked;
-        this.AddStore(StoreKey, DefaultValue);
-        this.AddVdom_Input(Dom, StoreKey, {
-            IsReCombineStore: false,
-        });
-
-        let BindValue = Option.Value;
-        if (Option.Multi) {
-            GetDom.ForEach(Item => {
-
-                if (BindValue == null) {
-                    let IsHtmlEmpty = Item.value == 'on' || this._IsNullOrEmpty(Item.value);
-                    if (IsHtmlEmpty)
-                        BindValue = `"${Item.getAttribute('vc-col')}"`;
-                }
-
-                this.AddVdom_Bind(new DomEditor(Item), 'value', BindValue);
-
-                if (Option.IsChecked) {
-                    let GetStore = this.Store[StoreKey];
-                    let AddValue = BindValue
-                        .replaceAll('"', '')
-                        .replaceAll("'", '');
-
-                    if (!GetStore.includes(AddValue))
-                        GetStore.push(AddValue);
-                }
-            });
-
-        }
-        else if (BindValue != null)
-            this.AddVdom_Bind(GetDom, 'value', BindValue);
-
-        return this;
-    }
-    //#endregion
-
-    //#region for-checkbox
-    //'m:for-checkbox; f:Datas; of:MyDiv; To:ChkResult; val:Id; dis:Name; lbl:MySpan',
-    AddVfor_Checkbox(Option = {
-        Checkbox: null,
-        From: null,
-        To: null,
-        Value: null,
-        Display: null,
-        Of: null,
-        Label: null,
-    }) {
-        let Display = this._ReCombineItemKey(Option.Display);
-        let Value = this._ReCombineItemKey(Option.Value);
-
-        this.AddVcol_Checkbox(Option.Checkbox, Option.To, {
-            Value: Value,
-            Multi: true,
-        });
-        this.AddVcol_For(Option.Of, Option.From);
-        this.AddVcol_Text(Option.Label, Display);
-        return this;
-    }
-
-    //#endregion
-
-    //#region For
-    AddV_For(DomId, StoreKey, ForKey = null) {
+    //#region v-for
+    AddV_For(ColName, StoreKey, ForKey = null) {
         this.AddVdom_For(
-            this.Dom.WithId(DomId),
-            StoreKey ?? DomId,
-            ForKey
-        );
-        return this;
-    }
-    AddVq_For(QueryString, StoreKey, ForKey = null) {
-        this.AddVdom_For(
-            this.Dom.WithCustom(QueryString),
-            StoreKey,
-            ForKey
-        );
-        return this;
-    }
-    AddVcol_For(ColName, StoreKey, ForKey = null) {
-        this.AddVdom_For(
-            this.Dom.WithAttr('vc-col', ColName),
+            this.Dom.WithAttr(this.DefaultQueryAttribute, ColName),
             StoreKey,
             ForKey
         );
         return this;
     }
     AddVdom_For(Dom, StoreKey, ForKey = null) {
-        let GetStore = this._RCS_GetStore(StoreKey, this.Store);
+        let GetStore = this.GetStore(StoreKey);
         if (GetStore == null)
             this.AddStore(StoreKey, []);
         else if (!Array.isArray(GetStore))
-            this.UpdateStore([], StoreKey, true);
+            this.UpdateStore(StoreKey, []);
 
         ForKey ??= '(Item, Idx)';
         let GetDom = this._BaseCheck_DomEditor(Dom);
@@ -478,16 +302,8 @@ class VueModel extends CommonFunc {
     //#endregion
 
     //#region Input-File
-    AddV_File(DomId, FileStoreKey = null, Option = { IsAddMode: false, ConverFileFunc: null }) {
-        this.AddVdom_File(this.Dom.WithId(DomId), FileStoreKey ?? DomId, Option);
-        return this;
-    }
-    AddVq_File(QueryString, FileStoreKey = null, Option = { IsAddMode: false, ConverFileFunc: null }) {
-        this.AddVdom_File(this.Dom.WithCustom(QueryString), FileStoreKey, Option);
-        return this;
-    }
-    AddVcol_File(ColName, FileStoreKey = null, Option = { IsAddMode: false, ConverFileFunc: null }) {
-        this.AddVdom_File(this.Dom.WithAttr('vc-col', ColName), FileStoreKey ?? ColName, Option);
+    AddV_File(ColName, FileStoreKey = null, Option = { IsAddMode: false, ConverFileFunc: null }) {
+        this.AddVdom_File(this.Dom.WithAttr(this.DefaultQueryAttribute, ColName), FileStoreKey ?? ColName, Option);
         return this;
     }
     AddVdom_File(Dom, FileStoreKey, Option = { IsAddMode: false, ConverFileFunc: null }) {
@@ -517,15 +333,15 @@ class VueModel extends CommonFunc {
             });
 
             this.FileStore[FileStoreKey].push(...AddFiles);
-            this._UpdateVueStore();
+            this.ForceUpdate();
         });
         return this;
     }
     //#endregion
 
-    //#region If Render
-    AddVcol_If(ColName, IfValue) {
-        this.AddVdom_If(this.Dom.WithAttr('vc-col', ColName), IfValue);
+    //#region v-if
+    AddV_If(ColName, IfValue) {
+        this.AddVdom_If(this.Dom.WithAttr(this.DefaultQueryAttribute, ColName), IfValue);
         return this;
     }
     AddVdom_If(Dom, IfValue) {
@@ -535,9 +351,9 @@ class VueModel extends CommonFunc {
     }
     //#endregion
 
-    //#region Show Render
-    AddVcol_Show(ColName, ShowValue) {
-        this.AddVdom_Show(this.Dom.WithAttr('vc-col', ColName), ShowValue);
+    //#region v-show
+    AddV_Show(ColName, ShowValue) {
+        this.AddVdom_Show(this.Dom.WithAttr(this.DefaultQueryAttribute, ColName), ShowValue);
         return this;
     }
     AddVdom_Show(Dom, ShowValue) {
@@ -547,30 +363,9 @@ class VueModel extends CommonFunc {
     }
     //#endregion
 
-    //#region Vue Option Set
-    AddV_Function(FuncKey, Func) {
-        this.VueOption.methods[FuncKey] = Func;
-        return this;
-    }
-
-    AddV_Watch(WatchPath, Func, Deep = false, Option = {}) {
-        let SetWatch = {
-            handler: Func,
-            deep: Deep,
-            ...Option,
-        };
-        this.VueOption.watch[WatchPath] = SetWatch;
-        return this;
-    }
-    //#endregion
-
-    //#region Add Format
-    AddV_Format(DomId, FuncKey, ...Params) {
-        this.AddVdom_Format(this.Dom.WithId(DomId), FuncKey, Params ?? DomId);
-        return this;
-    }
-    AddVq_Format(QueryString, FuncKey, ...Params) {
-        this.AddVdom_Format(this.Dom.WithCustom(QueryString), FuncKey, Params);
+    //#region v-bind:formatter
+    AddV_Format(ColName, FuncKey, ...Params) {
+        this.AddVdom_Format(this.Dom.WithAttr(this.DefaultQueryAttribute), FuncKey, Params ?? ColName);
         return this;
     }
     AddVdom_Format(_Dom, FuncKey, ...Params) {
@@ -581,31 +376,9 @@ class VueModel extends CommonFunc {
     }
     //#endregion
 
-    //#region Base Format Function
-    AddBase_Format_Date() {
-        this.AddV_Function(this.FuncKey_FormatDate, (DateValue, StoreKey) => {
-            let SetValue = DateValue;
-            if (DateValue != undefined) {
-                SetValue = DateValue.replaceAll('/', '-').replaceAll('T', ' ');
-            }
-            if (DateValue != SetValue)
-                this.UpdateStore(SetValue, StoreKey);
-        })
-        return this;
-    }
-    //#endregion
-
-    //#region On Change Event
-    AddV_OnChange(DomId, ChangeFunc, FuncParam = null) {
-        this.AddVdom_OnChange(this.Dom.WithId(DomId), ChangeFunc, FuncParam);
-        return this;
-    }
-    AddVq_OnChange(QueryString, ChangeFunc, FuncParam = null) {
-        this.AddVdom_OnChange(this.Dom.WithCustom(QueryString), ChangeFunc, FuncParam);
-        return this;
-    }
-    AddVcol_OnChange(ColName, ChangeFunc, FuncParam = null) {
-        this.AddVdom_OnChange(this.Dom.WithAttr('vc-col', ColName), ChangeFunc, FuncParam);
+    //#region v-on:change
+    AddV_OnChange(ColName, ChangeFunc, FuncParam = null) {
+        this.AddVdom_OnChange(this.Dom.WithAttr(this.DefaultQueryAttribute, ColName), ChangeFunc, FuncParam);
         return this;
     }
     AddVdom_OnChange(Dom, ChangeFunc, FuncParam = null) {
@@ -614,17 +387,9 @@ class VueModel extends CommonFunc {
     }
     //#endregion
 
-    //#region On Evnet
-    AddV_On(DomId, EventKey, EventFunc, FuncParam = null) {
-        this.AddVdom_On(this.Dom.WithId(DomId), EventKey, EventFunc, FuncParam);
-        return this;
-    }
-    AddVq_On(QueryString, EventKey, EventFunc, FuncParam = null) {
-        this.AddVdom_On(this.Dom.WithCustom(QueryString), EventKey, EventFunc, FuncParam);
-        return this;
-    }
-    AddVcol_On(ColName, EventKey, EventFunc, FuncParam = null) {
-        this.AddVdom_On(this.Dom.WithAttr('vc-col', ColName), EventKey, EventFunc, FuncParam);
+    //#region v-on
+    AddV_On(ColName, EventKey, EventFunc, FuncParam = null) {
+        this.AddVdom_On(this.Dom.WithAttr(this.DefaultQueryAttribute, ColName), EventKey, EventFunc, FuncParam);
         return this;
     }
     AddVdom_On(Dom, EventKey, EventFunc, FuncParam = null) {
@@ -648,17 +413,9 @@ class VueModel extends CommonFunc {
     }
     //#endregion
 
-    //#region Bind
-    AddV_Bind(DomId, BindKey, BindValue) {
-        this.AddVdom_Bind(this.Dom.WithId(DomId), BindKey, BindValue);
-        return this;
-    }
-    AddVcol_Bind(ColName, BindKey, BindValue) {
-        this.AddVdom_Bind(this.Dom.WithAttr('vc-col', ColName), BindKey, BindValue);
-        return this;
-    }
-    AddVq_Bind(QueryString, BindKey, BindValue) {
-        this.AddVdom_Bind(this.Dom.WithCustom(QueryString), BindKey, BindValue);
+    //#region v-bind
+    AddV_Bind(ColName, BindKey, BindValue) {
+        this.AddVdom_Bind(this.Dom.WithAttr(this.DefaultQueryAttribute, ColName), BindKey, BindValue);
         return this;
     }
     AddVdom_Bind(Dom, BindKey, BindValue) {
@@ -668,17 +425,9 @@ class VueModel extends CommonFunc {
     }
     //#endregion
 
-    //#region Click
-    AddV_Click(DomId, ClickFunc, FuncParam = null) {
-        this.AddVdom_Click(this.Dom.WithId(DomId), ClickFunc, FuncParam);
-        return this;
-    }
-    AddVq_Click(QueryString, ClickFunc, FuncParam = null) {
-        this.AddVdom_Click(this.Dom.WithCustom(QueryString), ClickFunc, FuncParam);
-        return this;
-    }
-    AddVcol_Click(ColName, ClickFunc, FuncParam = null) {
-        this.AddVdom_Click(this.Dom.WithAttr('vc-col', ColName), ClickFunc, FuncParam);
+    //#region v-on:click
+    AddV_Click(ColName, ClickFunc, FuncParam = null) {
+        this.AddVdom_Click(this.Dom.WithAttr(this.DefaultQueryAttribute, ColName), ClickFunc, FuncParam);
         return this;
     }
     AddVdom_Click(Dom, ClickFunc, FuncParam = null) {
@@ -690,17 +439,9 @@ class VueModel extends CommonFunc {
     }
     //#endregion
 
-    //#region Slot
-    AddV_Slot(DomId, SlotKey, SlotValue) {
-        this.AddVdom_Slot(this.Dom.WithId(DomId), SlotKey, SlotValue);
-        return this;
-    }
-    AddVcol_Slot(ColName, SlotKey, SlotValue) {
-        this.AddVdom_Slot(this.Dom.WithAttr('vc-col', ColName), SlotKey, SlotValue);
-        return this;
-    }
-    AddVq_Slot(QueryString, SlotKey, SlotValue) {
-        this.AddVdom_Slot(this.Dom.WithCustom(QueryString), SlotKey, SlotValue);
+    //#region v-slot
+    AddV_Slot(ColName, SlotKey, SlotValue) {
+        this.AddVdom_Slot(this.Dom.WithAttr(this.DefaultQueryAttribute, ColName), SlotKey, SlotValue);
         return this;
     }
     AddVdom_Slot(Dom, SlotKey, SlotValue) {
@@ -710,86 +451,53 @@ class VueModel extends CommonFunc {
     }
     //#endregion
 
-
-    //#region Add Base Vue Command
-    AddVdom_Model(Dom, StoreKey, Option = { VModelKey: null }) {
-        let GetDom = this._BaseCheck_DomEditor(Dom);
-        StoreKey = this._ReCombineStoreKey(StoreKey);
-        this.AddStore(StoreKey, null);
-        GetDom.ForEach(Item => {
-            let VModelCommand = 'v-model';
-            if (!this._IsNullOrEmpty(Option.VModelKey))
-                VModelCommand += `:${Option.VModelKey}`;
-
-            switch (Item.type) {
-                case 'datetime':
-                case 'datetime-local':
-                case 'date':
-                    this.AddVdom_Format(GetDom, this.FuncKey_FormatDate, StoreKey, `'${StoreKey}'`);
-                    break;
-                case 'number':
-                    VModelCommand = 'v-model.number';
-                    break;
-            }
-            GetDom.SetElement_Attr(Item, VModelCommand, StoreKey);
-        });
+    //#region v-watch
+    AddV_Watch(WatchPath, Func, Deep = false, Option = {}) {
+        let SetWatch = {
+            handler: Func,
+            deep: Deep,
+            ...Option,
+        };
+        this.VueOption.watch[WatchPath] = SetWatch;
         return this;
     }
     //#endregion
 
     //#endregion
 
-    //#region Attr Control
-    SetAttr(DomId, AttrName, AttrValue) {
-        this.SetAttrDom(this.Dom.WithId(DomId), AttrName, AttrValue);
+    //#region Data Store Controller
+    UpdateStoreDefault(StoreData) {
+        let StoreKey = this.DefaultStoreKey;
+        this.UpdateStore(StoreKey, StoreData);
+        return this;
+    }
+    UpdateStore(StorePath, StoreData) {
+        this._RCS_SetStore(StorePath, StoreData, this.Store, true);
+        this.ForceUpdate();
         return this;
     }
 
-    SetAttrQ(QueryString, AttrName, AttrValue) {
-        this.SetAttrDom(this.Dom.WithCustom(QueryString), AttrName, AttrValue);
-        return this;
-    }
-
-    SetAttrCol(ColName, AttrName, AttrValue) {
-        this.SetAttrDom(this.Dom.WithAttr('vc-col', ColName), AttrName, AttrValue);
-        return this;
-    }
-
-    SetAttrDom(Dom, AttrName, AttrValue) {
-        let GetDom = this._BaseCheck_DomEditor(Dom);
-        GetDom.SetAttr(AttrName, AttrValue);
-        return this;
-    }
-    //#endregion
-
-    //#region Base Add Vue Command
-    _BaseCheck_DomEditor(CheckDom) {
-        if (CheckDom instanceof DomEditor) {
-            return CheckDom;
-        }
-        throw new Error('error DomEditor type');
-    }
-    //#endregion
-
-    //#region Store Data Controller
-    UpdateStore(StoreData, StoreKey, IsReplace = false) {
-        StoreKey = this._TryGetStoreKey(StoreKey);
-
-        if (StoreData != null)
-            StoreData = this._TryToJson(StoreData);
-
-        this._RCS_SetStore(StoreKey, StoreData, this.Store, IsReplace);
-        this._UpdateVueStore();
-        return this;
-    }
-    AddStore(StoreKey, StoreData = {}) {
-        if (this._RCS_GetStore(StoreKey, this.Store) != null)
+    AddStore(StorePath, StoreData = null) {
+        if (this.GetStore(StorePath) != null)
             return this;
 
-        this._RCS_SetStore(StoreKey, StoreData, this.Store, true);
-        this._UpdateVueStore();
+        this._RCS_SetStore(StorePath, StoreData, this.Store, false);
+        this.ForceUpdate();
         return this;
     }
+    GetStore(StorePath, Option = {
+        CreateIfNull: false,
+        DefaultValue: {},
+    }) {
+        let Result = this._RCS_GetStore(StorePath, this.Store, Option);
+        return Result;
+    }
+    SetStore(StorePath, StoreData) {
+        this._RCS_SetStore(StorePath, StoreData, this.Store, false);
+        this.ForceUpdate();
+        return this;
+    }
+
     AddFileStore(FileStoreKey) {
         if (this.FileStore[FileStoreKey] == null)
             this.FileStore[FileStoreKey] = [];
@@ -806,113 +514,96 @@ class VueModel extends CommonFunc {
 
         return MapFiles;
     }
+    ForceUpdate() {
+        this.VueProxy?.$forceUpdate();
+        return this;
+    }
 
-    _RCS_GetStore(StoreKey, FindStore) {
+    _RCS_GetStore(StorePath, FindStore, Option = {
+        CreateIfNull: false,
+    }) {
+        Option.CreateIfNull ??= false;
         if (FindStore == null)
             return null;
 
-        if (!StoreKey.includes('.'))
-            return FindStore[StoreKey];
+        let StorePaths = StorePath.split('.');
+        let FirstKey = StorePaths.shift();
 
-        let FirstKey = StoreKey.split('.')[0];
-        let NextKey = StoreKey.replaceAll(`${FirstKey}.`, '');
-        return this._RCS_GetStore(NextKey, FindStore[FirstKey]);
+        if (FindStore[FirstKey] == null && Option.CreateIfNull)
+            FindStore[FirstKey] = {};
+
+        if (StorePaths.length == 0)
+            return FindStore[FirstKey];
+
+        let NextKey = StorePaths.join('.');
+        return this._RCS_GetStore(NextKey, FindStore[FirstKey], Option);
     }
-    _RCS_SetStore(StoreKey, StoreData, FindStore, IsReplace) {
-        if (!StoreKey.includes('.')) {
-            if (!(StoreKey in FindStore) || IsReplace) {
-                this._BaseSetStoreObject(StoreData, StoreKey, FindStore);
-            }
-            else {
-                let GetStore = FindStore[StoreKey];
-                let SetStore = StoreData;
-
-                if (typeof GetStore != 'object')
-                    FindStore[StoreKey] = SetStore;
-                else {
-                    this._BaseSetStoreObject(StoreData, StoreKey, FindStore);
-                }
-            }
-            return FindStore[StoreKey];
-        }
-        else {
-            let FirstKey = StoreKey.split('.')[0];
-            let NextKey = StoreKey.replaceAll(`${FirstKey}.`, '');
-            if (FindStore[FirstKey] == null) {
+    _RCS_SetStore(StorePath, StoreData, FindStore, IsDeepSet = true) {
+        if (StorePath.includes('.')) {
+            let StorePaths = StorePath.split('.');
+            let FirstKey = StorePaths.shift();
+            if (FindStore[FirstKey] == null)
                 FindStore[FirstKey] = {};
-            }
-            return this._RCS_SetStore(NextKey, StoreData, FindStore[FirstKey], IsReplace);
+
+            let NextKey = StorePaths.join('.');
+            return this._RCS_SetStore(NextKey, StoreData, FindStore[FirstKey]);
         }
+
+        if (StoreData == null || FindStore[StorePath] == null ||
+            typeof StoreData != 'object' || !IsDeepSet) {
+            FindStore[StorePath] = StoreData;
+            return StoreData;
+        }
+
+        this._DeepSetObject(StoreData, StorePath, FindStore);
+        return StoreData;
+
     }
-    _BaseSetStoreObject(SetData, StoreKey, FindStore) {
-        if (
-            FindStore[StoreKey] == null ||
-            typeof FindStore[StoreKey] == 'string' ||
-            typeof SetData != 'object' ||
-            Array.isArray(SetData)) {
-
-            if (!Array.isArray(SetData))
-                FindStore[StoreKey] = SetData;
-            else {
-                if (!Array.isArray(FindStore[StoreKey]))
-                    FindStore[StoreKey] = [];
-
-                if (FindStore[StoreKey].length > 0)
-                    FindStore[StoreKey].splice(0, FindStore[StoreKey].length);
-                FindStore[StoreKey].push(...SetData);
-            }
-        }
-        else if (SetData == null) {
-            FindStore[StoreKey] = SetData;
-        }
-        else {
+    _DeepSetObject(SetData, StorePath, FindStore) {
+        if (!Array.isArray(SetData)) {
             this._ForEachKeyValue(SetData, (Key, Value) => {
-                FindStore[StoreKey][Key] = Value;
+                FindStore[StorePath][Key] = Value;
             });
+            return;
         }
-    }
-    _UpdateVueStore() {
-        this.VueProxy?.$forceUpdate();
+
+        if (!Array.isArray(FindStore[StorePath]))
+            FindStore[StorePath] = [];
+
+        if (FindStore[StorePath].length > 0)
+            FindStore[StorePath].splice(0, FindStore[StorePath].length);
+
+        FindStore[StorePath].push(...SetData);
     }
     //#endregion
 
     //#region Api Store Controller
-    AddApi_Get(ApiKey, Option = {
-        Url: null,
-        Param: {
-            Query: null,
-        },
-        OnCalling: null,
-        OnSuccess: null,
-        OnError: null,
-        OnComplete: null,
-        IsUpdateStore: true,
+    AddApi(ApiContent = {
+        ApiKey: {
+            Url,
+            Param,
+            Method,
+            OnSuccess, OnError, OnComplete,
+            IsUpdateStore,
+        }
     }) {
-        Option.Method = 'GET';
-        this._Add_Api(ApiKey, Option);
+        for (let ApiKey in ApiContent) {
+            let ApiOption = ApiContent[ApiKey];
+            let SetApiStore = {
+                ApiKey,
+                Url: ApiOption.Url,
+                Method: ApiOption.Method,
+                Param: ApiOption.Param,
+                OnSuccess: ApiOption.OnSuccess,
+                OnError: ApiOption.OnError,
+                OnComplete: ApiOption.OnComplete,
+                IsUpdateStore: ApiOption.IsUpdateStore ?? true,
+            };
+            this.ApiStore[ApiKey] = SetApiStore;
+            this.AddStore(ApiKey);
+        }
         return this;
     }
-
-    AddApi_Post(ApiKey, Option = {
-        Url: null,
-        Param: {
-            Query: null,
-            Body: null,
-            Form: null,
-            File: null,
-        },
-        OnCalling: null,
-        OnSuccess: null,
-        OnError: null,
-        OnComplete: null,
-        IsUpdateStore: false,
-    }) {
-        Option.Method = 'POST';
-        Option.IsUpdateStore ??= false;
-        this._Add_Api(ApiKey, Option);
-        return this;
-    }
-
     ApiCall(ApiKey, Option = {
         Param: {
             Query: null,
@@ -938,12 +629,12 @@ class VueModel extends CommonFunc {
         let SendBody = Param?.Body;
         let IsUpdateStore = Option.IsUpdateStore ?? Api.IsUpdateStore ?? true;
 
-        let Url = this._ConvertTo_DomainUrl(Api.Url, Query);
+        let Url = this._ConvertTo_ApiDomainUrl(Api.Url, Query);
         let FetchParam = {
             method: Api.Method,
             headers: {
                 'content-type': 'application/json',
-                'Authorization': this._Token,
+                'Authorization': this.ApiToken,
             },
         };
 
@@ -960,7 +651,7 @@ class VueModel extends CommonFunc {
                 let ConvertResult = await this._ProcessApiReturn(ApiRet);
                 if (IsUpdateStore) {
                     let StoreKey = Api['ApiKey'];
-                    this.UpdateStore(ConvertResult, StoreKey, true);
+                    this.UpdateStore(StoreKey, ConvertResult);
                 }
 
                 Api.OnSuccess?.call(this, ConvertResult);
@@ -979,7 +670,6 @@ class VueModel extends CommonFunc {
 
         return this;
     }
-
     ApiCall_Form(ApiKey, Option = {
         Param: {
             Query: null,
@@ -1005,7 +695,7 @@ class VueModel extends CommonFunc {
         let ConvertFormData = Param?.Form;
 
         let SendForm = null;
-        let Url = this._ConvertTo_DomainUrl(Api.Url, Query);
+        let Url = this._ConvertTo_ApiDomainUrl(Api.Url, Query);
         SendForm = this._ConvertTo_FormData(ConvertFormData, SendForm);
 
         let FileParam = Option?.Param?.File;
@@ -1016,7 +706,7 @@ class VueModel extends CommonFunc {
             method: 'POST',
             body: SendForm,
             headers: {
-                'Authorization': this._Token,
+                'Authorization': this.ApiToken,
             },
         };
 
@@ -1045,27 +735,6 @@ class VueModel extends CommonFunc {
         return this;
     }
 
-    _Add_Api(ApiKey, Option = {
-        Url,
-        Param,
-        Method,
-        OnSuccess, OnError, OnComplete,
-        IsUpdateStore,
-    }) {
-        let SetStore = {
-            ApiKey,
-            Url: Option.Url,
-            Method: Option.Method,
-            Param: Option.Param,
-            OnSuccess: Option.OnSuccess,
-            OnError: Option.OnError,
-            OnComplete: Option.OnComplete,
-            IsUpdateStore: Option.IsUpdateStore,
-        };
-        this.ApiStore[ApiKey] = SetStore;
-        this.AddStore(ApiKey);
-        return SetStore;
-    }
     _ProcessApiReturn(ApiRet) {
         let GetContentType = ApiRet.headers.get("content-type");
         let ConvertSuccess = null;
@@ -1079,15 +748,15 @@ class VueModel extends CommonFunc {
         }
         return ConvertSuccess;
     }
-    _ConvertTo_DomainUrl(Url, Param = null) {
-        let DomainUrl = this._GetClearUrl(Url);
-        if (this.Domain != null && !DomainUrl.includes('http')) {
-            DomainUrl = `${this.Domain}/${DomainUrl}`;
-        }
-        if (Param != null)
-            DomainUrl = `${DomainUrl}?${this._ConvertTo_UrlQuery(Param)}`;
+    _ConvertTo_ApiDomainUrl(Url, Param = null) {
+        let ApiDomainUrl = this._ClearUrl(Url);
+        if (this.ApiDomain != null && !ApiDomainUrl.includes('http'))
+            ApiDomainUrl = `${this.ApiDomain}/${ApiDomainUrl}`;
 
-        return DomainUrl;
+        if (Param != null)
+            ApiDomainUrl = `${ApiDomainUrl}?${this._ConvertTo_UrlQuery(Param)}`;
+
+        return ApiDomainUrl;
     }
     _ConvertTo_UrlQuery(Param) {
         if (typeof Param === 'string')
@@ -1152,10 +821,22 @@ class VueModel extends CommonFunc {
     }
     //#endregion
 
-
+    //#region Base Format Function
+    AddBase_Format_Date() {
+        this.AddV_Function(this.FuncKey_FormatDate, (DateValue, StoreKey) => {
+            let SetValue = DateValue;
+            if (DateValue != null) {
+                SetValue = DateValue.replaceAll('/', '-').replaceAll('T', ' ');
+            }
+            if (DateValue != SetValue)
+                this.UpdateStore(StoreKey, SetValue);
+        });
+        return this;
+    }
+    //#endregion
 
     //#region Base Process
-    _BaseReCombine(FirstKey, Params) {
+    _BaseReCombineStorePath(FirstKey, Params) {
         if (!Array.isArray(Params))
             Params = [Params];
 
@@ -1173,11 +854,11 @@ class VueModel extends CommonFunc {
         return BindStoreKey;
     }
     _ReCombineStoreKey(Params) {
-        let BindStoreKey = this._BaseReCombine(this.DefaultStoreKey, Params);
+        let BindStoreKey = this._BaseReCombineStorePath(this.DefaultStoreKey, Params);
         return BindStoreKey;
     }
     _ReCombineItemKey(Params) {
-        let BindStoreKey = this._BaseReCombine('Item', Params);
+        let BindStoreKey = this._BaseReCombineStorePath('Item', Params);
         return BindStoreKey;
     }
     _IsClearSotreKey(StoreKey) {
@@ -1185,31 +866,11 @@ class VueModel extends CommonFunc {
         let IsClear = SkipChar.filter(Item => StoreKey.includes(Item)).length == 0;
         return IsClear;
     }
-    _TryToJson(Data) {
-        if (typeof Data === 'object')
-            return Data;
-        else if (typeof Data != 'string')
-            return Data;
-        else {
-            try {
-                return JSON.parse(Data);
-            }
-            catch {
-                return Data;
-            }
+    _BaseCheck_DomEditor(CheckDom) {
+        if (CheckDom instanceof DomEditor) {
+            return CheckDom;
         }
-    }
-    _TryGetStoreKey(_StoreKey) {
-        _StoreKey ??= this.DefaultStoreKey;
-        return _StoreKey;
-    }
-    _GetClearDomain(_Domain) {
-        let ClearDomain = _Domain.replace(/\/+$/, '');
-        return ClearDomain;
-    }
-    _GetClearUrl(_Url) {
-        let ClearUrl = _Url.replace(/^\/+/, '');
-        return ClearUrl;
+        throw new Error('error DomEditor type');
     }
     _GetRandomFuncName(FuncNameHead = '', FuncNameTail = '') {
         let RandomFuncName = this._GenerateId().replaceAll('-', '');
@@ -1270,6 +931,22 @@ class VueModel extends CommonFunc {
             return FileData['File'];
 
         return FileData;
+    }
+    //#endregion
+
+    //#region Element Attr Control
+    SetAttr(DomId, AttrName, AttrValue) {
+        this.SetAttrDom(this.Dom.WithId(DomId), AttrName, AttrValue);
+        return this;
+    }
+    SetAttrCol(ColName, AttrName, AttrValue) {
+        this.SetAttrDom(this.Dom.WithAttr('vc-col', ColName), AttrName, AttrValue);
+        return this;
+    }
+    SetAttrDom(Dom, AttrName, AttrValue) {
+        let GetDom = this._BaseCheck_DomEditor(Dom);
+        GetDom.SetAttr(AttrName, AttrValue);
+        return this;
     }
     //#endregion
 }

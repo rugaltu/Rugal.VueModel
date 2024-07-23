@@ -4,8 +4,7 @@
     "inputFiles": [
       "wwwroot/VueModel/src/CommonFunc.js",
       "wwwroot/VueModel/src/DomEditor.js",
-      "wwwroot/VueModel/src/VueModel.js",
-      "wwwroot/VueModel/src/VcController.js"
+      "wwwroot/VueModel/src/VueModel.js"
     ],
     "minify": {
       "enabled": true,

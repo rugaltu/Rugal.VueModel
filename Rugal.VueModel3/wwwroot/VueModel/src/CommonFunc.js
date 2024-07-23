@@ -1,9 +1,8 @@
 ﻿/**
- *  CommonFunc.js v1.0.2
+ *  CommonFunc.js v1.1.1
  *  From Rugal Tu
  * */
 class CommonFunc {
-
     constructor() {
         this.Id = this._GenerateId();
         this.NavigateToFunc = null;
@@ -217,7 +216,7 @@ class CommonFunc {
         let IsAbsolute = Url[0][0] == '/';
 
         let CombineUrl = Url
-            .map(Item => this._GetClearUrl(Item))
+            .map(Item => this._ClearUrl(Item))
             .join('/');
 
         if (IsAbsolute)
@@ -228,10 +227,17 @@ class CommonFunc {
                 UrlParam = this._ConvertTo_UrlQuery(UrlParam);
             CombineUrl += `?${UrlParam}`;
         }
-        window.location.href = CombineUrl;
+
+        if (this.NavigateToFunc)
+            this.NavigateToFunc(CombineUrl);
+        else
+            window.location.href = CombineUrl;
+    }
+    _ClearUrl(_ApiUrl) {
+        let ClearUrl = _ApiUrl.replace(/^\/+|\/+$/g, '');
+        return ClearUrl;
     }
     //#endregion
-
 }
 function AddTaskLoop(TaskFunc, Delay = 1000) {
     let LoopId = setInterval(TaskFunc, Delay);
