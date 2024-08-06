@@ -72,27 +72,28 @@ class VueModel extends CommonFunc {
 
     //#region Public Init Method
     Init() {
-        if (!this.IsInited) {
-            this.$Store = reactive(this.$Store);
-            let GetStore = this.$Store;
-            let MountedFunc = this.MountedFuncs;
-            let SetVueOption = {
-                ...this.VueOption,
-                data() {
-                    return GetStore;
-                },
-                mounted: () => {
-                    for (let Func of MountedFunc)
-                        Func();
-                }
-            };
-            this.Vue = createApp(SetVueOption);
-            for (let Item of this.VueUse) {
-                this.Vue.use(Item);
+        if (this.IsInited)
+            return this;
+
+        this.$Store = reactive(this.$Store);
+        let GetStore = this.$Store;
+        let MountedFunc = this.MountedFuncs;
+        let SetVueOption = {
+            ...this.VueOption,
+            data() {
+                return GetStore;
+            },
+            mounted: () => {
+                for (let Func of MountedFunc)
+                    Func();
             }
-            this.VueProxy = this.Vue.mount(`#${this.BindElementId}`);
-            this.IsInited = true;
+        };
+        this.Vue = createApp(SetVueOption);
+        for (let Item of this.VueUse) {
+            this.Vue.use(Item);
         }
+        this.VueProxy = this.Vue.mount(`#${this.BindElementId}`);
+        this.IsInited = true;
         return this;
     }
     Using(UseFunc = () => { }) {
@@ -181,6 +182,8 @@ class VueModel extends CommonFunc {
         Value: null,
         Target: null,
         Bind: [],
+        get: null,
+        set: null,
     }) {
         let SetStore = this.Store;
         let PropertyKey = PropertyPath;
@@ -209,8 +212,11 @@ class VueModel extends CommonFunc {
     _BaseAddProperty(PropertyStore, PropertyKey, Option = {
         Target: null,
         Value: null,
+        get: null,
+        set: null,
     }) {
         let ThisModel = this;
+
         let PropertyContent = {
             get() {
                 if (Option.Target == null)
@@ -225,13 +231,21 @@ class VueModel extends CommonFunc {
                     ThisModel.SetStore(Option.Target, Value);
             }
         };
-        let SetProperty = Object.defineProperty(PropertyStore, PropertyKey, PropertyContent);
-        if (Option.Value != null) {
-            if (Option.Target == null)
-                SetProperty[`$${PropertyKey}`] = Option.Value;
-            else
-                this.SetStore(Option.Target, Option.Value);
+
+        let HasGet = true;
+        let HasSet = true;
+        if (Option.get || Option.set) {
+            HasGet = Option.get != null;
+            HasSet = Option.set != null;
+            PropertyContent = {};
+            if (HasGet)
+                PropertyContent.get = Option.get;
+            if (HasSet)
+                PropertyContent.set = Option.set;
         }
+        let SetProperty = Object.defineProperty(PropertyStore, PropertyKey, PropertyContent);
+        if (Option.Value != null && HasSet)
+            SetProperty[PropertyKey] = Option.Value;
 
         return SetProperty;
     }

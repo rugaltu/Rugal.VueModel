@@ -1,5 +1,5 @@
 ﻿/**
- *  DomEditor.js v1.0.1
+ *  DomEditor.js v1.0.2
  *  From Rugal Tu
  * */
 
@@ -8,19 +8,17 @@ class DomEditor {
     constructor(_Doms = null) {
         this.Id = this._GenerateId();
         this.QueryParams = [];
+        this.Root = null;
         this._Props = {
             Doms: [],
         };
         this.Doms = _Doms;
     }
-    get NodeList() {
-        let Result = [];
-        for (let Item of [...document.children])
-            this._RCS_Visit(Item, Result);
-
-        return Result;
+    get Nodes() {
+        let RootElement = this.Root ?? document;
+        let Root = this._RCS_Visit(RootElement);
+        return Root;
     }
-
     get Doms() {
         this._NeedQuery();
         return this._Props.Doms;
@@ -40,7 +38,9 @@ class DomEditor {
         else
             throw new Error('error doms type');
     }
-
+    get HasSetRoot() {
+        return this.Root != null;
+    }
     //#region Instance Controller
     NewWithElement(Element = []) {
         if (!Array.isArray(Element))
@@ -51,6 +51,15 @@ class DomEditor {
     //#endregion
 
     //#region With Query
+    WithRoot(RootElement) {
+        this.Root = RootElement;
+        return this;
+    }
+    WithRootFrom(QueryRootFunc = Querytor => { }) {
+        QueryRootFunc(this);
+        this.Root = this.Doms[0];
+        return this;
+    }
     WithId(DomId) {
         let Query = this._QueryString_Id(DomId);
         this.QueryParams.push(Query);
@@ -74,12 +83,33 @@ class DomEditor {
         if (this.QueryParams.length == 0)
             throw new Error('query params is empty');
 
-        let QueryString = this.QueryParams.join(' ');
+        let FindElement = this.Nodes;
+        for (let Param of this.QueryParams) {
+            FindElement = this._RCS_Query(FindElement, Param);
+            if (FindElement == null)
+                break;
+        }
 
-        this.Doms = this.NodeList.filter(Item => Item.matches(QueryString))
+        this.Doms = FindElement == null ? [] : [FindElement.Element];
         this.QueryParams = [];
         return this;
     }
+    _RCS_Query(QueryNode, QueryParam) {
+        if (QueryNode.Element?.matches && QueryNode.Element.matches(QueryParam))
+            return QueryNode;
+
+        if (!QueryNode.Children)
+            return null;
+
+        for (let ItemNode of QueryNode.Children) {
+            let NodeResult = this._RCS_Query(ItemNode, QueryParam);
+            if (NodeResult)
+                return NodeResult;
+        }
+
+        return null;
+    }
+
     //#endregion
 
     //#region Where Doms
@@ -193,17 +223,27 @@ class DomEditor {
         );
     }
 
-    _RCS_Visit(TargetNode, Result) {
-        Result.push(TargetNode);
+    _RCS_Visit(TargetNode) {
+
+        let CurrnetNode = {
+            Element: TargetNode,
+            Children: []
+        };
+
         let Children = TargetNode.children;
-        if (TargetNode.tagName == 'TEMPLATE') {
+        if (TargetNode.tagName == 'TEMPLATE')
             Children = TargetNode.content.children;
+
+        if (!Children)
+            return CurrnetNode;
+
+        for (let Item of [...Children]) {
+            let ChildrenNode = this._RCS_Visit(Item);
+            if (ChildrenNode != null)
+                CurrnetNode.Children.push(ChildrenNode);
         }
 
-        if (Children) {
-            for (let Item of [...Children])
-                this._RCS_Visit(Item, Result);
-        }
+        return CurrnetNode;
     }
     //#endregion
 }

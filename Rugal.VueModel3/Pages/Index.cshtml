@@ -4,11 +4,21 @@
 }
 
 <div class="text-center">
-    <section>
-        <input v-model="A1.A2.A3.TestValue" />
+    <section vc-col="TestA">
+        @* <input v-model="A1.A2.A3.TestValue" />
         <input v-model="B1.Value" />
-        <input v-model="C1" />
+        <input v-model="C1" /> *@
+
+        <input v-model="Test.Value" />
+        <label v-text="Test.Value"></label>
+
         <label vc-col="Test"></label>
+
+        <template>
+            <div vc-col="TestB">
+            </div>
+        </template>
+
 
     </section>
 </div>
