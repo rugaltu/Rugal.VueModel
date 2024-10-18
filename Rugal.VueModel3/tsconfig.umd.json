@@ -1,0 +1,17 @@
+{
+  "compileOnSave": true,
+  "compilerOptions": {
+    "noImplicitAny": true,
+    "noEmitOnError": true,
+    "removeComments": false,
+    "sourceMap": true,
+    "target": "esnext",
+    "moduleResolution": "node",
+    "module": "UMD",
+    "outDir": "./wwwroot/VueModel/src/umd"
+  },
+  "exclude": [
+    "node_modules"
+  ],
+  "include": [ "./wwwroot/VueModel/src/VueModel.ts" ]
+}

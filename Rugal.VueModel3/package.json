@@ -3,7 +3,9 @@
   "name": "asp.net",
   "private": true,
   "dependencies": {
-    "gulp": "^4.0.2",
+    "@babel/types": "^7.25.6",
+    "@rugal.tu/gulp-initer": "^1.2.0",
+    "systemjs": "^6.15.1",
     "vue": "^3.4.33"
   }
 }

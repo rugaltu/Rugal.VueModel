@@ -3,29 +3,22 @@
     ViewData["Title"] = "Home page";
 }
 
-<div class="text-center">
-    <section vc-col="TestA">
-        @* <input v-model="A1.A2.A3.TestValue" />
-        <input v-model="B1.Value" />
-        <input v-model="C1" /> *@
-
-        <input v-model="Test.Value" />
-        <label v-text="Test.Value"></label>
-
-        <label vc-col="Test"></label>
-
-        <template>
-            <div vc-col="TestB">
-            </div>
-        </template>
-
-
-    </section>
+<div id="A" pv-name="A">
+   
 </div>
 
-<script src="/npm/vue/vue.global.prod.js"></script>
+
+<script src="~/npm/systemjs/dist/system.js"></script>
+<script src="~/npm/vue/dist/vue.global.js"></script>
+
+<script src="~/src/js/setup.js"></script>
+<script src="~/src/js/test.js"></script>
+@* <script src="~/VueModel/src/testVueModel.js"></script> *@
+
+
+
 @* <script src="/VueModel/dist/VueModel.full.js"></script> *@
-<script src="/VueModel/src/CommonFunc.js"></script>
+@* <script src="/VueModel/src/CommonFunc.js"></script>
 <script src="/VueModel/src/DomEditor.js"></script>
-<script src="/VueModel/src/VueModel.js"></script>
-<script src="~/js/site.js"></script>
+<script src="/VueModel/src/VueModel.js"></script> *@
+

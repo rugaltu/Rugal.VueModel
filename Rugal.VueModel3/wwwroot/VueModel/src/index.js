@@ -1,0 +1,1 @@
+const VueModel = require('./VueModel');

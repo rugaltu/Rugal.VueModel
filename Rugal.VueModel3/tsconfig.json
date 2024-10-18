@@ -1,0 +1,12 @@
+{
+  "compileOnSave": true,
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "System",
+    "moduleResolution": "Node",
+    "sourceMap": true,
+    "noImplicitAny": true,
+    "esModuleInterop": true
+  },
+  "exclude": [ "node_modules" ],
+}

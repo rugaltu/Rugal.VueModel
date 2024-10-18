@@ -1,13 +1,19 @@
 {
-  "name": "@rugal.tu/vuemodel",
-  "version": "3.4.4",
+  "name": "@rugal.tu/vuemodel3",
+  "version": "1.0.0-beta.63",
   "publishConfig": {
     "access": "public"
   },
+  "types": "src/types/VueModel.d.ts",
+  "main": "src/index.js",
+  "files": [
+    "dist/",
+    "src/"
+  ],
   "dependencies": {
-    "vue": "^3.4.33"
+    "vue": "^3.5.11"
   },
   "devDependencies": {
-    "vue": "^3.4.33"
+    "vue": "^3.5.11"
   }
 }

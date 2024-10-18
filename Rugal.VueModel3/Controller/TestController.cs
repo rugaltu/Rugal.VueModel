@@ -15,5 +15,17 @@ namespace Rugal.VueModel3.Controller
                 Value = "TestB"
             };
         }
+
+        public record PostTestModel
+        {
+            public string Name { get; set; }
+            public string Value { get; set; }
+        }
+
+        [HttpPost]
+        public dynamic PostTest(PostTestModel Model)
+        {
+            return Model;
+        }
     }
 }
