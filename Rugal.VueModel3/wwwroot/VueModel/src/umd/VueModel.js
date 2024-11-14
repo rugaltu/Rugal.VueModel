@@ -44,6 +44,14 @@
             let Id = this.GenerateId().replaceAll('-', FillString);
             return Id;
         }
+        NavigateToRoot() {
+            let RootUrl = '/';
+            if (this.$NavigateToFunc)
+                this.$NavigateToFunc(RootUrl);
+            else
+                window.location.href = RootUrl;
+            return this;
+        }
         NavigateTo(Url, UrlParam = null) {
             Url = this.Paths(Url);
             if (Url == null || Url.length == 0 || Url[0].length == 0)
@@ -54,11 +62,14 @@
                 UrlParam = this.ConvertTo_UrlQuery(UrlParam);
                 CombineUrl += `?${UrlParam}`;
             }
-            if (this.$NavigateToFunc)
-                this.$NavigateToFunc(CombineUrl);
-            else
-                window.location.href = CombineUrl;
+            this.$BaseNavigateTo(CombineUrl);
             return this;
+        }
+        $BaseNavigateTo(Url) {
+            if (this.$NavigateToFunc)
+                this.$NavigateToFunc(Url);
+            else
+                window.location.href = Url;
         }
         ForEachObject(Param, Func) {
             for (let Key of Object.getOwnPropertyNames(Param)) {
@@ -320,7 +331,10 @@
     class ApiStore extends FuncBase {
         //#region Private Property
         #ApiDomain = null;
-        #ApiToken = null;
+        #RootRoute = null;
+        #AccessToken = null;
+        #RefreshToken = null;
+        #HeaderFuncs = [];
         #OnEventFunc = {};
         #OnEventName = {
             ApiStore: {
@@ -330,6 +344,9 @@
                 SetStore: 'SetStore',
             }
         };
+        #OnSuccess;
+        #OnError;
+        #OnComplete;
         #Store = {
             FileStore: {},
         };
@@ -368,12 +385,36 @@
         }
         //#endregion
         //#region Public With Method
-        WithApiToken(ApiToken) {
-            this.#ApiToken = ApiToken;
+        WithAccessToken(AccessToken) {
+            this.#AccessToken = AccessToken;
+            return this;
+        }
+        WithRefreshToken(RefreshToken) {
+            this.#RefreshToken = RefreshToken;
             return this;
         }
         WithApiDomain(ApiDomain) {
             this.ApiDomain = ApiDomain;
+            return this;
+        }
+        WithRootRoute(Route) {
+            this.#RootRoute = Route;
+            return this;
+        }
+        WithHeader(Func) {
+            this.#HeaderFuncs.push(Func);
+            return this;
+        }
+        WithOnSuccess(SuccessFunc) {
+            this.#OnSuccess = SuccessFunc;
+            return this;
+        }
+        WithOnError(ErrorFunc) {
+            this.#OnError = ErrorFunc;
+            return this;
+        }
+        WithOnComplete(CompleteFunc) {
+            this.#OnComplete = CompleteFunc;
             return this;
         }
         //#endregion
@@ -427,32 +468,46 @@
             Api.OnCalling?.call(this, FetchRequest);
             Option?.OnCalling?.call(this, FetchRequest);
             fetch(Url, FetchRequest)
-                .then(async (ApiResult) => {
-                if (!ApiResult.ok)
-                    throw ApiResult;
-                let ConvertResult = await this.$ProcessApiReturn(ApiResult);
+                .then(async (ApiResponse) => {
+                if (!ApiResponse.ok)
+                    throw ApiResponse;
+                let ConvertResult = await this.$ProcessApiReturn(ApiResponse);
                 if (IsUpdateStore) {
                     let StoreKey = Api.ApiKey;
                     this.UpdateStore(StoreKey, ConvertResult);
                 }
-                Api.OnSuccess?.call(this, ConvertResult);
-                Option?.OnSuccess?.call(this, ConvertResult);
-                return ConvertResult;
+                Api.OnSuccess?.call(this, ConvertResult, ApiResponse);
+                Option?.OnSuccess?.call(this, ConvertResult, ApiResponse);
+                this.#OnSuccess(ConvertResult, ApiResponse);
+                return { ConvertResult, ApiResponse };
             })
                 .catch(ex => {
+                this.$Error(ex.message);
                 Api.OnError?.call(this, ex);
                 Option?.OnError?.call(this, ex);
-                this.$Error(ex.message);
+                this.#OnError?.call(this, ex);
             })
-                .then(ConvertResult => {
-                Api.OnComplete?.call(this, ConvertResult);
-                Option?.OnComplete?.call(this, ConvertResult);
+                .then(Result => {
+                if (Result instanceof Object) {
+                    Api.OnComplete?.call(this, Result.ConvertResult, Result.ApiResponse);
+                    Option?.OnComplete?.call(this, Result.ConvertResult, Result.ApiResponse);
+                    this.#OnComplete?.call(this, Result.ConvertResult, Result.ApiResponse);
+                }
+                else {
+                    Api.OnComplete?.call(this);
+                    Option?.OnComplete?.call(this);
+                    this.#OnComplete?.call(this, null, null);
+                }
             });
         }
         $GenerateFetchRequest(Api, ParamBody, ParamFile, IsFormRequest) {
-            let Header = {
-                Authorization: this.#ApiToken,
-            };
+            let Header = new Headers();
+            Header.set('Authorization', `Bearer ${this.#AccessToken}`);
+            if (this.#HeaderFuncs.length > 0) {
+                for (let Func of this.#HeaderFuncs) {
+                    Func(Header);
+                }
+            }
             let FetchRequest = {
                 method: Api.Method,
                 headers: Header,
@@ -464,7 +519,7 @@
                 FetchRequest.method = 'POST';
             }
             else {
-                Header['content-type'] = 'application/json';
+                Header.set('content-type', 'application/json');
                 if (Api.Method == 'POST')
                     FetchRequest.body = JSON.stringify(ParamBody ?? {});
             }
@@ -688,6 +743,13 @@
                     .then(GetText => GetText);
             }
             return ConvertSuccess;
+        }
+        //#endregion
+        //#region Override Method
+        NavigateToRoot() {
+            let RootUrl = this.#RootRoute ?? '/';
+            super.$BaseNavigateTo(RootUrl);
+            return this;
         }
         //#endregion
         //#region Protected ConvertTo

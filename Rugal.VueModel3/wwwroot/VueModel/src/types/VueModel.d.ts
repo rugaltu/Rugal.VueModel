@@ -8,7 +8,9 @@ declare class FuncBase {
     WithDateTextJoinChar(JoinChar: string): this;
     GenerateId(): string;
     GenerateIdReplace(FillString: string): string;
+    NavigateToRoot(): this;
     NavigateTo(Url: PathBase, UrlParam?: string | Record<string, any>): this;
+    protected $BaseNavigateTo(Url: string): void;
     ForEachObject<TValue>(Param: Record<string, TValue>, Func: (Key: string, Value: TValue) => void): void;
     DeepObjectExtend(Target: any, Source: any, MaxDepth?: number): any;
     ToDateInfo(QueryDate?: Date | string | DateTimeInfo): DateTimeInfo;
@@ -167,8 +169,14 @@ declare class ApiStore extends FuncBase {
     get Store(): StoreType;
     protected set Store(Store: StoreType);
     get FileStore(): FileStoreType;
-    WithApiToken(ApiToken: string): this;
+    WithAccessToken(AccessToken: string): this;
+    WithRefreshToken(RefreshToken: string): this;
     WithApiDomain(ApiDomain: string): this;
+    WithRootRoute(Route: string): this;
+    WithHeader(Func: (Headers: Headers) => void): this;
+    WithOnSuccess(SuccessFunc: (Result: any, Reponse: Response) => void): this;
+    WithOnError(ErrorFunc: (Exception: any) => void): this;
+    WithOnComplete(CompleteFunc: (Result: any, Reponse: Response) => void): this;
     WithConvertTo_FormParam(ConvertToFunc: (ConvertData: object, Form: FormData) => object): this;
     ClearConvertTo_FormParam(): this;
     AddApi(AddApi: Record<string, AddApiContent>): this;
@@ -199,6 +207,7 @@ declare class ApiStore extends FuncBase {
     AddFileStore(FileStoreKey: string): this;
     Files(FileStoreKey: string, MapFunc?: (FileArg: FileDataType) => boolean): boolean[] | File[];
     protected $ProcessApiReturn(ApiResponse: Response): Promise<any>;
+    NavigateToRoot(): this;
     protected $ConvertTo_ApiDomainUrl(Url: string, Param?: string | object): string;
     protected $ConvertTo_FormData(ConvertFormData: FormData | Record<string, any>, Form: FormData): FormData;
     protected $ConvertTo_FormFile(FileParam: FileParamType, Form: FormData): FormData;
