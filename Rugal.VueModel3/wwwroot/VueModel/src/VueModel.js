@@ -45,10 +45,7 @@ System.register(["vue"], function (exports_1, context_1) {
                 }
                 NavigateToRoot() {
                     let RootUrl = '/';
-                    if (this.$NavigateToFunc)
-                        this.$NavigateToFunc(RootUrl);
-                    else
-                        window.location.href = RootUrl;
+                    this.$BaseNavigateTo(RootUrl);
                     return this;
                 }
                 NavigateTo(Url, UrlParam = null) {

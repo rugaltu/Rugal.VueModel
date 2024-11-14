@@ -41,10 +41,7 @@ class FuncBase {
     }
     public NavigateToRoot() {
         let RootUrl = '/';
-        if (this.$NavigateToFunc)
-            this.$NavigateToFunc(RootUrl);
-        else
-            window.location.href = RootUrl;
+        this.$BaseNavigateTo(RootUrl);
         return this;
     }
     public NavigateTo(Url: PathBase, UrlParam: string | Record<string, any> = null) {
