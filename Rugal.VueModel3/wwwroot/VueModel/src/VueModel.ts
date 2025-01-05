@@ -425,19 +425,72 @@ type TreeSetInfo = {
     Command: string;
     CommandKey?: string;
 }
-class FileDataType {
+class FileItem {
     FileId: string;
     File: File;
-}
-type FileParamType =
-    File | FileDataType |
-    File[] | FileDataType[] |
-    Record<string, File> | Record<string, FileDataType> |
-    Record<string, File[]> | Record<string, FileDataType[]>;
+    Base64?: string;
+    Buffer?: ArrayBuffer;
+    ConvertType?: FileConvertType | FileConvertType[];
+    constructor(FileId: string, File: File, ConvertType: FileConvertType | FileConvertType[] = 'none') {
+        this.FileId = FileId;
+        this.File = File;
+        this.ConvertType = ConvertType;
+
+        this.$ConvertFile();
+    }
+    protected $ConvertFile() {
+
+        if (this.ConvertType == null)
+            return;
+
+        let GetConvertType: FileConvertType[] = [];
+        if (Array.isArray(this.ConvertType))
+            GetConvertType = this.ConvertType;
+        else
+            GetConvertType = [this.ConvertType];
+
+        for (let i = 0; i < GetConvertType.length; i++) {
+            let TypeItem = GetConvertType[i];
+            switch (TypeItem) {
+                case 'base64':
+                    this.$ConvertBase64();
+                    break;
+                case 'buffer':
+                    this.$ConvertBuffer();
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+    protected $ConvertBase64(IsForce: boolean = false) {
+        if (this.File == null)
+            return this;
+
+        if (this.Base64 != null && IsForce == false)
+            return this;
+
+        let Reader = new FileReader();
+        Reader.readAsDataURL(this.File);
+        Reader.onload = () => this.Base64 = Reader.result as string;
+        return this;
+    }
+    protected $ConvertBuffer() {
+        let Reader = new FileReader();
+        Reader.readAsArrayBuffer(this.File);
+        Reader.onload = () => this.Buffer = Reader.result as ArrayBuffer;
+    }
+};
+type FileConvertType = 'none' | 'base64' | 'buffer';
+type FilesType = File | File[] | FileItem | FileItem[];
+
+type FormDataFileType = FilesType |
+    Record<string, File> | Record<string, FileItem> |
+    Record<string, File[]> | Record<string, FileItem[]>;
 type HttpMethod = 'GET' | 'POST';
 type ApiCallQuery = string | object;
 type ApiCallBody = Record<string, any>;
-type ApiCallFile = FileParamType;
+type ApiCallFile = FormDataFileType;
 type AddApiContent = {
     Url: string,
     Method: HttpMethod,
@@ -456,7 +509,7 @@ type ApiCallOption = {
     File?: ApiCallFile | (() => ApiCallFile),
     IsUpdateStore?: boolean,
 } & ApiCallback;
-type FileStoreType = Record<string, FileDataType[]>;
+type FileStoreType = Record<string, FileItem[]>;
 type StoreType = Record<string, any> & {
     FileStore: FileStoreType,
 };
@@ -914,16 +967,54 @@ class ApiStore extends FuncBase {
             this.FileStore[FileStoreKey] = [];
         return this;
     }
-    public Files(FileStoreKey: string, MapFunc: (FileArg: FileDataType) => boolean = null) {
+    public Files(FileStoreKey: string, WhereFunc: (FileArg: FileItem) => boolean = null): File[] {
         let GetFiles = this.FileStore[FileStoreKey];
         if (GetFiles == null)
             return [];
 
-        let MapFiles = MapFunc != null ?
-            GetFiles.map(Item => MapFunc(Item)) :
-            GetFiles.map(Item => Item['File']);
+        if (WhereFunc != null)
+            GetFiles = GetFiles.filter(Item => WhereFunc(Item));
 
-        return MapFiles;
+        let Result = GetFiles.map(Item => Item.File);
+        return Result;
+    }
+    public AddFile(FileStoreKey: string, AddFile: FilesType, ConvertType: FileConvertType | FileConvertType[] = 'none') {
+        this.AddFileStore(FileStoreKey);
+        let GetStore = this.FileStore[FileStoreKey];
+
+        if (Array.isArray(AddFile))
+            AddFile.forEach(Item => this.AddFile(FileStoreKey, Item));
+        else if (AddFile instanceof FileItem) {
+            GetStore.push(AddFile);
+        }
+        else {
+            let NewFile = new FileItem(this.GenerateId(), AddFile, ConvertType);
+            GetStore.push(NewFile);
+        }
+
+        return this;
+    }
+    public RemoveFile(FileStoreKey: string, DeleteFileId: string | string[]) {
+        let GetStore = this.FileStore[FileStoreKey];
+        if (GetStore == null)
+            return this;
+
+        if (Array.isArray(DeleteFileId))
+            DeleteFileId.forEach(Item => this.RemoveFile(FileStoreKey, Item))
+        else {
+            let DeleteIndex = GetStore.findIndex(Item => Item.FileId == DeleteFileId);
+            if (DeleteIndex >= 0)
+                GetStore.splice(DeleteIndex, 1);
+        }
+        return this;
+    }
+    public ClearFile(FileStoreKey: string) {
+        let GetStore = this.FileStore[FileStoreKey];
+        if (GetStore == null)
+            return this;
+
+        GetStore.splice(0, GetStore.length);
+        return this;
     }
     //#endregion
 
@@ -982,20 +1073,19 @@ class ApiStore extends FuncBase {
         });
         return Form;
     }
-    protected $ConvertTo_FormFile(FileParam: FileParamType, Form: FormData): FormData {
-
+    protected $ConvertTo_FormFile(FileParam: FormDataFileType, Form: FormData): FormData {
         Form ??= new FormData();
         if (FileParam == null)
             return Form;
 
         let DefaultKey = 'Files';
         if (Array.isArray(FileParam)) {
-            this.$AppendFileDataArray(DefaultKey, Form, FileParam);
+            this.$AppendFileToFormData(DefaultKey, Form, FileParam);
             return Form;
         }
 
-        if (FileParam instanceof File || FileParam instanceof FileDataType) {
-            this.$AppendFileData(DefaultKey, Form, FileParam);
+        if (FileParam instanceof File || FileParam instanceof FileItem) {
+            this.$AppendFileToFormData(DefaultKey, Form, FileParam);
             return Form;
         }
 
@@ -1003,26 +1093,21 @@ class ApiStore extends FuncBase {
         for (let i = 0; i < Keys.length; i++) {
             let FileKey = Keys[i];
             let FileValue = FileParam[FileKey];
-            if (Array.isArray(FileValue)) {
-                this.$AppendFileDataArray(FileKey, Form, FileValue);
-                continue;
-            }
-            this.$AppendFileData(FileKey, Form, FileValue);
+            this.$AppendFileToFormData(FileKey, Form, FileValue);
         }
 
         return Form;
     }
-    protected $AppendFileDataArray(FileKey: string, Form: FormData, FileDatas: File[] | FileDataType[]) {
-        FileDatas.forEach(FileData => {
-            this.$AppendFileData(FileKey, Form, FileData);
-        });
-        return Form;
-    }
-    protected $AppendFileData(FileKey: string, Form: FormData, FileData: File | FileDataType) {
-        if (FileData instanceof File)
+    protected $AppendFileToFormData(FileKey: string, Form: FormData, FileData: FilesType) {
+        if (Array.isArray(FileData)) {
+            for (let i = 0; i < FileData.length; i++)
+                this.$AppendFileToFormData(FileKey, Form, FileData[i]);
+        }
+        else if (FileData instanceof File)
             Form.append(FileKey, FileData);
         else
             Form.append(FileKey, FileData.File);
+
         return Form;
     }
     //#endregion
@@ -1110,12 +1195,20 @@ class VueStore extends ApiStore {
     //#endregion
 }
 
+//#region VueCommand Data Type
 type AddV_ModelOption = {
-    ModelValue?: string;
-    DefaultValue?: any;
+    ModelValue?: string,
+    DefaultValue?: any,
 };
 
-class VueCmd extends VueStore {
+type AddV_FilePickerOption = {
+    StorePath: string,
+    Accept?: string | string[],
+    Multiple?: boolean;
+    ConvertType?: FileConvertType | FileConvertType[];
+};
+//#endregion
+class VueCommand extends VueStore {
     protected $IsInited: boolean = false;
     $QueryDomName: string = null;
 
@@ -1217,6 +1310,50 @@ class VueCmd extends VueStore {
             ...Option,
         };
         this.$VueOption.watch[this.ToJoin(WatchPath)] = SetWatch;
+        return this;
+    }
+    public AddV_FilePicker(DomName: PathType, Option: string | AddV_FilePickerOption) {
+
+        let FileStorePath: string = null;
+        let Accept: string = null;
+        let ConvertType: FileConvertType | FileConvertType[] = 'none';
+        let Multiple: boolean = false;
+
+        if (typeof (Option) == 'string')
+            FileStorePath = Option;
+        else {
+            FileStorePath = Option.StorePath;
+            ConvertType = Option.ConvertType;
+            Multiple = Option.Multiple;
+
+            if (Array.isArray(Option.Accept))
+                Accept = Option.Accept.join(' ');
+            else
+                Accept = Option.Accept;
+        }
+
+        this.AddFileStore(FileStorePath);
+        this.AddV_Click(DomName, () => {
+            let TempInput = document.createElement('input');
+            TempInput.type = 'file';
+            if (Accept != null)
+                TempInput.accept = Accept;
+            if (Multiple != null)
+                TempInput.multiple = Multiple;
+
+            TempInput.onchange = (Event) => {
+                if (TempInput.files == null || TempInput.files.length == 0)
+                    return;
+
+                let Files = TempInput.files;
+                for (let i = 0; i < Files.length; i++) {
+                    let PickFile = Files[i];
+                    this.AddFile(FileStorePath, PickFile, ConvertType);
+                }
+            };
+            TempInput.click();
+        });
+
         return this;
     }
 
@@ -1470,7 +1607,7 @@ class VueCmd extends VueStore {
 
     //#endregion
 }
-class VueModel extends VueCmd {
+class VueModel extends VueCommand {
     $MountId: string = null;
     Id: string;
     constructor() {

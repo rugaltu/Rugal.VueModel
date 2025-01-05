@@ -105,15 +105,24 @@ type CommandOption = {
     FuncAction?: boolean;
     FuncArgs?: PathType;
 };
-declare class FileDataType {
+declare class FileItem {
     FileId: string;
     File: File;
+    Base64?: string;
+    Buffer?: ArrayBuffer;
+    ConvertType?: FileConvertType | FileConvertType[];
+    constructor(FileId: string, File: File, ConvertType?: FileConvertType | FileConvertType[]);
+    protected $ConvertFile(): void;
+    protected $ConvertBase64(IsForce?: boolean): this;
+    protected $ConvertBuffer(): void;
 }
-type FileParamType = File | FileDataType | File[] | FileDataType[] | Record<string, File> | Record<string, FileDataType> | Record<string, File[]> | Record<string, FileDataType[]>;
+type FileConvertType = 'none' | 'base64' | 'buffer';
+type FilesType = File | File[] | FileItem | FileItem[];
+type FormDataFileType = FilesType | Record<string, File> | Record<string, FileItem> | Record<string, File[]> | Record<string, FileItem[]>;
 type HttpMethod = 'GET' | 'POST';
 type ApiCallQuery = string | object;
 type ApiCallBody = Record<string, any>;
-type ApiCallFile = FileParamType;
+type ApiCallFile = FormDataFileType;
 type AddApiContent = {
     Url: string;
     Method: HttpMethod;
@@ -131,7 +140,7 @@ type ApiCallOption = {
     File?: ApiCallFile | (() => ApiCallFile);
     IsUpdateStore?: boolean;
 } & ApiCallback;
-type FileStoreType = Record<string, FileDataType[]>;
+type FileStoreType = Record<string, FileItem[]>;
 type StoreType = Record<string, any> & {
     FileStore: FileStoreType;
 };
@@ -205,14 +214,16 @@ declare class ApiStore extends FuncBase {
     }): any;
     protected $DeepSetObject(StorePath: string, SetData: Record<string, any>, FindStore: any): void;
     AddFileStore(FileStoreKey: string): this;
-    Files(FileStoreKey: string, MapFunc?: (FileArg: FileDataType) => boolean): boolean[] | File[];
+    Files(FileStoreKey: string, WhereFunc?: (FileArg: FileItem) => boolean): File[];
+    AddFile(FileStoreKey: string, AddFile: FilesType, ConvertType?: FileConvertType | FileConvertType[]): this;
+    RemoveFile(FileStoreKey: string, DeleteFileId: string | string[]): this;
+    ClearFile(FileStoreKey: string): this;
     protected $ProcessApiReturn(ApiResponse: Response): Promise<any>;
     NavigateToRoot(): this;
     protected $ConvertTo_ApiDomainUrl(Url: string, Param?: string | object): string;
     protected $ConvertTo_FormData(ConvertFormData: FormData | Record<string, any>, Form: FormData): FormData;
-    protected $ConvertTo_FormFile(FileParam: FileParamType, Form: FormData): FormData;
-    protected $AppendFileDataArray(FileKey: string, Form: FormData, FileDatas: File[] | FileDataType[]): FormData;
-    protected $AppendFileData(FileKey: string, Form: FormData, FileData: File | FileDataType): FormData;
+    protected $ConvertTo_FormFile(FileParam: FormDataFileType, Form: FormData): FormData;
+    protected $AppendFileToFormData(FileKey: string, Form: FormData, FileData: FilesType): FormData;
 }
 import { App, Plugin } from 'vue';
 declare class VueStore extends ApiStore {
@@ -236,7 +247,13 @@ type AddV_ModelOption = {
     ModelValue?: string;
     DefaultValue?: any;
 };
-declare class VueCmd extends VueStore {
+type AddV_FilePickerOption = {
+    StorePath: string;
+    Accept?: string | string[];
+    Multiple?: boolean;
+    ConvertType?: FileConvertType | FileConvertType[];
+};
+declare class VueCommand extends VueStore {
     protected $IsInited: boolean;
     $QueryDomName: string;
     WithQueryAttribute(QueryDomName: string): this;
@@ -252,6 +269,7 @@ declare class VueCmd extends VueStore {
     AddV_Click(DomName: PathType, Option: AddCommandOption, Args?: string): this;
     AddV_Function(FuncName: PathType, Func: Function): this;
     AddV_Watch(WatchPath: PathType, Func: Function, Deep?: boolean, Option?: any): this;
+    AddV_FilePicker(DomName: PathType, Option: string | AddV_FilePickerOption): this;
     AddV_Tree(TreeRoot: PathType, TreeSet: TreeSetType): this;
     private $ParseTreeSet;
     AddV_Property(PropertyPath: PathType, Option: AddPropertyType): this;
@@ -262,7 +280,7 @@ declare class VueCmd extends VueStore {
     protected $RandomFuncName(BaseFuncName: string): string;
     protected $GenerateEventFunction(DomName: PathType, EventFunc: Function, Command: string): string;
 }
-declare class VueModel extends VueCmd {
+declare class VueModel extends VueCommand {
     $MountId: string;
     Id: string;
     constructor();

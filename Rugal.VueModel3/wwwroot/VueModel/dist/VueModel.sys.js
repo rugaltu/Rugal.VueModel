@@ -1,6 +1,6 @@
 System.register(["vue"], function (exports_1, context_1) {
     "use strict";
-    var FuncBase, QueryNode, DomQueryer, Queryer, FileDataType, ApiStore, vue_1, VueStore, VueCmd, VueModel, Model;
+    var FuncBase, QueryNode, DomQueryer, Queryer, FileItem, ApiStore, vue_1, VueStore, VueCommand, VueModel, Model;
     var __moduleName = context_1 && context_1.id;
     return {
         setters: [
@@ -45,10 +45,7 @@ System.register(["vue"], function (exports_1, context_1) {
                 }
                 NavigateToRoot() {
                     let RootUrl = '/';
-                    if (this.$NavigateToFunc)
-                        this.$NavigateToFunc(RootUrl);
-                    else
-                        window.location.href = RootUrl;
+                    this.$BaseNavigateTo(RootUrl);
                     return this;
                 }
                 NavigateTo(Url, UrlParam = null) {
@@ -322,10 +319,57 @@ System.register(["vue"], function (exports_1, context_1) {
             exports_1("DomQueryer", DomQueryer);
             Queryer = new DomQueryer();
             exports_1("Queryer", Queryer);
-            FileDataType = class FileDataType {
+            FileItem = class FileItem {
                 FileId;
                 File;
+                Base64;
+                Buffer;
+                ConvertType;
+                constructor(FileId, File, ConvertType = 'none') {
+                    this.FileId = FileId;
+                    this.File = File;
+                    this.ConvertType = ConvertType;
+                    this.$ConvertFile();
+                }
+                $ConvertFile() {
+                    if (this.ConvertType == null)
+                        return;
+                    let GetConvertType = [];
+                    if (Array.isArray(this.ConvertType))
+                        GetConvertType = this.ConvertType;
+                    else
+                        GetConvertType = [this.ConvertType];
+                    for (let i = 0; i < GetConvertType.length; i++) {
+                        let TypeItem = GetConvertType[i];
+                        switch (TypeItem) {
+                            case 'base64':
+                                this.$ConvertBase64();
+                                break;
+                            case 'buffer':
+                                this.$ConvertBuffer();
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                }
+                $ConvertBase64(IsForce = false) {
+                    if (this.File == null)
+                        return this;
+                    if (this.Base64 != null && IsForce == false)
+                        return this;
+                    let Reader = new FileReader();
+                    Reader.readAsDataURL(this.File);
+                    Reader.onload = () => this.Base64 = Reader.result;
+                    return this;
+                }
+                $ConvertBuffer() {
+                    let Reader = new FileReader();
+                    Reader.readAsArrayBuffer(this.File);
+                    Reader.onload = () => this.Buffer = Reader.result;
+                }
             };
+            ;
             //#endregion
             ApiStore = class ApiStore extends FuncBase {
                 //#region Private Property
@@ -718,14 +762,48 @@ System.register(["vue"], function (exports_1, context_1) {
                         this.FileStore[FileStoreKey] = [];
                     return this;
                 }
-                Files(FileStoreKey, MapFunc = null) {
+                Files(FileStoreKey, WhereFunc = null) {
                     let GetFiles = this.FileStore[FileStoreKey];
                     if (GetFiles == null)
                         return [];
-                    let MapFiles = MapFunc != null ?
-                        GetFiles.map(Item => MapFunc(Item)) :
-                        GetFiles.map(Item => Item['File']);
-                    return MapFiles;
+                    if (WhereFunc != null)
+                        GetFiles = GetFiles.filter(Item => WhereFunc(Item));
+                    let Result = GetFiles.map(Item => Item.File);
+                    return Result;
+                }
+                AddFile(FileStoreKey, AddFile, ConvertType = 'none') {
+                    this.AddFileStore(FileStoreKey);
+                    let GetStore = this.FileStore[FileStoreKey];
+                    if (Array.isArray(AddFile))
+                        AddFile.forEach(Item => this.AddFile(FileStoreKey, Item));
+                    else if (AddFile instanceof FileItem) {
+                        GetStore.push(AddFile);
+                    }
+                    else {
+                        let NewFile = new FileItem(this.GenerateId(), AddFile, ConvertType);
+                        GetStore.push(NewFile);
+                    }
+                    return this;
+                }
+                RemoveFile(FileStoreKey, DeleteFileId) {
+                    let GetStore = this.FileStore[FileStoreKey];
+                    if (GetStore == null)
+                        return this;
+                    if (Array.isArray(DeleteFileId))
+                        DeleteFileId.forEach(Item => this.RemoveFile(FileStoreKey, Item));
+                    else {
+                        let DeleteIndex = GetStore.findIndex(Item => Item.FileId == DeleteFileId);
+                        if (DeleteIndex >= 0)
+                            GetStore.splice(DeleteIndex, 1);
+                    }
+                    return this;
+                }
+                ClearFile(FileStoreKey) {
+                    let GetStore = this.FileStore[FileStoreKey];
+                    if (GetStore == null)
+                        return this;
+                    GetStore.splice(0, GetStore.length);
+                    return this;
                 }
                 //#endregion
                 //#endregion
@@ -780,33 +858,27 @@ System.register(["vue"], function (exports_1, context_1) {
                         return Form;
                     let DefaultKey = 'Files';
                     if (Array.isArray(FileParam)) {
-                        this.$AppendFileDataArray(DefaultKey, Form, FileParam);
+                        this.$AppendFileToFormData(DefaultKey, Form, FileParam);
                         return Form;
                     }
-                    if (FileParam instanceof File || FileParam instanceof FileDataType) {
-                        this.$AppendFileData(DefaultKey, Form, FileParam);
+                    if (FileParam instanceof File || FileParam instanceof FileItem) {
+                        this.$AppendFileToFormData(DefaultKey, Form, FileParam);
                         return Form;
                     }
                     let Keys = Object.keys(FileParam);
                     for (let i = 0; i < Keys.length; i++) {
                         let FileKey = Keys[i];
                         let FileValue = FileParam[FileKey];
-                        if (Array.isArray(FileValue)) {
-                            this.$AppendFileDataArray(FileKey, Form, FileValue);
-                            continue;
-                        }
-                        this.$AppendFileData(FileKey, Form, FileValue);
+                        this.$AppendFileToFormData(FileKey, Form, FileValue);
                     }
                     return Form;
                 }
-                $AppendFileDataArray(FileKey, Form, FileDatas) {
-                    FileDatas.forEach(FileData => {
-                        this.$AppendFileData(FileKey, Form, FileData);
-                    });
-                    return Form;
-                }
-                $AppendFileData(FileKey, Form, FileData) {
-                    if (FileData instanceof File)
+                $AppendFileToFormData(FileKey, Form, FileData) {
+                    if (Array.isArray(FileData)) {
+                        for (let i = 0; i < FileData.length; i++)
+                            this.$AppendFileToFormData(FileKey, Form, FileData[i]);
+                    }
+                    else if (FileData instanceof File)
                         Form.append(FileKey, FileData);
                     else
                         Form.append(FileKey, FileData.File);
@@ -888,7 +960,8 @@ System.register(["vue"], function (exports_1, context_1) {
                 }
             };
             exports_1("VueStore", VueStore);
-            VueCmd = class VueCmd extends VueStore {
+            //#endregion
+            VueCommand = class VueCommand extends VueStore {
                 $IsInited = false;
                 $QueryDomName = null;
                 //#region With Method
@@ -982,6 +1055,43 @@ System.register(["vue"], function (exports_1, context_1) {
                         ...Option,
                     };
                     this.$VueOption.watch[this.ToJoin(WatchPath)] = SetWatch;
+                    return this;
+                }
+                AddV_FilePicker(DomName, Option) {
+                    let FileStorePath = null;
+                    let Accept = null;
+                    let ConvertType = 'none';
+                    let Multiple = false;
+                    if (typeof (Option) == 'string')
+                        FileStorePath = Option;
+                    else {
+                        FileStorePath = Option.StorePath;
+                        ConvertType = Option.ConvertType;
+                        Multiple = Option.Multiple;
+                        if (Array.isArray(Option.Accept))
+                            Accept = Option.Accept.join(' ');
+                        else
+                            Accept = Option.Accept;
+                    }
+                    this.AddFileStore(FileStorePath);
+                    this.AddV_Click(DomName, () => {
+                        let TempInput = document.createElement('input');
+                        TempInput.type = 'file';
+                        if (Accept != null)
+                            TempInput.accept = Accept;
+                        if (Multiple != null)
+                            TempInput.multiple = Multiple;
+                        TempInput.onchange = (Event) => {
+                            if (TempInput.files == null || TempInput.files.length == 0)
+                                return;
+                            let Files = TempInput.files;
+                            for (let i = 0; i < Files.length; i++) {
+                                let PickFile = Files[i];
+                                this.AddFile(FileStorePath, PickFile, ConvertType);
+                            }
+                        };
+                        TempInput.click();
+                    });
                     return this;
                 }
                 AddV_Tree(TreeRoot, TreeSet) {
@@ -1207,7 +1317,7 @@ System.register(["vue"], function (exports_1, context_1) {
                     return this.ToJoin(FullFuncPath);
                 }
             };
-            VueModel = class VueModel extends VueCmd {
+            VueModel = class VueModel extends VueCommand {
                 $MountId = null;
                 Id;
                 constructor() {
