@@ -8,9 +8,12 @@ declare class FuncBase {
     WithDateTextJoinChar(JoinChar: string): this;
     GenerateId(): string;
     GenerateIdReplace(FillString: string): string;
+    protected $BaseGenerateUrl(Url: PathBase, UrlParam?: string | Record<string, any>): string;
+    protected $BaseNavigateTo(Url: string): void;
     NavigateToRoot(): this;
     NavigateTo(Url: PathBase, UrlParam?: string | Record<string, any>): this;
-    protected $BaseNavigateTo(Url: string): void;
+    protected $BaseNavigateBlank(Url: string): void;
+    NavigateBlank(Url: PathBase, UrlParam?: string | Record<string, any>): this;
     ForEachObject<TValue>(Param: Record<string, TValue>, Func: (Key: string, Value: TValue) => void): void;
     DeepObjectExtend(Target: any, Source: any, MaxDepth?: number): any;
     ToDateInfo(QueryDate?: Date | string | DateTimeInfo): DateTimeInfo;
@@ -186,6 +189,7 @@ declare class ApiStore extends FuncBase {
     WithOnSuccess(SuccessFunc: (Result: any, Reponse: Response) => void): this;
     WithOnError(ErrorFunc: (Exception: any) => void): this;
     WithOnComplete(CompleteFunc: (Result: any, Reponse: Response) => void): this;
+    WithExportSuccessStore(ExportSuccessStoreFunc: (Result: any, Reponse: Response) => any): this;
     WithConvertTo_FormParam(ConvertToFunc: (ConvertData: object, Form: FormData) => object): this;
     ClearConvertTo_FormParam(): this;
     AddApi(AddApi: Record<string, AddApiContent>): this;

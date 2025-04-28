@@ -1,2 +1,2 @@
-start tsc --watch --project tsconfig.sys.json
-start tsc --watch --project tsconfig.types.json
+start tsc --watch --project tsconfig.esm.json
+start tsc --watch --project tsconfig.umd.json

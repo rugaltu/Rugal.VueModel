@@ -10,18 +10,13 @@
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.VueStore = exports.ApiStore = exports.FuncBase = exports.VueModel = exports.Model = exports.Queryer = exports.DomQueryer = void 0;
-    //#endregion
-    //#region FuncBase
     class FuncBase {
-        //#region Protected Property
         $NavigateToFunc;
         $DefaultDateJoinChar;
-        //#endregion
         constructor() {
             this.$NavigateToFunc = null;
             this.WithDateTextJoinChar('-');
         }
-        //#region Public With Method
         WithNavigateTo(NavigateToFunc) {
             this.$NavigateToFunc = NavigateToFunc;
             return this;
@@ -30,8 +25,6 @@
             this.$DefaultDateJoinChar = JoinChar;
             return this;
         }
-        //#endregion
-        //#region Public Method
         GenerateId() {
             let NewId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (char) => {
                 let RandomValue = crypto.getRandomValues(new Uint8Array(1))[0] & 15;
@@ -44,12 +37,7 @@
             let Id = this.GenerateId().replaceAll('-', FillString);
             return Id;
         }
-        NavigateToRoot() {
-            let RootUrl = '/';
-            this.$BaseNavigateTo(RootUrl);
-            return this;
-        }
-        NavigateTo(Url, UrlParam = null) {
+        $BaseGenerateUrl(Url, UrlParam = null) {
             Url = this.Paths(Url);
             if (Url == null || Url.length == 0 || Url[0].length == 0)
                 this.$Throw('Url can not be null or empty');
@@ -59,14 +47,35 @@
                 UrlParam = this.ConvertTo_UrlQuery(UrlParam);
                 CombineUrl += `?${UrlParam}`;
             }
-            this.$BaseNavigateTo(CombineUrl);
-            return this;
+            return CombineUrl;
         }
         $BaseNavigateTo(Url) {
             if (this.$NavigateToFunc)
                 this.$NavigateToFunc(Url);
             else
                 window.location.href = Url;
+        }
+        NavigateToRoot() {
+            let RootUrl = '/';
+            this.$BaseNavigateTo(RootUrl);
+            return this;
+        }
+        NavigateTo(Url, UrlParam = null) {
+            let TargetUrl = this.$BaseGenerateUrl(Url, UrlParam);
+            this.$BaseNavigateTo(TargetUrl);
+            return this;
+        }
+        $BaseNavigateBlank(Url) {
+            let Link = document.createElement('a');
+            Link.href = Url;
+            Link.target = '_blank';
+            Link.rel = 'noopener noreferrer';
+            Link.click();
+        }
+        NavigateBlank(Url, UrlParam = null) {
+            let TargetUrl = this.$BaseGenerateUrl(Url, UrlParam);
+            this.$BaseNavigateBlank(TargetUrl);
+            return this;
         }
         ForEachObject(Param, Func) {
             for (let Key of Object.getOwnPropertyNames(Param)) {
@@ -150,8 +159,6 @@
             };
             return Result;
         }
-        //#endregion
-        //#region Process
         ConvertTo_UrlQuery(Param) {
             if (typeof Param === 'string')
                 return Param;
@@ -188,8 +195,6 @@
             }
             return Result;
         }
-        //#endregion
-        //#region Console And Throw
         $Throw(Message) {
             throw new Error(Message);
         }
@@ -198,8 +203,6 @@
         }
     }
     exports.FuncBase = FuncBase;
-    //#endregion
-    //#region DomQueryer
     class QueryNode extends FuncBase {
         Dom;
         DomName = null;
@@ -370,10 +373,7 @@
             Reader.onload = () => this.Buffer = Reader.result;
         }
     }
-    ;
-    //#endregion
     class ApiStore extends FuncBase {
-        //#region Private Property
         #ApiDomain = null;
         #RootRoute = null;
         #AccessToken = null;
@@ -391,19 +391,16 @@
         #OnSuccess;
         #OnError;
         #OnComplete;
+        #ExportSuccessStore;
         #Store = {
             FileStore: {},
         };
         #Func_ConvertTo_FormData = [];
-        //#endregion
-        //#region Protected Property
         $ApiStore = {};
-        //#endregion
         constructor() {
             super();
             this.UseFormJsonBody();
         }
-        //#region Get/Set Property
         get ApiDomain() {
             if (this.#ApiDomain == null)
                 return null;
@@ -427,8 +424,6 @@
         get FileStore() {
             return this.Store.FileStore;
         }
-        //#endregion
-        //#region Public With Method
         WithAccessToken(AccessToken) {
             this.#AccessToken = AccessToken;
             return this;
@@ -461,8 +456,10 @@
             this.#OnComplete = CompleteFunc;
             return this;
         }
-        //#endregion
-        //#region ConvertTo Method
+        WithExportSuccessStore(ExportSuccessStoreFunc) {
+            this.#ExportSuccessStore = ExportSuccessStoreFunc;
+            return this;
+        }
         WithConvertTo_FormParam(ConvertToFunc) {
             this.#Func_ConvertTo_FormData.push(ConvertToFunc);
             return this;
@@ -471,8 +468,6 @@
             this.#Func_ConvertTo_FormData = [];
             return this;
         }
-        //#endregion
-        //#region Api Method
         AddApi(AddApi) {
             for (let ApiKey in AddApi) {
                 let ApiOption = AddApi[ApiKey];
@@ -517,12 +512,15 @@
                     throw ApiResponse;
                 let ConvertResult = await this.$ProcessApiReturn(ApiResponse);
                 if (IsUpdateStore) {
+                    if (this.#ExportSuccessStore != null) {
+                        ConvertResult = this.#ExportSuccessStore?.call(this, ConvertResult, ApiResponse);
+                    }
                     let StoreKey = Api.ApiKey;
                     this.UpdateStore(StoreKey, ConvertResult);
                 }
                 Api.OnSuccess?.call(this, ConvertResult, ApiResponse);
                 Option?.OnSuccess?.call(this, ConvertResult, ApiResponse);
-                this.#OnSuccess(ConvertResult, ApiResponse);
+                this.#OnSuccess?.call(this, ConvertResult, ApiResponse);
                 return { ConvertResult, ApiResponse };
             })
                 .catch(ex => {
@@ -569,8 +567,6 @@
             }
             return FetchRequest;
         }
-        //#endregion
-        //#region Default Use Method
         UseFormJsonBody(JsonBodyKey = 'Body') {
             this.WithConvertTo_FormParam((FormDataBody, Form) => {
                 let ConvertParam = {};
@@ -579,8 +575,6 @@
             });
             return this;
         }
-        //#endregion
-        //#region Public Event Add
         EventAdd_AddApi(EventFunc) {
             this.$EventAdd(this.#EventName.AddApi, EventFunc);
             return this;
@@ -597,8 +591,6 @@
             this.$EventAdd(this.#EventName.SetStore, EventFunc);
             return this;
         }
-        //#endregion
-        //#region Protected Event Process
         $EventAdd(EventName, OnFunc) {
             if (EventName in this.#OnEventFunc == false)
                 this.#OnEventFunc[EventName] = [];
@@ -611,9 +603,6 @@
             for (let Item of EventFuncs)
                 Item(EventArg);
         }
-        //#endregion
-        //#region Store Control
-        //#region Public Data Store Contorl
         UpdateStore(StorePath, StoreData) {
             StorePath = this.ToJoin(StorePath);
             this.$RCS_SetStore(StorePath, StoreData, this.Store, {
@@ -690,8 +679,6 @@
             }
             return this;
         }
-        //#endregion
-        //#region Protected Data Store Process
         $RCS_GetStore(StorePath, FindStore, Option) {
             if (FindStore == null)
                 return null;
@@ -756,8 +743,6 @@
                 FindStore[StorePath].splice(0, FindStore[StorePath].length);
             FindStore[StorePath].push(...SetData);
         }
-        //#endregion
-        //#region File Store
         AddFileStore(FileStoreKey) {
             if (this.FileStore[FileStoreKey] == null)
                 this.FileStore[FileStoreKey] = [];
@@ -806,9 +791,6 @@
             GetStore.splice(0, GetStore.length);
             return this;
         }
-        //#endregion
-        //#endregion
-        //#region Protected Process
         $ProcessApiReturn(ApiResponse) {
             let GetContentType = ApiResponse.headers.get("content-type");
             let ConvertSuccess = null;
@@ -822,15 +804,11 @@
             }
             return ConvertSuccess;
         }
-        //#endregion
-        //#region Override Method
         NavigateToRoot() {
             let RootUrl = this.#RootRoute ?? '/';
             super.$BaseNavigateTo(RootUrl);
             return this;
         }
-        //#endregion
-        //#region Protected ConvertTo
         $ConvertTo_ApiDomainUrl(Url, Param = null) {
             let ApiDomainUrl = Url;
             if (this.ApiDomain != null && !ApiDomainUrl.includes('http'))
@@ -903,7 +881,6 @@
             super();
             this.#Setup();
         }
-        //#region Private Setup
         #Setup() {
             this
                 .EventAdd_AddApi(Arg => {
@@ -919,8 +896,6 @@
                 this.ForceUpdate();
             });
         }
-        //#endregion
-        //#region Get/Set Property
         get Store() {
             if (this.$VueProxy != null)
                 return this.$VueProxy;
@@ -929,8 +904,6 @@
         set Store(Store) {
             super.Store = Store;
         }
-        //#endregion
-        //#region Public With Method
         WithVueOption(VueOption = {}) {
             this.$VueOption = this.DeepObjectExtend(this.$VueOption, VueOption);
             return this;
@@ -949,8 +922,6 @@
             }
             return this;
         }
-        //#endregion
-        //#region Public Method
         ForceUpdate() {
             this.$VueProxy?.$forceUpdate();
             return this;
@@ -962,17 +933,13 @@
         }
     }
     exports.VueStore = VueStore;
-    //#endregion
     class VueCommand extends VueStore {
         $IsInited = false;
         $QueryDomName = null;
-        //#region With Method
         WithQueryAttribute(QueryDomName) {
             this.$QueryDomName = QueryDomName;
             return this;
         }
-        //#endregion
-        //#region Path Command
         AddV_Text(DomName, Option) {
             let SetOption = this.$ConvertCommandOption(DomName, Option);
             if (typeof SetOption.Target != 'function')
@@ -995,8 +962,6 @@
             this.$AddCommand(DomName, `v-slot`, SetOption);
             return this;
         }
-        //#endregion
-        //#region Path/Function Command
         AddV_For(DomName, Option, ForKey) {
             let SetOption = this.$ConvertCommandOption(DomName, Option);
             if (ForKey) {
@@ -1030,8 +995,6 @@
             this.$AddCommand(DomName, `v-on`, SetOption);
             return this;
         }
-        //#endregion
-        //#region Customer Command
         AddV_OnChange(DomName, ChangeFunc) {
             this.AddV_On(DomName, 'change', ChangeFunc);
             return this;
@@ -1194,8 +1157,6 @@
                 this.$ParseTreeSet([...Paths, DomName], Value, Result);
             }
         }
-        //#endregion
-        //#region Property Method
         AddV_Property(PropertyPath, Option) {
             let SetStore = this.Store;
             PropertyPath = this.ToJoin(PropertyPath);
@@ -1262,8 +1223,6 @@
                 SetProperty[PropertyKey] = Option.Value;
             return SetProperty;
         }
-        //#endregion
-        //#region Protected Process
         $ConvertCommandOption(DomName, Option) {
             if (!Option)
                 return { Target: DomName, FuncAction: true };
@@ -1307,7 +1266,6 @@
             }
             Dom.setAttribute(AttrName, AttrValue);
         }
-        //#region Function Control
         $RandomFuncName(BaseFuncName) {
             return `${BaseFuncName}${this.GenerateIdReplace('')}`.replace(/[-:.]/g, '_');
         }
@@ -1326,13 +1284,10 @@
             super();
             this.Id = this.GenerateId();
         }
-        //#region With Method
         WithMountId(MountId) {
             this.$MountId = MountId;
             return this;
         }
-        //#endregion
-        //#region Public Method
         Init() {
             if (this.$IsInited)
                 return this;

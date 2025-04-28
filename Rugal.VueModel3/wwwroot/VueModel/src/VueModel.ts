@@ -3,7 +3,6 @@ type PathBase = string | string[];
 export type PathType = PathBase | PathBase[];
 //#endregion
 
-
 //#region FuncBase
 class FuncBase {
     //#region Protected Property
@@ -39,13 +38,8 @@ class FuncBase {
         let Id = this.GenerateId().replaceAll('-', FillString);
         return Id;
     }
-    public NavigateToRoot() {
-        let RootUrl = '/';
-        this.$BaseNavigateTo(RootUrl);
-        return this;
-    }
-    public NavigateTo(Url: PathBase, UrlParam: string | Record<string, any> = null) {
 
+    protected $BaseGenerateUrl(Url: PathBase, UrlParam: string | Record<string, any> = null): string {
         Url = this.Paths(Url);
         if (Url == null || Url.length == 0 || Url[0].length == 0)
             this.$Throw('Url can not be null or empty');
@@ -56,14 +50,37 @@ class FuncBase {
             UrlParam = this.ConvertTo_UrlQuery(UrlParam);
             CombineUrl += `?${UrlParam}`;
         }
-        this.$BaseNavigateTo(CombineUrl);
-        return this;
+
+        return CombineUrl;
     }
     protected $BaseNavigateTo(Url: string) {
         if (this.$NavigateToFunc)
             this.$NavigateToFunc(Url);
         else
             window.location.href = Url;
+    }
+    public NavigateToRoot() {
+        let RootUrl = '/';
+        this.$BaseNavigateTo(RootUrl);
+        return this;
+    }
+    public NavigateTo(Url: PathBase, UrlParam: string | Record<string, any> = null) {
+        let TargetUrl = this.$BaseGenerateUrl(Url, UrlParam);
+        this.$BaseNavigateTo(TargetUrl);
+        return this;
+    }
+
+    protected $BaseNavigateBlank(Url: string) {
+        let Link = document.createElement('a');
+        Link.href = Url;
+        Link.target = '_blank';
+        Link.rel = 'noopener noreferrer';
+        Link.click();
+    }
+    public NavigateBlank(Url: PathBase, UrlParam: string | Record<string, any> = null) {
+        let TargetUrl = this.$BaseGenerateUrl(Url, UrlParam);
+        this.$BaseNavigateBlank(TargetUrl);
+        return this;
     }
 
     public ForEachObject<TValue>(Param: Record<string, TValue>, Func: (Key: string, Value: TValue) => void): void;
@@ -480,7 +497,7 @@ class FileItem {
         Reader.readAsArrayBuffer(this.File);
         Reader.onload = () => this.Buffer = Reader.result as ArrayBuffer;
     }
-};
+}
 type FileConvertType = 'none' | 'base64' | 'buffer';
 type FilesType = File | File[] | FileItem | FileItem[];
 
@@ -553,6 +570,7 @@ class ApiStore extends FuncBase {
     #OnSuccess: (Result: any, Reponse: Response) => void;
     #OnError: (Except: any) => void;
     #OnComplete: (Result: any, Reponse: Response) => void;
+    #ExportSuccessStore: (Result: any, Reponse: Response) => any;
     #Store: StoreType = {
         FileStore: {},
     };
@@ -627,6 +645,10 @@ class ApiStore extends FuncBase {
         this.#OnComplete = CompleteFunc;
         return this;
     }
+    public WithExportSuccessStore(ExportSuccessStoreFunc: (Result: any, Reponse: Response) => any) {
+        this.#ExportSuccessStore = ExportSuccessStoreFunc;
+        return this;
+    }
     //#endregion
 
     //#region ConvertTo Method
@@ -690,13 +712,16 @@ class ApiStore extends FuncBase {
 
                 let ConvertResult = await this.$ProcessApiReturn(ApiResponse);
                 if (IsUpdateStore) {
+                    if (this.#ExportSuccessStore != null) {
+                        ConvertResult = this.#ExportSuccessStore?.call(this, ConvertResult, ApiResponse);
+                    }
                     let StoreKey = Api.ApiKey;
                     this.UpdateStore(StoreKey, ConvertResult);
                 }
 
                 Api.OnSuccess?.call(this, ConvertResult, ApiResponse);
                 Option?.OnSuccess?.call(this, ConvertResult, ApiResponse);
-                this.#OnSuccess(ConvertResult, ApiResponse);
+                this.#OnSuccess?.call(this, ConvertResult, ApiResponse);
                 return { ConvertResult, ApiResponse };
             })
             .catch(ex => {

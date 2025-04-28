@@ -1,12 +1,19 @@
 {
   "compileOnSave": true,
   "compilerOptions": {
-    "target": "ESNext",
-    "module": "System",
-    "moduleResolution": "Node",
-    "sourceMap": true,
     "noImplicitAny": true,
-    "esModuleInterop": true
+    "removeComments": false,
+    "sourceMap": true,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "esModuleInterop": true,
+    "target": "ESNext",
+    "module": "NodeNext",
+    "moduleResolution": "nodenext",
+    "outDir": "./wwwroot/VueModel/src/types",
   },
-  "exclude": [ "node_modules" ],
+  "exclude": [
+    "node_modules"
+  ],
+  "include": [ "./wwwroot/VueModel/src/VueModel.ts" ]
 }

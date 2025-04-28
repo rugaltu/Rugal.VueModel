@@ -23,7 +23,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="6.0.24" />
-		<PackageReference Include="Microsoft.TypeScript.MSBuild" Version="5.5.3">
+		<PackageReference Include="Microsoft.TypeScript.MSBuild" Version="5.8.1">
 		  <PrivateAssets>all</PrivateAssets>
 		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
@@ -52,12 +52,10 @@
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
 	</ItemGroup>
-
+	
 	<Target Name="TypeScriptCompileSystem" AfterTargets="Build">
-		<Exec Command="tsc --project tsconfig.sys.json" />
-		<Exec Command="tsc --project tsconfig.umd.json" />
 		<Exec Command="tsc --project tsconfig.esm.json" />
-		<Exec Command="tsc --project tsconfig.types.json" />
+		<Exec Command="tsc --project tsconfig.umd.json" />
 	</Target>
 
 </Project>
