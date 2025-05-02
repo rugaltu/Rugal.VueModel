@@ -3,22 +3,24 @@
     ViewData["Title"] = "Home page";
 }
 
-<div id="A" pv-name="A">
-   <button pv-name="BtnPicker">123</button>
+<div pv-name="Root">
+    -Root
+    <div pv-name="B">
+        B1
+        <div pv-name="C">
+            C1
+        </div>
+    </div>
+    <div pv-name="B">
+        B2
+        <div pv-name="C">
+            C2
+            <div pv-name="C">
+                C3
+            </div>
+        </div>
+
+    </div>
 </div>
 
-
-<script src="~/npm/systemjs/dist/system.js"></script>
-<script src="~/npm/vue/dist/vue.global.js"></script>
-
-<script src="~/src/js/setup.js"></script>
-<script src="~/src/js/test.js"></script>
-@* <script src="~/VueModel/src/testVueModel.js"></script> *@
-
-
-
-@* <script src="/VueModel/dist/VueModel.full.js"></script> *@
-@* <script src="/VueModel/src/CommonFunc.js"></script>
-<script src="/VueModel/src/DomEditor.js"></script>
-<script src="/VueModel/src/VueModel.js"></script> *@
-
+<script type="module" src="~/src/test.js"></script>

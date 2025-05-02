@@ -215,7 +215,7 @@
             this.Dom = Dom;
         }
         Query(DomName) {
-            return this.$RCS_QueryChildren(this, DomName);
+            return this.$RCS_QueryChildrens(this, DomName);
         }
         Selector(Selector) {
             return this.Dom.querySelector(Selector);
@@ -223,12 +223,13 @@
         SelectorAll(Selector) {
             return this.Dom.querySelectorAll(Selector);
         }
-        $RCS_QueryChildren(TargetNode, DomName) {
+        $RCS_QueryChildrens(TargetNode, DomName) {
             if (DomName == null)
                 return null;
             DomName = this.Paths(DomName);
             if (DomName.length == 1)
                 DomName = DomName[0];
+            let Results = [];
             for (let Item of TargetNode.Children) {
                 if (Array.isArray(DomName)) {
                     let Names = [...DomName];
@@ -236,20 +237,24 @@
                     if (Item.DomName == FirstName) {
                         if (Names.length == 1)
                             Names = Names[0];
-                        let FindChildren = this.$RCS_QueryChildren(Item, Names);
-                        if (FindChildren != null)
-                            return FindChildren;
+                        let FindChildren = this.$RCS_QueryChildrens(Item, Names);
+                        if (FindChildren != null) {
+                            Results.push(...FindChildren);
+                            continue;
+                        }
                     }
                 }
                 else {
-                    if (Item.DomName == DomName)
-                        return Item;
+                    if (Item.DomName == DomName) {
+                        Results.push(Item);
+                        continue;
+                    }
                 }
-                let ChildrenResult = this.$RCS_QueryChildren(Item, DomName);
+                let ChildrenResult = this.$RCS_QueryChildrens(Item, DomName);
                 if (ChildrenResult != null)
-                    return ChildrenResult;
+                    Results.push(...ChildrenResult);
             }
-            return null;
+            return Results;
         }
     }
     class DomQueryer {
@@ -282,11 +287,10 @@
         }
         Using(DomName, UsingFunc, TargetNode) {
             TargetNode ??= this.$RootNode;
-            let QueryNode = TargetNode.Query(DomName);
-            if (QueryNode != null)
+            let QueryNodes = TargetNode.Query(DomName);
+            if (QueryNodes != null && QueryNodes.length > 0)
                 UsingFunc({
-                    QueryNode,
-                    Dom: QueryNode.Dom,
+                    QueryNodes,
                 });
             return this;
         }
@@ -644,7 +648,8 @@
             Option ??= {};
             Option.Clone ??= false;
             Option.CreateIfNull ??= false;
-            Option.DefaultValue ??= {};
+            if (Option.DefaultValue == null)
+                Option.DefaultValue = {};
             StorePath = this.ToJoin(StorePath);
             let FindStore = this.$RCS_GetStore(StorePath, this.Store, {
                 CreateIfNull: Option.CreateIfNull,
@@ -1167,7 +1172,6 @@
                 let FindPath = PropertyPaths.join('.');
                 SetStore = this.GetStore(FindPath, {
                     CreateIfNull: true,
-                    DefaultValue: {},
                 });
             }
             let SetProperty = this.$BaseAddProperty(SetStore, PropertyKey, Option);
@@ -1236,26 +1240,30 @@
             if (!Queryer.IsInited)
                 Queryer.Init();
             let Target = Option.Target;
-            Queryer.Using(DomName, ({ Dom }) => {
-                if (typeof (Target) == 'function') {
-                    Target = this.$GenerateEventFunction(DomName, Target, Command);
-                    if (Option.FuncArgs) {
-                        let Args = this.ToJoin(Option.FuncArgs, ',');
-                        Target += `(${Args})`;
+            Queryer.Using(DomName, ({ QueryNodes }) => {
+                for (let i = 0; i < QueryNodes.length; i++) {
+                    let NodeItem = QueryNodes[i];
+                    let Dom = NodeItem.Dom;
+                    if (typeof (Target) == 'function') {
+                        Target = this.$GenerateEventFunction(DomName, Target, Command);
+                        if (Option.FuncArgs) {
+                            let Args = this.ToJoin(Option.FuncArgs, ',');
+                            Target += `(${Args})`;
+                        }
+                        else if (Option.FuncAction) {
+                            Target += `()`;
+                        }
                     }
-                    else if (Option.FuncAction) {
-                        Target += `()`;
-                    }
+                    else
+                        Target = this.ToJoin(Target);
+                    if (Option.TargetHead)
+                        Target = Option.TargetHead + Target;
+                    if (Option.TargetTail)
+                        Target += Option.TargetTail;
+                    if (Option.CommandKey)
+                        Command += `:${Option.CommandKey}`;
+                    this.$SetAttribute(Dom, Command, Target);
                 }
-                else
-                    Target = this.ToJoin(Target);
-                if (Option.TargetHead)
-                    Target = Option.TargetHead + Target;
-                if (Option.TargetTail)
-                    Target += Option.TargetTail;
-                if (Option.CommandKey)
-                    Command += `:${Option.CommandKey}`;
-                this.$SetAttribute(Dom, Command, Target);
             });
         }
         $SetAttribute(Dom, AttrName, AttrValue) {

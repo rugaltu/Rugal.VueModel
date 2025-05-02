@@ -22,8 +22,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="6.0.24" />
-		<PackageReference Include="Microsoft.TypeScript.MSBuild" Version="5.8.1">
+		<PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="8.0.15" />
+		<PackageReference Include="Microsoft.TypeScript.MSBuild" Version="5.8.3">
 		  <PrivateAssets>all</PrivateAssets>
 		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
@@ -32,7 +32,6 @@
 
 	<ItemGroup>
 		<Folder Include="ClientApp\" />
-		<Folder Include="wwwroot\test\" />
 		<Folder Include="wwwroot\VueModel\dist\" />
 	</ItemGroup>
 
@@ -42,9 +41,6 @@
 	
 	
 	<ItemGroup>
-		<None Update="tsconfig.sys.json">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
 		<None Update="tsconfig.umd.json">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
@@ -52,8 +48,9 @@
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
 	</ItemGroup>
-	
+
 	<Target Name="TypeScriptCompileSystem" AfterTargets="Build">
+		<Exec Command="tsc --project tsconfig.types.json" />
 		<Exec Command="tsc --project tsconfig.esm.json" />
 		<Exec Command="tsc --project tsconfig.umd.json" />
 	</Target>

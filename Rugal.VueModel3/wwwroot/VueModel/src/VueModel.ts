@@ -246,8 +246,8 @@ class QueryNode extends FuncBase {
         this.Dom = Dom;
     }
 
-    public Query(DomName: PathType): QueryNode {
-        return this.$RCS_QueryChildren(this, DomName);
+    public Query(DomName: PathType): QueryNode[] {
+        return this.$RCS_QueryChildrens(this, DomName);
     }
     public Selector(Selector: string) {
         return this.Dom.querySelector(Selector);
@@ -255,7 +255,7 @@ class QueryNode extends FuncBase {
     public SelectorAll(Selector: string) {
         return this.Dom.querySelectorAll(Selector);
     }
-    protected $RCS_QueryChildren(TargetNode: QueryNode, DomName: PathType): QueryNode {
+    protected $RCS_QueryChildrens(TargetNode: QueryNode, DomName: PathType): QueryNode[] {
         if (DomName == null)
             return null;
 
@@ -263,6 +263,7 @@ class QueryNode extends FuncBase {
         if (DomName.length == 1)
             DomName = DomName[0];
 
+        let Results = [];
         for (let Item of TargetNode.Children) {
             if (Array.isArray(DomName)) {
                 let Names: PathType = [...DomName];
@@ -271,21 +272,25 @@ class QueryNode extends FuncBase {
                     if (Names.length == 1)
                         Names = Names[0];
 
-                    let FindChildren = this.$RCS_QueryChildren(Item, Names);
-                    if (FindChildren != null)
-                        return FindChildren;
+                    let FindChildren = this.$RCS_QueryChildrens(Item, Names);
+                    if (FindChildren != null) {
+                        Results.push(...FindChildren);
+                        continue;
+                    }
                 }
             }
             else {
-                if (Item.DomName == DomName)
-                    return Item;
+                if (Item.DomName == DomName) {
+                    Results.push(Item);
+                    continue;
+                }
             }
 
-            let ChildrenResult = this.$RCS_QueryChildren(Item, DomName);
+            let ChildrenResult = this.$RCS_QueryChildrens(Item, DomName);
             if (ChildrenResult != null)
-                return ChildrenResult;
+                Results.push(...ChildrenResult);
         }
-        return null;
+        return Results;
     }
 }
 class DomQueryer {
@@ -318,25 +323,23 @@ class DomQueryer {
         return this;
     }
 
-    public Query(DomName: string): QueryNode;
-    public Query(DomName: string, TargetNode: QueryNode): QueryNode;
-    public Query(DomName: string, TargetNode?: QueryNode): QueryNode {
+    public Query(DomName: PathType): QueryNode[];
+    public Query(DomName: PathType, TargetNode: QueryNode): QueryNode[];
+    public Query(DomName: PathType, TargetNode?: QueryNode): QueryNode[] {
         TargetNode ??= this.$RootNode;
         return TargetNode.Query(DomName);
     }
 
-    public Using(DomName: PathType, UsingFunc: (Prop: { QueryNode: QueryNode, Dom: HTMLElement }) => void, TargetNode?: QueryNode) {
+    public Using(DomName: PathType, UsingFunc: (Prop: { QueryNodes: QueryNode[] }) => void, TargetNode?: QueryNode) {
         TargetNode ??= this.$RootNode;
-        let QueryNode = TargetNode.Query(DomName);
-        if (QueryNode != null)
+        let QueryNodes = TargetNode.Query(DomName);
+        if (QueryNodes != null && QueryNodes.length > 0)
             UsingFunc({
-                QueryNode,
-                Dom: QueryNode.Dom,
+                QueryNodes,
             });
 
         return this;
     }
-
 
     protected $RCS_Visit(DomNode: HTMLElement, Parent: QueryNode, ElementDeep: number) {
         let NextNode = this.$AddNode(DomNode, Parent, ElementDeep);
@@ -504,7 +507,7 @@ type FilesType = File | File[] | FileItem | FileItem[];
 type FormDataFileType = FilesType |
     Record<string, File> | Record<string, FileItem> |
     Record<string, File[]> | Record<string, FileItem[]>;
-type HttpMethod = 'GET' | 'POST';
+type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 type ApiCallQuery = string | object;
 type ApiCallBody = Record<string, any>;
 type ApiCallFile = FormDataFileType;
@@ -530,9 +533,9 @@ type FileStoreType = Record<string, FileItem[]>;
 type StoreType = Record<string, any> & {
     FileStore: FileStoreType,
 };
-type GetStoreOption = {
+type GetStoreOption<TStore = any> = {
     CreateIfNull?: boolean,
-    DefaultValue?: object,
+    DefaultValue?: TStore,
     Clone?: boolean,
 };
 
@@ -825,7 +828,7 @@ class ApiStore extends FuncBase {
     //#region Store Control
 
     //#region Public Data Store Contorl
-    public UpdateStore(StorePath: PathType, StoreData: any) {
+    public UpdateStore<TStore = any>(StorePath: PathType, StoreData: TStore) {
         StorePath = this.ToJoin(StorePath);
         this.$RCS_SetStore(StorePath, StoreData, this.Store, {
             IsDeepSet: true,
@@ -836,7 +839,7 @@ class ApiStore extends FuncBase {
         });
         return this;
     }
-    public AddStore(StorePath: PathType, StoreData: any = null) {
+    public AddStore<TStore = any>(StorePath: PathType, StoreData: TStore = null) {
         StorePath = this.ToJoin(StorePath);
         if (this.GetStore(StorePath) != null)
             return this;
@@ -850,7 +853,7 @@ class ApiStore extends FuncBase {
         });
         return this;
     }
-    public SetStore(StorePath: PathType, StoreData: any) {
+    public SetStore<TStore = any>(StorePath: PathType, StoreData: TStore) {
         StorePath = this.ToJoin(StorePath);
         this.$RCS_SetStore(StorePath, StoreData, this.Store, {
             IsDeepSet: false,
@@ -861,19 +864,20 @@ class ApiStore extends FuncBase {
         });
         return this;
     }
-    public GetStore<TStore = any>(StorePath: PathType, Option?: GetStoreOption | boolean): TStore {
+    public GetStore<TStore = any>(StorePath: PathType, Option?: GetStoreOption<TStore> | boolean): TStore {
         if (typeof Option == 'boolean')
             Option = { Clone: Option };
 
         Option ??= {};
         Option.Clone ??= false;
         Option.CreateIfNull ??= false;
-        Option.DefaultValue ??= {};
+        if (Option.DefaultValue == null)
+            Option.DefaultValue = {} as any;
 
         StorePath = this.ToJoin(StorePath);
         let FindStore = this.$RCS_GetStore(StorePath, this.Store, {
             CreateIfNull: Option.CreateIfNull,
-            DefaultValue: Option.DefaultValue,
+            DefaultValue: Option.DefaultValue as any,
         });
 
         if (Option.Clone) {
@@ -1499,7 +1503,6 @@ class VueCommand extends VueStore {
             let FindPath = PropertyPaths.join('.');
             SetStore = this.GetStore(FindPath, {
                 CreateIfNull: true,
-                DefaultValue: {},
             });
         }
         let SetProperty = this.$BaseAddProperty(SetStore, PropertyKey, Option);
@@ -1580,32 +1583,36 @@ class VueCommand extends VueStore {
             Queryer.Init();
 
         let Target = Option.Target;
-        Queryer.Using(DomName, ({ Dom }) => {
+        Queryer.Using(DomName, ({ QueryNodes }) => {
+            for (let i = 0; i < QueryNodes.length; i++) {
+                let NodeItem = QueryNodes[i];
+                let Dom = NodeItem.Dom;
+                if (typeof (Target) == 'function') {
+                    Target = this.$GenerateEventFunction(DomName, Target, Command);
 
-            if (typeof (Target) == 'function') {
-                Target = this.$GenerateEventFunction(DomName, Target, Command);
+                    if (Option.FuncArgs) {
+                        let Args = this.ToJoin(Option.FuncArgs, ',');
+                        Target += `(${Args})`;
+                    }
+                    else if (Option.FuncAction) {
+                        Target += `()`;
+                    }
+                }
+                else
+                    Target = this.ToJoin(Target);
 
-                if (Option.FuncArgs) {
-                    let Args = this.ToJoin(Option.FuncArgs, ',');
-                    Target += `(${Args})`;
-                }
-                else if (Option.FuncAction) {
-                    Target += `()`;
-                }
+                if (Option.TargetHead)
+                    Target = Option.TargetHead + Target;
+
+                if (Option.TargetTail)
+                    Target += Option.TargetTail;
+
+                if (Option.CommandKey)
+                    Command += `:${Option.CommandKey}`;
+
+                this.$SetAttribute(Dom, Command, Target);
             }
-            else
-                Target = this.ToJoin(Target);
 
-            if (Option.TargetHead)
-                Target = Option.TargetHead + Target;
-
-            if (Option.TargetTail)
-                Target += Option.TargetTail;
-
-            if (Option.CommandKey)
-                Command += `:${Option.CommandKey}`;
-
-            this.$SetAttribute(Dom, Command, Target);
         });
     }
     protected $SetAttribute(Dom: HTMLElement, AttrName: string, AttrValue: string) {

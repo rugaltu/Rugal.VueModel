@@ -35,10 +35,10 @@ declare class QueryNode extends FuncBase {
     ElementDeep: number;
     NodeDeep: number;
     constructor(Dom: HTMLElement);
-    Query(DomName: PathType): QueryNode;
+    Query(DomName: PathType): QueryNode[];
     Selector(Selector: string): Element;
     SelectorAll(Selector: string): NodeListOf<Element>;
-    protected $RCS_QueryChildren(TargetNode: QueryNode, DomName: PathType): QueryNode;
+    protected $RCS_QueryChildrens(TargetNode: QueryNode, DomName: PathType): QueryNode[];
 }
 declare class DomQueryer {
     $Root: HTMLElement;
@@ -49,11 +49,10 @@ declare class DomQueryer {
     WithRoot(Filter: string): this;
     WithDomName(QueryDomName: string): this;
     Init(IsReInited?: boolean): this;
-    Query(DomName: string): QueryNode;
-    Query(DomName: string, TargetNode: QueryNode): QueryNode;
+    Query(DomName: PathType): QueryNode[];
+    Query(DomName: PathType, TargetNode: QueryNode): QueryNode[];
     Using(DomName: PathType, UsingFunc: (Prop: {
-        QueryNode: QueryNode;
-        Dom: HTMLElement;
+        QueryNodes: QueryNode[];
     }) => void, TargetNode?: QueryNode): this;
     protected $RCS_Visit(DomNode: HTMLElement, Parent: QueryNode, ElementDeep: number): void;
     protected $AddNode(Dom: HTMLElement, Parent: QueryNode, ElementDeep: number): QueryNode;
@@ -122,7 +121,7 @@ declare class FileItem {
 type FileConvertType = 'none' | 'base64' | 'buffer';
 type FilesType = File | File[] | FileItem | FileItem[];
 type FormDataFileType = FilesType | Record<string, File> | Record<string, FileItem> | Record<string, File[]> | Record<string, FileItem[]>;
-type HttpMethod = 'GET' | 'POST';
+type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 type ApiCallQuery = string | object;
 type ApiCallBody = Record<string, any>;
 type ApiCallFile = FormDataFileType;
@@ -147,9 +146,9 @@ type FileStoreType = Record<string, FileItem[]>;
 type StoreType = Record<string, any> & {
     FileStore: FileStoreType;
 };
-type GetStoreOption = {
+type GetStoreOption<TStore = any> = {
     CreateIfNull?: boolean;
-    DefaultValue?: object;
+    DefaultValue?: TStore;
     Clone?: boolean;
 };
 type EventArg_AddApi = ApiStoreValue;
@@ -204,10 +203,10 @@ declare class ApiStore extends FuncBase {
     EventAdd_SetStore(EventFunc: (EventArg: EventArg_SetStore) => void): this;
     protected $EventAdd<EventArgType>(EventName: string, OnFunc: (EventArg: EventArgType) => void): void;
     protected $EventTrigger<EventArgType>(EventName: string, EventArg: EventArgType): void;
-    UpdateStore(StorePath: PathType, StoreData: any): this;
-    AddStore(StorePath: PathType, StoreData?: any): this;
-    SetStore(StorePath: PathType, StoreData: any): this;
-    GetStore<TStore = any>(StorePath: PathType, Option?: GetStoreOption | boolean): TStore;
+    UpdateStore<TStore = any>(StorePath: PathType, StoreData: TStore): this;
+    AddStore<TStore = any>(StorePath: PathType, StoreData?: TStore): this;
+    SetStore<TStore = any>(StorePath: PathType, StoreData: TStore): this;
+    GetStore<TStore = any>(StorePath: PathType, Option?: GetStoreOption<TStore> | boolean): TStore;
     ClearStore(StorePath: PathType): this;
     protected $RCS_GetStore(StorePath: string, FindStore: any, Option: {
         CreateIfNull: boolean;

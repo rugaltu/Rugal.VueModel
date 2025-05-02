@@ -3,5 +3,4 @@ const Initer = require('@rugal.tu/gulp-initer');
 
 Initer
     .AddFolder_Js('vue/dist')
-    .AddFolder_Js('systemjs/dist')
     .InitTask();

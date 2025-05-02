@@ -1,10 +1,10 @@
 {
   "name": "@rugal.tu/vuemodel3",
-  "version": "1.0.0-beta.78",
+  "version": "1.0.0-beta.81",
   "publishConfig": {
     "access": "public"
   },
-  "types": "src/types/VueModel.d.ts",
+  "types": "src/VueModel.d.ts",
   "main": "src/index.js",
   "files": [
     "dist/",

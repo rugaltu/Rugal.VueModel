@@ -4,18 +4,18 @@
     "noImplicitAny": true,
     "removeComments": false,
     "sourceMap": true,
-    "declaration": false,
+    "declaration": true,
+    "emitDeclarationOnly": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "target": "ESNext",
     "module": "ESNext",
-    "moduleResolution": "node",
-    "baseUrl": ".",
-    "paths": {
-      "vuemodel3": [ "wwwroot/VueModel/src/VueModel.d.ts" ]
-    }
+    "moduleResolution": "node"
   },
   "exclude": [
     "node_modules"
+  ],
+  "include": [
+    "wwwroot/VueModel/src/VueModel.ts"
   ]
 }
