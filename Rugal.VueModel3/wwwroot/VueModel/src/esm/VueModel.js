@@ -1287,8 +1287,15 @@ class VueCommand extends VueStore {
         return SetProperty;
     }
     $ConvertCommandOption(DomName, Option) {
-        if (Option == null && this.IsPathType(DomName))
-            return { Target: DomName, FuncAction: true };
+        if (Option == null) {
+            if (this.IsPathType(DomName))
+                return { Target: DomName, FuncAction: false };
+            else {
+                let Nodes = DomName;
+                let NodeNames = Nodes.map(Item => Item.DomName);
+                return { Target: NodeNames, FuncAction: false };
+            }
+        }
         if (typeof Option == 'string' || typeof Option == 'function' || Array.isArray(Option))
             return { Target: Option, FuncAction: true };
         Option.FuncAction ??= true;

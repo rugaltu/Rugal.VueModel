@@ -1665,8 +1665,15 @@ class VueCommand extends VueStore {
 
     //#region Protected Process
     protected $ConvertCommandOption(DomName: PathType | QueryNode[], Option?: AddCommandOption): CommandOption {
-        if (Option == null && this.IsPathType(DomName))
-            return { Target: DomName as PathType, FuncAction: true };
+        if (Option == null) {
+            if (this.IsPathType(DomName))
+                return { Target: DomName as PathType, FuncAction: false };
+            else {
+                let Nodes = DomName as QueryNode[];
+                let NodeNames = Nodes.map(Item => Item.DomName);
+                return { Target: NodeNames, FuncAction: false };
+            }
+        }
 
         if (typeof Option == 'string' || typeof Option == 'function' || Array.isArray(Option))
             return { Target: Option, FuncAction: true };
