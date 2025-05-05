@@ -49,7 +49,7 @@
 		</None>
 	</ItemGroup>
 
-	<Target Name="TypeScriptCompileSystem" AfterTargets="Build">
+	<Target Name="TypeScriptCompileSystem" BeforeTargets="Build">
 		<Exec Command="tsc --project tsconfig.types.json" />
 		<Exec Command="tsc --project tsconfig.esm.json" />
 		<Exec Command="tsc --project tsconfig.umd.json" />

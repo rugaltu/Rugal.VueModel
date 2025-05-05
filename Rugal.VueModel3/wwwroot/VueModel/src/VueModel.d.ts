@@ -24,9 +24,15 @@ declare class FuncBase {
     ClearUrl(ApiUrl: string): string;
     ToJoin(Value: any, Separator?: string): string;
     Paths(...Value: any[]): any[];
+    IsPathType(CheckPathType: any): boolean;
     protected $Throw(Message: string): void;
     protected $Error(Data: any): void;
 }
+type QueryModeType = 'Multi' | 'DeepMulti';
+type QueryOption = {
+    Mode: QueryModeType;
+    TargetNode?: QueryNode;
+};
 declare class QueryNode extends FuncBase {
     Dom: HTMLElement;
     DomName: string;
@@ -35,10 +41,10 @@ declare class QueryNode extends FuncBase {
     ElementDeep: number;
     NodeDeep: number;
     constructor(Dom: HTMLElement);
-    Query(DomName: PathType): QueryNode[];
+    Query(DomName: PathType, Option?: QueryOption): QueryNode[];
     Selector(Selector: string): Element;
     SelectorAll(Selector: string): NodeListOf<Element>;
-    protected $RCS_QueryChildrens(TargetNode: QueryNode, DomName: PathType): QueryNode[];
+    protected $RCS_QueryChildrens(TargetNode: QueryNode, DomName: PathType, Option: QueryOption): QueryNode[];
 }
 declare class DomQueryer {
     $Root: HTMLElement;
@@ -49,8 +55,7 @@ declare class DomQueryer {
     WithRoot(Filter: string): this;
     WithDomName(QueryDomName: string): this;
     Init(IsReInited?: boolean): this;
-    Query(DomName: PathType): QueryNode[];
-    Query(DomName: PathType, TargetNode: QueryNode): QueryNode[];
+    Query(DomName: PathType, Option?: QueryOption | QueryNode): QueryNode[];
     Using(DomName: PathType, UsingFunc: (Prop: {
         QueryNodes: QueryNode[];
     }) => void, TargetNode?: QueryNode): this;
@@ -78,34 +83,6 @@ export type ApiCallback = {
     OnSuccess?: Function;
     OnError?: Function;
     OnComplete?: Function;
-};
-export type TreeSetType = {
-    'v-text'?: PathType | Function | TreeSetOption;
-    'v-model'?: PathType;
-    'v-for'?: PathType | Function | TreeSetOption;
-    'v-if'?: PathType | Function | TreeSetOption;
-    'v-show'?: PathType | Function | TreeSetOption;
-    'v-bind'?: PathType | Function | TreeSetOption;
-    'v-on:change'?: PathType | Function | TreeSetOption;
-    'v-on:click'?: PathType | Function | TreeSetOption;
-    'watch'?: Function;
-    [VModelCmd: `v-model:${string}`]: PathType | TreeSetOption;
-    [VForCmd: `v-for:${string}`]: PathType | Function | TreeSetOption;
-    [VBindCmd: `v-bind:${string}`]: PathType | Function | TreeSetOption;
-    [VOnCmd: `v-on:${string}`]: PathType | Function | TreeSetOption;
-    [VSlotCmd: `v-slot:${string}`]: string;
-    [FuncCmd: `func:${string}`]: Function;
-    [DomName: `:${string}`]: TreeSetType;
-};
-export type TreeSetOption = CommandOption;
-export type AddCommandOption = PathType | Function | CommandOption;
-type CommandOption = {
-    CommandKey?: string;
-    Target: PathType | Function;
-    TargetHead?: PathType;
-    TargetTail?: PathType;
-    FuncAction?: boolean;
-    FuncArgs?: PathType;
 };
 declare class FileItem {
     FileId: string;
@@ -246,39 +223,76 @@ declare class VueStore extends ApiStore {
     ForceUpdate(): this;
     Refs(RefName: string): any;
 }
+type CommandOption = {
+    CommandKey?: string;
+    Target: PathType | Function;
+    TargetHead?: PathType;
+    TargetTail?: PathType;
+    FuncAction?: boolean;
+    FuncArgs?: PathType;
+};
+export type TreeSetType = {
+    'v-text'?: PathType | Function | TreeSetOption;
+    'v-model'?: PathType;
+    'v-for'?: PathType | Function | TreeSetOption;
+    'v-if'?: PathType | Function | TreeSetOption;
+    'v-else'?: null;
+    'v-else-if'?: PathType | Function | TreeSetOption;
+    'v-show'?: PathType | Function | TreeSetOption;
+    'v-bind'?: PathType | Function | TreeSetOption;
+    'v-on:change'?: PathType | Function | TreeSetOption;
+    'v-on:click'?: PathType | Function | TreeSetOption;
+    'watch'?: Function;
+    [VModelCmd: `v-model:${string}`]: PathType | TreeSetOption;
+    [VForCmd: `v-for:${string}`]: PathType | Function | TreeSetOption;
+    [VBindCmd: `v-bind:${string}`]: PathType | Function | TreeSetOption;
+    [VOnCmd: `v-on:${string}`]: PathType | Function | TreeSetOption;
+    [VSlotCmd: `v-slot:${string}`]: string;
+    [FuncCmd: `func:${string}`]: Function;
+    [DomName: `:${string}`]: TreeSetType;
+};
+export type TreeSetOption = CommandOption;
+export type AddCommandOption = PathType | Function | CommandOption;
 type AddV_ModelOption = {
     ModelValue?: string;
     DefaultValue?: any;
 };
-type AddV_FilePickerOption = {
+type AddV_FilePickerOption = string | {
     StorePath: string;
     Accept?: string | string[];
     Multiple?: boolean;
     ConvertType?: FileConvertType | FileConvertType[];
 };
+type AddV_TreeOption = {
+    UseDeepQuery?: boolean;
+    UseTreePath?: boolean;
+    UseDomStore?: boolean;
+};
 declare class VueCommand extends VueStore {
     protected $IsInited: boolean;
     $QueryDomName: string;
-    WithQueryAttribute(QueryDomName: string): this;
-    AddV_Text(DomName: PathType, Option: AddCommandOption): this;
-    AddV_Model(DomName: PathType, StorePath: PathType, Option?: AddV_ModelOption): this;
-    AddV_Slot(DomName: PathType, SlotKey: string, StorePath: string): this;
-    AddV_For(DomName: PathType, Option?: AddCommandOption, ForKey?: PathType): this;
-    AddV_If(DomName: PathType, Option: AddCommandOption): this;
-    AddV_Show(DomName: PathType, Option: AddCommandOption): this;
-    AddV_Bind(DomName: PathType, BindKey: string, Option: AddCommandOption): this;
-    AddV_On(DomName: PathType, EventName: string, Option: AddCommandOption): this;
-    AddV_OnChange(DomName: PathType, ChangeFunc: AddCommandOption): this;
-    AddV_Click(DomName: PathType, Option: AddCommandOption, Args?: string): this;
-    AddV_Function(FuncName: PathType, Func: Function): this;
+    WithQueryDomName(QueryDomName: string): this;
+    AddV_Text(DomName: PathType | QueryNode[], Option: AddCommandOption): this;
+    AddV_Model(DomName: PathType | QueryNode[], StorePath: PathType, Option?: AddV_ModelOption): this;
+    AddV_Slot(DomName: PathType | QueryNode[], SlotKey: string, StorePath: PathType): this;
+    AddV_For(DomName: PathType | QueryNode[], Option?: AddCommandOption, ForKey?: PathType): this;
+    AddV_If(DomName: PathType | QueryNode[], Option: AddCommandOption): this;
+    AddV_ElseIf(DomName: PathType | QueryNode[], Option: AddCommandOption): this;
+    AddV_Else(DomName: PathType | QueryNode[]): this;
+    AddV_Show(DomName: PathType | QueryNode[], Option: AddCommandOption): this;
+    AddV_Bind(DomName: PathType | QueryNode[], BindKey: string, Option: AddCommandOption): this;
+    AddV_On(DomName: PathType | QueryNode[], EventName: string, Option: AddCommandOption): this;
     AddV_Watch(WatchPath: PathType, Func: Function, Deep?: boolean, Option?: any): this;
-    AddV_FilePicker(DomName: PathType, Option: string | AddV_FilePickerOption): this;
-    AddV_Tree(TreeRoot: PathType, TreeSet: TreeSetType): this;
+    AddV_Function(FuncName: PathType, Func: Function): this;
+    AddV_OnChange(DomName: PathType | QueryNode[], ChangeFunc: AddCommandOption): this;
+    AddV_Click(DomName: PathType | QueryNode[], Option: AddCommandOption, Args?: string): this;
+    AddV_FilePicker(DomName: PathType | QueryNode[], Option: AddV_FilePickerOption): this;
+    AddV_Tree(TreeRoot: PathType, TreeSet: TreeSetType, Option?: AddV_TreeOption): this;
     private $ParseTreeSet;
     AddV_Property(PropertyPath: PathType, Option: AddPropertyType): this;
     protected $BaseAddProperty(PropertyStore: StoreType, PropertyKey: string, Option: AddPropertyType): StoreType;
-    protected $ConvertCommandOption(DomName: PathType, Option?: AddCommandOption): CommandOption;
-    protected $AddCommand(DomName: PathType, Command: string, Option: CommandOption): void;
+    protected $ConvertCommandOption(DomName: PathType | QueryNode[], Option?: AddCommandOption): CommandOption;
+    protected $AddCommand(DomName: PathType | QueryNode[], Command: string, Option: CommandOption): void;
     protected $SetAttribute(Dom: HTMLElement, AttrName: string, AttrValue: string): void;
     protected $RandomFuncName(BaseFuncName: string): string;
     protected $GenerateEventFunction(DomName: PathType, EventFunc: Function, Command: string): string;

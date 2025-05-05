@@ -2,14 +2,19 @@
 //import { ApiStore } from '../VueModel/src/testVueModel';
 import { Queryer, Model } from 'vuemodel3';
 
-Queryer.WithDomName('pv-name')
-    .Init();
-let B = Queryer.Query(['Root', 'B']);
-let C = Queryer.Query(['Root', 'C']);
-
-console.log(B);
-console.log(C);
-
+Model.WithQueryDomName('pv-name')
+    .UpdateStore('C', 'aaa')
+    .AddV_Tree('Root', {
+        ':B': {
+            'v-else': null,
+        },
+        ':C': {
+            'v-else-if': 'A == 1',
+        }
+    }, {
+        UseTreePath: false,
+    })
+    //.Init();
 
 //Model
 //    .WithQueryAttribute('pv-name')
