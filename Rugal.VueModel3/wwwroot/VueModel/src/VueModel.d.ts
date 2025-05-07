@@ -8,7 +8,7 @@ declare class FuncBase {
     WithDateTextJoinChar(JoinChar: string): this;
     GenerateId(): string;
     GenerateIdReplace(FillString: string): string;
-    protected $BaseGenerateUrl(Url: PathBase, UrlParam?: string | Record<string, any>): string;
+    GenerateUrl(Url: PathBase, UrlParam?: string | Record<string, any>): string;
     protected $BaseNavigateTo(Url: string): void;
     NavigateToRoot(): this;
     NavigateTo(Url: PathBase, UrlParam?: string | Record<string, any>): this;
@@ -168,6 +168,7 @@ declare class ApiStore extends FuncBase {
     WithExportSuccessStore(ExportSuccessStoreFunc: (Result: any, Reponse: Response) => any): this;
     WithConvertTo_FormParam(ConvertToFunc: (ConvertData: object, Form: FormData) => object): this;
     ClearConvertTo_FormParam(): this;
+    ConvertTo_ApiUrl(Url: string, Param?: string | object): string;
     AddApi(AddApi: Record<string, AddApiContent>): this;
     ApiCall(ApiKey: string, Option?: ApiCallOption): this;
     ApiCall_Form(ApiKey: string, Option?: ApiCallOption): this;
@@ -200,7 +201,6 @@ declare class ApiStore extends FuncBase {
     ClearFile(FileStoreKey: string): this;
     protected $ProcessApiReturn(ApiResponse: Response): Promise<any>;
     NavigateToRoot(): this;
-    protected $ConvertTo_ApiDomainUrl(Url: string, Param?: string | object): string;
     protected $ConvertTo_FormData(ConvertFormData: FormData | Record<string, any>, Form: FormData): FormData;
     protected $ConvertTo_FormFile(FileParam: FormDataFileType, Form: FormData): FormData;
     protected $AppendFileToFormData(FileKey: string, Form: FormData, FileData: FilesType): FormData;

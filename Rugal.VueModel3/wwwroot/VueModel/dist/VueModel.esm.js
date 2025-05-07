@@ -25,7 +25,7 @@ class FuncBase {
         let Id = this.GenerateId().replaceAll('-', FillString);
         return Id;
     }
-    $BaseGenerateUrl(Url, UrlParam = null) {
+    GenerateUrl(Url, UrlParam = null) {
         Url = this.Paths(Url);
         if (Url == null || Url.length == 0 || Url[0].length == 0)
             this.$Throw('Url can not be null or empty');
@@ -49,7 +49,7 @@ class FuncBase {
         return this;
     }
     NavigateTo(Url, UrlParam = null) {
-        let TargetUrl = this.$BaseGenerateUrl(Url, UrlParam);
+        let TargetUrl = this.GenerateUrl(Url, UrlParam);
         this.$BaseNavigateTo(TargetUrl);
         return this;
     }
@@ -61,7 +61,7 @@ class FuncBase {
         Link.click();
     }
     NavigateBlank(Url, UrlParam = null) {
-        let TargetUrl = this.$BaseGenerateUrl(Url, UrlParam);
+        let TargetUrl = this.GenerateUrl(Url, UrlParam);
         this.$BaseNavigateBlank(TargetUrl);
         return this;
     }
@@ -488,6 +488,14 @@ class ApiStore extends FuncBase {
         this.#Func_ConvertTo_FormData = [];
         return this;
     }
+    ConvertTo_ApiUrl(Url, Param = null) {
+        let ApiDomainUrl = Url;
+        if (this.ApiDomain != null && !ApiDomainUrl.includes('http'))
+            ApiDomainUrl = `${this.ApiDomain}/${this.ClearUrl(ApiDomainUrl)}`;
+        if (Param != null)
+            ApiDomainUrl = `${ApiDomainUrl}?${this.ConvertTo_UrlQuery(Param)}`;
+        return ApiDomainUrl;
+    }
     AddApi(AddApi) {
         for (let ApiKey in AddApi) {
             let ApiOption = AddApi[ApiKey];
@@ -522,7 +530,7 @@ class ApiStore extends FuncBase {
         if (typeof (ParamFile) == 'function')
             ParamFile = ParamFile();
         let IsUpdateStore = Option?.IsUpdateStore ?? Api.IsUpdateStore ?? true;
-        let Url = this.$ConvertTo_ApiDomainUrl(Api.Url, ParamQuery);
+        let Url = this.ConvertTo_ApiUrl(Api.Url, ParamQuery);
         let FetchRequest = this.$GenerateFetchRequest(Api, ParamBody, ParamFile, IsFormRequest);
         Api.OnCalling?.call(this, FetchRequest);
         Option?.OnCalling?.call(this, FetchRequest);
@@ -582,7 +590,7 @@ class ApiStore extends FuncBase {
         }
         else {
             Header.set('content-type', 'application/json');
-            if (Api.Method == 'POST')
+            if (Api.Method != 'GET')
                 FetchRequest.body = JSON.stringify(ParamBody ?? {});
         }
         return FetchRequest;
@@ -814,29 +822,18 @@ class ApiStore extends FuncBase {
     }
     $ProcessApiReturn(ApiResponse) {
         let GetContentType = ApiResponse.headers.get("content-type");
-        let ConvertSuccess = null;
-        if (GetContentType && GetContentType.includes('application/json')) {
-            ConvertSuccess = ApiResponse.json()
-                .then(GetJson => GetJson);
+        if (GetContentType.includes('application/json')) {
+            return ApiResponse.json().then(GetJson => GetJson);
         }
-        else {
-            ConvertSuccess = ApiResponse.text()
-                .then(GetText => GetText);
+        if (GetContentType.includes('text')) {
+            return ApiResponse.text().then(GetText => GetText);
         }
-        return ConvertSuccess;
+        return new Promise(reslove => { reslove(ApiResponse); });
     }
     NavigateToRoot() {
         let RootUrl = this.#RootRoute ?? '/';
         super.$BaseNavigateTo(RootUrl);
         return this;
-    }
-    $ConvertTo_ApiDomainUrl(Url, Param = null) {
-        let ApiDomainUrl = Url;
-        if (this.ApiDomain != null && !ApiDomainUrl.includes('http'))
-            ApiDomainUrl = `${this.ApiDomain}/${this.ClearUrl(ApiDomainUrl)}`;
-        if (Param != null)
-            ApiDomainUrl = `${ApiDomainUrl}?${this.ConvertTo_UrlQuery(Param)}`;
-        return ApiDomainUrl;
     }
     $ConvertTo_FormData(ConvertFormData, Form) {
         Form ??= new FormData();
