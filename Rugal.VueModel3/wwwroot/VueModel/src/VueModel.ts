@@ -1750,17 +1750,38 @@ class VueCommand extends VueStore {
     //#endregion
 }
 class VueModel extends VueCommand {
+    $NativeWarn: (...Message: any[]) => void;
+    $IsEnableVueWarn: boolean;
     $MountId: string = null;
     Id: string;
+
     constructor() {
         super();
         this.Id = this.GenerateId();
         this.$MountId = 'app';
+        this.WithVueWarn(false);
     }
 
     //#region With Method
     public WithMountId(MountId: string) {
         this.$MountId = MountId;
+        return this;
+    }
+    public WithVueWarn(Enable: boolean) {
+        this.$IsEnableVueWarn = Enable;
+        this.$NativeWarn = console.warn;
+        console.warn = (...Message: any[]) => {
+            if (Message == null)
+                return;
+
+            if (Message.length == 0)
+                return;
+
+            if (Message[0].toLowerCase().includes('[vue warn]') && this.$IsEnableVueWarn == false)
+                return;
+
+            this.$NativeWarn(Message);
+        }
         return this;
     }
     //#endregion

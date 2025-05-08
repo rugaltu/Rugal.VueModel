@@ -298,10 +298,13 @@ declare class VueCommand extends VueStore {
     protected $GenerateEventFunction(DomName: PathType, EventFunc: Function, Command: string): string;
 }
 declare class VueModel extends VueCommand {
+    $NativeWarn: (...Message: any[]) => void;
+    $IsEnableVueWarn: boolean;
     $MountId: string;
     Id: string;
     constructor();
     WithMountId(MountId: string): this;
+    WithVueWarn(Enable: boolean): this;
     Init(): this;
     Using(UseFunc?: () => void): this;
 }
