@@ -692,6 +692,8 @@ class ApiStore extends FuncBase {
     }
     ClearStore(StorePath) {
         let TargetStore = this.GetStore(StorePath);
+        if (TargetStore == null)
+            return this;
         let AllProperty = Object.getOwnPropertyNames(TargetStore);
         for (let Key of AllProperty) {
             if (Key.match(/^\$/g))
