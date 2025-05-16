@@ -4,6 +4,13 @@ import { Queryer, Model } from 'vuemodel3';
 
 Model.WithQueryDomName('pv-name')
     .UpdateStore('C', 'aaa')
+    .UpdateStore('Test.A', null)
+    .AddV_Watch('Test.A', (Value: any) => {
+        alert('a');
+    }, true)
+    .AddV_Watch('Test.A', (Value: any) => {
+        alert('b');
+    })
     .AddV_Tree('Root', {
         ':B': {
             'v-else': null,
@@ -14,7 +21,7 @@ Model.WithQueryDomName('pv-name')
     }, {
         UseTreePath: false,
     })
-    //.Init();
+    .Init();
 
 //Model
 //    .WithQueryAttribute('pv-name')

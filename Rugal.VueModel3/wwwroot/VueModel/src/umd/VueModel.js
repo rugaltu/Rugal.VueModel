@@ -4,7 +4,7 @@
         if (v !== undefined) module.exports = v;
     }
     else if (typeof define === "function" && define.amd) {
-        define(["require", "exports", "vue"], factory);
+        define(["require", "exports", "vue", "vue"], factory);
     }
 })(function (require, exports) {
     "use strict";
@@ -433,7 +433,7 @@
         $ApiStore = {};
         constructor() {
             super();
-            this.UseFormJsonBody();
+            this.SetStore('api', this.$ApiStore);
         }
         get ApiDomain() {
             if (this.#ApiDomain == null)
@@ -546,6 +546,7 @@
             let IsUpdateStore = Option?.IsUpdateStore ?? Api.IsUpdateStore ?? true;
             let Url = this.ConvertTo_ApiUrl(Api.Url, ParamQuery);
             let FetchRequest = this.$GenerateFetchRequest(Api, ParamBody, ParamFile, IsFormRequest);
+            Api.IsCalling = true;
             Api.OnCalling?.call(this, FetchRequest);
             Option?.OnCalling?.call(this, FetchRequest);
             fetch(Url, FetchRequest)
@@ -560,18 +561,24 @@
                     let StoreKey = Api.ApiKey;
                     this.UpdateStore(StoreKey, ConvertResult);
                 }
+                Api.IsSuccess = true;
+                Api.IsError = false;
                 Api.OnSuccess?.call(this, ConvertResult, ApiResponse);
                 Option?.OnSuccess?.call(this, ConvertResult, ApiResponse);
                 this.#OnSuccess?.call(this, ConvertResult, ApiResponse);
                 return { ConvertResult, ApiResponse };
             })
                 .catch(ex => {
+                Api.IsError = true;
+                Api.IsSuccess = false;
                 this.$Error(ex.message);
                 Api.OnError?.call(this, ex);
                 Option?.OnError?.call(this, ex);
                 this.#OnError?.call(this, ex);
             })
                 .then(Result => {
+                Api.IsCalling = false;
+                Api.IsComplete = true;
                 if (Result instanceof Object) {
                     Api.OnComplete?.call(this, Result.ConvertResult, Result.ApiResponse);
                     Option?.OnComplete?.call(this, Result.ConvertResult, Result.ApiResponse);
@@ -900,13 +907,14 @@
     }
     exports.ApiStore = ApiStore;
     const vue_1 = require("vue");
+    const vue_2 = require("vue");
     class VueStore extends ApiStore {
         $VueProxy = null;
         $VueOption = {
             methods: {},
             components: {},
-            watch: {},
             computed: {},
+            watch: {},
         };
         $VueApp = null;
         $VueUse = [];
@@ -1034,8 +1042,10 @@
             this.$AddCommand(DomName, 'v-bind', SetOption);
             return this;
         }
-        AddV_On(DomName, EventName, Option) {
+        AddV_On(DomName, EventName, Option, Args) {
             let SetOption = this.$ConvertCommandOption(DomName, Option);
+            if (Args)
+                SetOption.FuncArgs = Args;
             SetOption.FuncAction = false;
             SetOption.CommandKey = EventName;
             this.$AddCommand(DomName, `v-on`, SetOption);
@@ -1047,7 +1057,10 @@
                 deep: Deep,
                 ...Option,
             };
-            this.$VueOption.watch[this.ToJoin(WatchPath)] = SetWatch;
+            Model.WithMounted(() => {
+                Model.AddStore(WatchPath);
+                (0, vue_1.watch)(() => Model.GetStore(WatchPath), Func, SetWatch);
+            });
             return this;
         }
         AddV_Function(FuncName, Func) {
@@ -1057,8 +1070,8 @@
                 Model.UpdateStore(FuncName, Func);
             return this;
         }
-        AddV_OnChange(DomName, ChangeFunc) {
-            this.AddV_On(DomName, 'change', ChangeFunc);
+        AddV_OnChange(DomName, ChangeFunc, Args) {
+            this.AddV_On(DomName, 'change', ChangeFunc, Args);
             return this;
         }
         AddV_Click(DomName, Option, Args) {
@@ -1404,10 +1417,10 @@
         Init() {
             if (this.$IsInited)
                 return this;
-            this.Store = (0, vue_1.reactive)(this.Store);
+            this.Store = (0, vue_2.reactive)(this.Store);
             let GetStore = this.Store;
             let MountedFunc = this.$MountedFuncs;
-            this.$VueApp = (0, vue_1.createApp)({
+            this.$VueApp = (0, vue_2.createApp)({
                 ...this.$VueOption,
                 data() {
                     return GetStore;

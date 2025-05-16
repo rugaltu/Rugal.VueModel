@@ -518,6 +518,10 @@ type AddApiContent = {
 } & ApiCallback;
 type ApiStoreValue = {
     ApiKey: string,
+    IsCalling?: boolean,
+    IsComplete?: boolean,
+    IsError?: boolean,
+    IsSuccess?: boolean,
 } & AddApiContent;
 type ApiCallOption = {
     Query?: ApiCallQuery | (() => ApiCallQuery),
@@ -581,8 +585,7 @@ class ApiStore extends FuncBase {
     //#endregion
     constructor() {
         super();
-
-        this.UseFormJsonBody();
+        this.SetStore('api', this.$ApiStore);
     }
 
     //#region Get/Set Property
@@ -712,6 +715,7 @@ class ApiStore extends FuncBase {
         let Url = this.ConvertTo_ApiUrl(Api.Url, ParamQuery);
         let FetchRequest = this.$GenerateFetchRequest(Api, ParamBody, ParamFile, IsFormRequest);
 
+        Api.IsCalling = true;
         Api.OnCalling?.call(this, FetchRequest);
         Option?.OnCalling?.call(this, FetchRequest);
         fetch(Url, FetchRequest)
@@ -727,19 +731,25 @@ class ApiStore extends FuncBase {
                     let StoreKey = Api.ApiKey;
                     this.UpdateStore(StoreKey, ConvertResult);
                 }
-
+                Api.IsSuccess = true;
+                Api.IsError = false;
                 Api.OnSuccess?.call(this, ConvertResult, ApiResponse);
                 Option?.OnSuccess?.call(this, ConvertResult, ApiResponse);
                 this.#OnSuccess?.call(this, ConvertResult, ApiResponse);
                 return { ConvertResult, ApiResponse };
             })
             .catch(ex => {
+                Api.IsError = true;
+                Api.IsSuccess = false;
+
                 this.$Error(ex.message);
                 Api.OnError?.call(this, ex);
                 Option?.OnError?.call(this, ex);
                 this.#OnError?.call(this, ex);
             })
             .then(Result => {
+                Api.IsCalling = false;
+                Api.IsComplete = true;
                 if (Result instanceof Object) {
                     Api.OnComplete?.call(this, Result.ConvertResult, Result.ApiResponse);
                     Option?.OnComplete?.call(this, Result.ConvertResult, Result.ApiResponse);
@@ -1138,15 +1148,15 @@ class ApiStore extends FuncBase {
     }
     //#endregion
 }
-import { App, Plugin } from 'vue';
+import { App, Plugin, watch } from 'vue';
 import { createApp, reactive } from 'vue';
 class VueStore extends ApiStore {
     $VueProxy: any = null;
     $VueOption: Record<string, any> = {
         methods: {},
         components: {},
-        watch: {},
         computed: {},
+        watch: {},
     };
     $VueApp: App = null;
     $VueUse: Plugin[] = [];
@@ -1358,8 +1368,10 @@ class VueCommand extends VueStore {
         this.$AddCommand(DomName, 'v-bind', SetOption);
         return this;
     }
-    public AddV_On(DomName: PathType | QueryNode[], EventName: string, Option: AddCommandOption) {
+    public AddV_On(DomName: PathType | QueryNode[], EventName: string, Option: AddCommandOption, Args?: string) {
         let SetOption = this.$ConvertCommandOption(DomName, Option);
+        if (Args)
+            SetOption.FuncArgs = Args;
         SetOption.FuncAction = false;
         SetOption.CommandKey = EventName;
         this.$AddCommand(DomName, `v-on`, SetOption);
@@ -1374,7 +1386,10 @@ class VueCommand extends VueStore {
             deep: Deep,
             ...Option,
         };
-        this.$VueOption.watch[this.ToJoin(WatchPath)] = SetWatch;
+        Model.WithMounted(() => {
+            Model.AddStore(WatchPath);
+            watch(() => Model.GetStore(WatchPath), Func as any, SetWatch);
+        })
         return this;
     }
     public AddV_Function(FuncName: PathType, Func: Function) {
@@ -1385,8 +1400,8 @@ class VueCommand extends VueStore {
         return this;
     }
 
-    public AddV_OnChange(DomName: PathType | QueryNode[], ChangeFunc: AddCommandOption) {
-        this.AddV_On(DomName, 'change', ChangeFunc);
+    public AddV_OnChange(DomName: PathType | QueryNode[], ChangeFunc: AddCommandOption, Args?: string) {
+        this.AddV_On(DomName, 'change', ChangeFunc, Args);
         return this;
     }
     public AddV_Click(DomName: PathType | QueryNode[], Option: AddCommandOption, Args?: string) {
