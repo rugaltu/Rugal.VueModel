@@ -85,12 +85,24 @@ export type ApiCallback = {
     OnComplete?: Function;
 };
 declare class FileItem {
-    FileId: string;
-    File: File;
-    Base64?: string;
-    Buffer?: ArrayBuffer;
-    ConvertType?: FileConvertType | FileConvertType[];
+    protected $Store: {
+        FileId: string;
+        File: File;
+        Base64?: string;
+        Buffer?: ArrayBuffer;
+        ConvertType?: FileConvertType | FileConvertType[];
+    };
     constructor(FileId: string, File: File, ConvertType?: FileConvertType | FileConvertType[]);
+    get FileId(): string;
+    set FileId(Value: string);
+    get File(): File;
+    set File(Value: File);
+    get ConvertType(): FileConvertType | FileConvertType[];
+    set ConvertType(Value: FileConvertType | FileConvertType[]);
+    get Base64(): string;
+    set Base64(Value: string);
+    get Buffer(): ArrayBuffer;
+    set Buffer(Value: ArrayBuffer);
     protected $ConvertFile(): void;
     protected $ConvertBase64(IsForce?: boolean): this;
     protected $ConvertBuffer(): void;
@@ -262,7 +274,7 @@ type AddV_ModelOption = {
     DefaultValue?: any;
 };
 type AddV_FilePickerOption = string | {
-    StorePath: string;
+    Store: string;
     Accept?: string | string[];
     Multiple?: boolean;
     ConvertType?: FileConvertType | FileConvertType[];

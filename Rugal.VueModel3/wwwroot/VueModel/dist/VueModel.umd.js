@@ -358,16 +358,46 @@
     var Queryer = new DomQueryer();
     exports.Queryer = Queryer;
     class FileItem {
-        FileId;
-        File;
-        Base64;
-        Buffer;
-        ConvertType;
+        $Store;
         constructor(FileId, File, ConvertType = 'none') {
-            this.FileId = FileId;
-            this.File = File;
-            this.ConvertType = ConvertType;
+            this.$Store = (0, vue_2.reactive)({
+                FileId: FileId,
+                File: File,
+                ConvertType: ConvertType,
+                Base64: null,
+                Buffer: null,
+            });
             this.$ConvertFile();
+        }
+        get FileId() {
+            return this.$Store.FileId;
+        }
+        set FileId(Value) {
+            this.$Store.FileId = Value;
+        }
+        get File() {
+            return this.$Store.File;
+        }
+        set File(Value) {
+            this.$Store.File = Value;
+        }
+        get ConvertType() {
+            return this.$Store.ConvertType;
+        }
+        set ConvertType(Value) {
+            this.$Store.ConvertType = Value;
+        }
+        get Base64() {
+            return this.$Store.Base64;
+        }
+        set Base64(Value) {
+            this.$Store.Base64 = Value;
+        }
+        get Buffer() {
+            return this.$Store.Buffer;
+        }
+        set Buffer(Value) {
+            this.$Store.Buffer = Value;
         }
         $ConvertFile() {
             if (this.ConvertType == null)
@@ -914,7 +944,6 @@
             methods: {},
             components: {},
             computed: {},
-            watch: {},
         };
         $VueApp = null;
         $VueUse = [];
@@ -1089,7 +1118,7 @@
             if (typeof (Option) == 'string')
                 FileStorePath = Option;
             else {
-                FileStorePath = Option.StorePath;
+                FileStorePath = Option.Store;
                 ConvertType = Option.ConvertType;
                 Multiple = Option.Multiple;
                 if (Array.isArray(Option.Accept))

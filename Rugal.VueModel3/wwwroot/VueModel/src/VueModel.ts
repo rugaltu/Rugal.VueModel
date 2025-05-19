@@ -442,20 +442,56 @@ export type ApiCallback = {
     //ProcessResult?: 'json' | 'text' | 'buffer',
 };
 class FileItem {
-    FileId: string;
-    File: File;
-    Base64?: string;
-    Buffer?: ArrayBuffer;
-    ConvertType?: FileConvertType | FileConvertType[];
-    constructor(FileId: string, File: File, ConvertType: FileConvertType | FileConvertType[] = 'none') {
-        this.FileId = FileId;
-        this.File = File;
-        this.ConvertType = ConvertType;
 
+    protected $Store: {
+        FileId: string;
+        File: File;
+        Base64?: string;
+        Buffer?: ArrayBuffer;
+        ConvertType?: FileConvertType | FileConvertType[];
+    }
+    constructor(FileId: string, File: File, ConvertType: FileConvertType | FileConvertType[] = 'none') {
+        this.$Store = reactive({
+            FileId: FileId,
+            File: File,
+            ConvertType: ConvertType,
+            Base64: null,
+            Buffer: null,
+        });
         this.$ConvertFile();
     }
-    protected $ConvertFile() {
+    get FileId() {
+        return this.$Store.FileId;
+    }
+    set FileId(Value: string) {
+        this.$Store.FileId = Value;
+    }
+    get File() {
+        return this.$Store.File;
+    }
+    set File(Value: File) {
+        this.$Store.File = Value;
+    }
+    get ConvertType() {
+        return this.$Store.ConvertType;
+    }
+    set ConvertType(Value: FileConvertType | FileConvertType[]) {
+        this.$Store.ConvertType = Value;
+    }
+    get Base64() {
+        return this.$Store.Base64;
+    }
+    set Base64(Value: string) {
+        this.$Store.Base64 = Value;
+    }
+    get Buffer() {
+        return this.$Store.Buffer;
+    }
+    set Buffer(Value: ArrayBuffer) {
+        this.$Store.Buffer = Value;
+    }
 
+    protected $ConvertFile() {
         if (this.ConvertType == null)
             return;
 
@@ -1278,7 +1314,7 @@ type AddV_ModelOption = {
     DefaultValue?: any,
 };
 type AddV_FilePickerOption = string | {
-    StorePath: string,
+    Store: string,
     Accept?: string | string[],
     Multiple?: boolean;
     ConvertType?: FileConvertType | FileConvertType[];
@@ -1421,7 +1457,7 @@ class VueCommand extends VueStore {
         if (typeof (Option) == 'string')
             FileStorePath = Option;
         else {
-            FileStorePath = Option.StorePath;
+            FileStorePath = Option.Store;
             ConvertType = Option.ConvertType;
             Multiple = Option.Multiple;
 
