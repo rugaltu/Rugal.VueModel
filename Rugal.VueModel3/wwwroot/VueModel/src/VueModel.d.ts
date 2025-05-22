@@ -260,7 +260,7 @@ export type TreeSetType = {
     'v-on:click'?: PathType | Function | TreeSetOption;
     'watch'?: Function;
     [VModelCmd: `v-model:${string}`]: PathType | TreeSetOption;
-    [VForCmd: `v-for:${string}`]: PathType | Function | TreeSetOption;
+    [VForCmd: `v-for(${string})`]: PathType | Function | TreeSetOption;
     [VBindCmd: `v-bind:${string}`]: PathType | Function | TreeSetOption;
     [VOnCmd: `v-on:${string}`]: PathType | Function | TreeSetOption;
     [VSlotCmd: `v-slot:${string}`]: string;

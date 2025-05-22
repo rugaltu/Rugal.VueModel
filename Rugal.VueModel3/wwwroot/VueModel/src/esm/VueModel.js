@@ -1022,9 +1022,15 @@ class VueCommand extends VueStore {
         let SetOption = this.$ConvertCommandOption(DomName, Option);
         if (ForKey) {
             ForKey = this.ToJoin(ForKey);
-            SetOption.TargetHead = `(${ForKey}) in `;
+            if (!/^\(/.test(ForKey))
+                ForKey = `(${ForKey}`;
+            if (!/\)$/.test(ForKey))
+                ForKey += ')';
+            SetOption.TargetHead = `${ForKey} in `;
         }
-        SetOption.TargetHead ??= '(item, index) in ';
+        let Target = Model.ToJoin(SetOption.Target);
+        if (!Target.includes('in'))
+            SetOption.TargetHead ??= '(item, index) in ';
         this.$AddCommand(DomName, 'v-for', SetOption);
         return this;
     }
@@ -1167,7 +1173,7 @@ class VueCommand extends VueStore {
                 Model.AddV_Bind(Option.TargetDom, Info.CommandKey, Option.TargetValue);
             },
             'v-on': (Info, Option) => {
-                Model.AddV_On(Option.TargetDom, Info.CommandKey, Option.TargetValue);
+                Model.AddV_On(Option.TargetDom, Info.CommandKey, Option.TargetValue, Info.Params);
             },
             'v-slot': (Info, Option) => {
                 if (Array.isArray(Info.StoreValue) || typeof (Info.StoreValue) == 'function') {
@@ -1225,6 +1231,7 @@ class VueCommand extends VueStore {
     }
     $ParseTreeSet(Paths, TreeSet, Result) {
         let AllKeys = Object.keys(TreeSet);
+        let ParamRegex = /^(.+?)\(([^)]*)\)$/;
         for (let i = 0; i < AllKeys.length; i++) {
             let Command = AllKeys[i];
             let SetPair = TreeSet[Command];
@@ -1232,12 +1239,19 @@ class VueCommand extends VueStore {
             let TreePaths = [...Paths];
             let DomName = TreePaths.pop();
             if (!Command.includes(':')) {
+                let HasParams = Command.match(ParamRegex);
+                let CommandKey = null;
+                if (HasParams && HasParams.length >= 3) {
+                    Command = HasParams[1];
+                    CommandKey = HasParams[2];
+                }
                 Result.push({
                     Command: Command,
                     StoreValue: SetPair,
                     TreePaths: TreePaths,
                     DomPaths: DomPaths,
                     DomName: DomName,
+                    CommandKey: CommandKey,
                 });
                 continue;
             }
@@ -1247,6 +1261,17 @@ class VueCommand extends VueStore {
                 continue;
             }
             Command = Commands.shift();
+            let Params = null;
+            if (Commands.length > 0) {
+                let LastCommand = Commands.pop();
+                let HasParams = LastCommand.match(ParamRegex);
+                if (HasParams && HasParams.length >= 3) {
+                    Commands.push(HasParams[1]);
+                    Params = HasParams[2];
+                }
+                else
+                    Commands.push(LastCommand);
+            }
             let NextDomName = Model.ToJoin(Commands, ':');
             if (Command == '') {
                 this.$ParseTreeSet([...Paths, NextDomName], SetPair, Result);
@@ -1259,6 +1284,7 @@ class VueCommand extends VueStore {
                 TreePaths: TreePaths,
                 DomPaths: DomPaths,
                 DomName: DomName,
+                Params: Params,
             });
         }
     }
@@ -1359,7 +1385,11 @@ class VueCommand extends VueStore {
             Target = this.$GenerateEventFunction(FuncDomName, Target, Command);
             if (Option.FuncArgs) {
                 let Args = this.ToJoin(Option.FuncArgs, ',');
-                Target += `(${Args})`;
+                if (!/^\(/.test(Args))
+                    Args = `(${Args}`;
+                if (!/\)$/.test(Args))
+                    Args += ')';
+                Target += Args;
             }
             else if (Option.FuncAction) {
                 Target += `()`;

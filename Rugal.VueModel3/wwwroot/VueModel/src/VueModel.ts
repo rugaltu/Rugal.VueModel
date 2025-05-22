@@ -1290,7 +1290,7 @@ export type TreeSetType = {
     'watch'?: Function,
 
     [VModelCmd: `v-model:${string}`]: PathType | TreeSetOption,
-    [VForCmd: `v-for:${string}`]: PathType | Function | TreeSetOption,
+    [VForCmd: `v-for(${string})`]: PathType | Function | TreeSetOption,
     [VBindCmd: `v-bind:${string}`]: PathType | Function | TreeSetOption,
     [VOnCmd: `v-on:${string}`]: PathType | Function | TreeSetOption,
     [VSlotCmd: `v-slot:${string}`]: string,
@@ -1308,6 +1308,7 @@ type TreeSetInfo = {
     StoreValue: PathType | Function,
     Command: string,
     CommandKey?: string,
+    Params?: string,
 }
 type AddV_ModelOption = {
     ModelValue?: string,
@@ -1369,9 +1370,16 @@ class VueCommand extends VueStore {
         let SetOption = this.$ConvertCommandOption(DomName, Option);
         if (ForKey) {
             ForKey = this.ToJoin(ForKey);
-            SetOption.TargetHead = `(${ForKey}) in `;
+            if (!/^\(/.test(ForKey))
+                ForKey = `(${ForKey}`;
+            if (!/\)$/.test(ForKey))
+                ForKey += ')';
+
+            SetOption.TargetHead = `${ForKey} in `;
         }
-        SetOption.TargetHead ??= '(item, index) in ';
+        let Target = Model.ToJoin(SetOption.Target);
+        if (!Target.includes('in'))
+            SetOption.TargetHead ??= '(item, index) in ';
         this.$AddCommand(DomName, 'v-for', SetOption);
         return this;
     }
@@ -1535,7 +1543,7 @@ class VueCommand extends VueStore {
                 Model.AddV_Bind(Option.TargetDom, Info.CommandKey, Option.TargetValue);
             },
             'v-on': (Info, Option) => {
-                Model.AddV_On(Option.TargetDom, Info.CommandKey, Option.TargetValue);
+                Model.AddV_On(Option.TargetDom, Info.CommandKey, Option.TargetValue, Info.Params);
             },
             'v-slot': (Info, Option) => {
                 if (Array.isArray(Info.StoreValue) || typeof (Info.StoreValue) == 'function') {
@@ -1592,11 +1600,14 @@ class VueCommand extends VueStore {
                 TargetPath: TargetPath,
                 TargetValue: TargetValue,
             });
+
         }
         return this;
     }
     private $ParseTreeSet(Paths: string[], TreeSet: TreeSetType, Result: TreeSetInfo[]) {
         let AllKeys = Object.keys(TreeSet);
+        let ParamRegex = /^(.+?)\(([^)]*)\)$/;
+
         for (let i = 0; i < AllKeys.length; i++) {
             let Command = AllKeys[i];
             let SetPair = TreeSet[Command as any];
@@ -1605,12 +1616,19 @@ class VueCommand extends VueStore {
             let TreePaths = [...Paths];
             let DomName = TreePaths.pop();
             if (!Command.includes(':')) {
+                let HasParams = Command.match(ParamRegex);
+                let CommandKey: string = null;
+                if (HasParams && HasParams.length >= 3) {
+                    Command = HasParams[1];
+                    CommandKey = HasParams[2];
+                }
                 Result.push({
                     Command: Command,
                     StoreValue: SetPair,
                     TreePaths: TreePaths,
                     DomPaths: DomPaths,
                     DomName: DomName,
+                    CommandKey: CommandKey,
                 });
                 continue;
             }
@@ -1620,7 +1638,20 @@ class VueCommand extends VueStore {
                 Model.$Error(`command ${Command} invalid`);
                 continue;
             }
+
             Command = Commands.shift();
+            let Params: string = null;
+            if (Commands.length > 0) {
+                let LastCommand = Commands.pop();
+                let HasParams = LastCommand.match(ParamRegex);
+                if (HasParams && HasParams.length >= 3) {
+                    Commands.push(HasParams[1]);
+                    Params = HasParams[2];
+                }
+                else
+                    Commands.push(LastCommand);
+            }
+
             let NextDomName = Model.ToJoin(Commands, ':');
             if (Command == '') {
                 this.$ParseTreeSet([...Paths, NextDomName], SetPair, Result);
@@ -1634,6 +1665,7 @@ class VueCommand extends VueStore {
                 TreePaths: TreePaths,
                 DomPaths: DomPaths,
                 DomName: DomName,
+                Params: Params,
             });
         }
     }
@@ -1753,7 +1785,11 @@ class VueCommand extends VueStore {
 
             if (Option.FuncArgs) {
                 let Args = this.ToJoin(Option.FuncArgs, ',');
-                Target += `(${Args})`;
+                if (!/^\(/.test(Args))
+                    Args = `(${Args}`;
+                if (!/\)$/.test(Args))
+                    Args += ')';
+                Target += Args;
             }
             else if (Option.FuncAction) {
                 Target += `()`;
