@@ -1187,15 +1187,16 @@ class ApiStore extends FuncBase {
 import { App, Plugin, watch } from 'vue';
 import { createApp, reactive } from 'vue';
 class VueStore extends ApiStore {
-    $VueProxy: any = null;
-    $VueOption: Record<string, any> = {
+    protected $VueProxy: any = null;
+    protected $VueOption: Record<string, any> = {
         methods: {},
         components: {},
         computed: {},
     };
-    $VueApp: App = null;
-    $VueUse: Plugin[] = [];
-    $MountedFuncs: Function[] = [];
+    protected $VueApp: App = null;
+    protected $VueUse: Plugin[] = [];
+    protected $CoreStore: string = 'app';
+    protected $MountedFuncs: Function[] = [];
     constructor() {
         super();
         this.#Setup();
@@ -1215,6 +1216,10 @@ class VueStore extends ApiStore {
             })
             .EventAdd_SetStore(() => {
                 this.ForceUpdate();
+            })
+            .AddStore(this.$CoreStore, {})
+            .WithMounted(() => {
+                this.UpdateStore([this.$CoreStore, 'IsMounted'], true);
             });
     }
     //#endregion

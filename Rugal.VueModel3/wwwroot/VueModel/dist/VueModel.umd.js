@@ -947,6 +947,7 @@
         };
         $VueApp = null;
         $VueUse = [];
+        $CoreStore = 'app';
         $MountedFuncs = [];
         constructor() {
             super();
@@ -965,6 +966,10 @@
             })
                 .EventAdd_SetStore(() => {
                 this.ForceUpdate();
+            })
+                .AddStore(this.$CoreStore, {})
+                .WithMounted(() => {
+                this.UpdateStore([this.$CoreStore, 'IsMounted'], true);
             });
         }
         get Store() {

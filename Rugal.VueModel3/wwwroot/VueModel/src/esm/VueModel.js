@@ -932,6 +932,7 @@ class VueStore extends ApiStore {
     };
     $VueApp = null;
     $VueUse = [];
+    $CoreStore = 'app';
     $MountedFuncs = [];
     constructor() {
         super();
@@ -950,6 +951,10 @@ class VueStore extends ApiStore {
         })
             .EventAdd_SetStore(() => {
             this.ForceUpdate();
+        })
+            .AddStore(this.$CoreStore, {})
+            .WithMounted(() => {
+            this.UpdateStore([this.$CoreStore, 'IsMounted'], true);
         });
     }
     get Store() {

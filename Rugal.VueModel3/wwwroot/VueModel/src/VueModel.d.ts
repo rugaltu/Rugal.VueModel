@@ -224,11 +224,12 @@ declare class ApiStore extends FuncBase {
 import { App, Plugin } from 'vue';
 declare class VueStore extends ApiStore {
     #private;
-    $VueProxy: any;
-    $VueOption: Record<string, any>;
-    $VueApp: App;
-    $VueUse: Plugin[];
-    $MountedFuncs: Function[];
+    protected $VueProxy: any;
+    protected $VueOption: Record<string, any>;
+    protected $VueApp: App;
+    protected $VueUse: Plugin[];
+    protected $CoreStore: string;
+    protected $MountedFuncs: Function[];
     constructor();
     get Store(): StoreType;
     protected set Store(Store: StoreType);
