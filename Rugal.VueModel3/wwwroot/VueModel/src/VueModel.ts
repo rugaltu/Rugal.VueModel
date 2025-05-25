@@ -1744,7 +1744,7 @@ class VueCommand extends VueStore {
                 PropertyOption[`$${PropertyKey}`] = Value;
         }
 
-        if (Option.Value != null)
+        if (SetProperty[PropertyKey] == null && Option.Value != null)
             SetProperty[PropertyKey] = Option.Value;
 
         return SetProperty;
