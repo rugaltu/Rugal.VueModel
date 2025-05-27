@@ -1038,9 +1038,8 @@ class ApiStore extends FuncBase {
         }
         if (!Array.isArray(FindStore[StorePath]))
             FindStore[StorePath] = [];
-        if (FindStore[StorePath].length > 0)
-            FindStore[StorePath].splice(0, FindStore[StorePath].length);
-        FindStore[StorePath].push(...SetData);
+
+        FindStore[StorePath] = SetData.slice();
     }
     //#endregion
 
@@ -1107,11 +1106,11 @@ class ApiStore extends FuncBase {
     protected $ProcessApiReturn(ApiResponse: Response): Promise<any> {
         let GetContentType = ApiResponse.headers.get("content-type");
         if (GetContentType.includes('application/json')) {
-            return ApiResponse.json().then(GetJson => GetJson);
+            return ApiResponse.json();
         }
 
         if (GetContentType.includes('text')) {
-            return ApiResponse.text().then(GetText => GetText);
+            return ApiResponse.text();
         }
 
         return new Promise(reslove => { reslove(ApiResponse) });
