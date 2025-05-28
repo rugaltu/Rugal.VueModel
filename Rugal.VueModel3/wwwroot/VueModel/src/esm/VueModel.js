@@ -345,15 +345,19 @@ var Queryer = new DomQueryer();
 export { DomQueryer, Queryer };
 class FileItem {
     $Store;
-    constructor(FileId, File, ConvertType = 'none') {
-        this.$Store = reactive({
-            FileId: FileId,
-            File: File,
-            ConvertType: ConvertType,
-            Base64: null,
-            Buffer: null,
-        });
-        this.$ConvertFile();
+    constructor(File, ConvertType = 'none') {
+        if (File == null)
+            this.$Store = reactive({});
+        else {
+            this.$Store = reactive({
+                FileId: new FuncBase().GenerateId(),
+                File: File,
+                ConvertType: ConvertType,
+                Base64: null,
+                Buffer: null,
+            });
+            this.$ConvertFile();
+        }
     }
     get FileId() {
         return this.$Store.FileId;
@@ -384,6 +388,17 @@ class FileItem {
     }
     set Buffer(Value) {
         this.$Store.Buffer = Value;
+    }
+    get InnerStore() {
+        return this.$Store;
+    }
+    Clear() {
+        this.$Store.Base64 = null;
+        this.$Store.Buffer = null;
+        this.$Store.File = null;
+    }
+    From(Item) {
+        this.$Store = Item.InnerStore;
     }
     $ConvertFile() {
         if (this.ConvertType == null)
@@ -809,31 +824,54 @@ class ApiStore extends FuncBase {
             FindStore[StorePath] = [];
         FindStore[StorePath] = SetData.slice();
     }
-    AddFileStore(FileStoreKey) {
-        if (this.FileStore[FileStoreKey] == null)
-            this.FileStore[FileStoreKey] = [];
+    AddFileStore(FileStoreKey, Option) {
+        Option ??= {};
+        if (this.FileStore[FileStoreKey] == null) {
+            if (Option.Multi == true)
+                this.FileStore[FileStoreKey] = [];
+            else {
+                this.FileStore[FileStoreKey] = new FileItem();
+            }
+        }
         return this;
     }
     Files(FileStoreKey, WhereFunc = null) {
         let GetFiles = this.FileStore[FileStoreKey];
         if (GetFiles == null)
             return [];
+        if (!Array.isArray(GetFiles))
+            GetFiles = [GetFiles];
         if (WhereFunc != null)
             GetFiles = GetFiles.filter(Item => WhereFunc(Item));
         let Result = GetFiles.map(Item => Item.File);
         return Result;
     }
+    File(FileStoreKey, WhereFunc = null) {
+        let GetFiles = this.Files(FileStoreKey, WhereFunc);
+        if (GetFiles == null || GetFiles.length == 0)
+            return null;
+        return GetFiles[0];
+    }
     AddFile(FileStoreKey, AddFile, ConvertType = 'none') {
+        if (AddFile == null)
+            return;
         this.AddFileStore(FileStoreKey);
         let GetStore = this.FileStore[FileStoreKey];
-        if (Array.isArray(AddFile))
-            AddFile.forEach(Item => this.AddFile(FileStoreKey, Item));
-        else if (AddFile instanceof FileItem) {
-            GetStore.push(AddFile);
+        if (Array.isArray(AddFile)) {
+            if (Array.isArray(GetStore))
+                AddFile.forEach(Item => this.AddFile(FileStoreKey, Item));
+            else
+                this.AddFile(FileStoreKey, AddFile[0]);
         }
         else {
-            let NewFile = new FileItem(this.GenerateId(), AddFile, ConvertType);
-            GetStore.push(NewFile);
+            if (AddFile instanceof FileItem == false)
+                AddFile = new FileItem(AddFile, ConvertType);
+            if (Array.isArray(GetStore)) {
+                GetStore.push(AddFile);
+            }
+            else {
+                GetStore.From(AddFile);
+            }
         }
         return this;
     }
@@ -844,9 +882,14 @@ class ApiStore extends FuncBase {
         if (Array.isArray(DeleteFileId))
             DeleteFileId.forEach(Item => this.RemoveFile(FileStoreKey, Item));
         else {
-            let DeleteIndex = GetStore.findIndex(Item => Item.FileId == DeleteFileId);
-            if (DeleteIndex >= 0)
-                GetStore.splice(DeleteIndex, 1);
+            if (Array.isArray(GetStore)) {
+                let DeleteIndex = GetStore.findIndex(Item => Item.FileId == DeleteFileId);
+                if (DeleteIndex >= 0)
+                    GetStore.splice(DeleteIndex, 1);
+            }
+            else {
+                GetStore.Clear();
+            }
         }
         return this;
     }
@@ -854,7 +897,12 @@ class ApiStore extends FuncBase {
         let GetStore = this.FileStore[FileStoreKey];
         if (GetStore == null)
             return this;
-        GetStore.splice(0, GetStore.length);
+        if (Array.isArray(GetStore)) {
+            GetStore.splice(0, GetStore.length);
+        }
+        else {
+            GetStore.Clear();
+        }
         return this;
     }
     $ProcessApiReturn(ApiResponse) {
@@ -1107,26 +1155,28 @@ class VueCommand extends VueStore {
         let FileStorePath = null;
         let Accept = null;
         let ConvertType = 'none';
-        let Multiple = false;
+        let Multi = false;
         if (typeof (Option) == 'string')
             FileStorePath = Option;
         else {
             FileStorePath = Option.Store;
             ConvertType = Option.ConvertType;
-            Multiple = Option.Multiple;
+            Multi = Option.Multi;
             if (Array.isArray(Option.Accept))
                 Accept = Option.Accept.join(' ');
             else
                 Accept = Option.Accept;
         }
-        this.AddFileStore(FileStorePath);
+        this.AddFileStore(FileStorePath, {
+            Multi: Multi,
+        });
         this.AddV_Click(DomName, () => {
             let TempInput = document.createElement('input');
             TempInput.type = 'file';
             if (Accept != null)
                 TempInput.accept = Accept;
-            if (Multiple != null)
-                TempInput.multiple = Multiple;
+            if (Multi != null)
+                TempInput.multiple = Multi;
             TempInput.onchange = (Event) => {
                 if (TempInput.files == null || TempInput.files.length == 0)
                     return;
@@ -1198,6 +1248,9 @@ class VueCommand extends VueStore {
                     return;
                 }
                 Model.AddV_Function(['event', ...Info.DomPaths, Info.CommandKey], Info.StoreValue);
+            },
+            'using': (Info, Option) => {
+                debugger;
             }
         };
         for (let Info of AllSetInfo) {

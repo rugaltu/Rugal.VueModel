@@ -441,24 +441,29 @@ export type ApiCallback = {
     OnComplete?: Function,
     //ProcessResult?: 'json' | 'text' | 'buffer',
 };
+type FileItemStore = {
+    FileId?: string;
+    File?: File;
+    Base64?: string;
+    Buffer?: ArrayBuffer;
+    ConvertType?: FileConvertType | FileConvertType[];
+}
 class FileItem {
 
-    protected $Store: {
-        FileId: string;
-        File: File;
-        Base64?: string;
-        Buffer?: ArrayBuffer;
-        ConvertType?: FileConvertType | FileConvertType[];
-    }
-    constructor(FileId: string, File: File, ConvertType: FileConvertType | FileConvertType[] = 'none') {
-        this.$Store = reactive({
-            FileId: FileId,
-            File: File,
-            ConvertType: ConvertType,
-            Base64: null,
-            Buffer: null,
-        });
-        this.$ConvertFile();
+    protected $Store: FileItemStore;
+    constructor(File?: File, ConvertType: FileConvertType | FileConvertType[] = 'none') {
+        if (File == null)
+            this.$Store = reactive({});
+        else {
+            this.$Store = reactive({
+                FileId: new FuncBase().GenerateId(),
+                File: File,
+                ConvertType: ConvertType,
+                Base64: null,
+                Buffer: null,
+            });
+            this.$ConvertFile();
+        }
     }
     get FileId() {
         return this.$Store.FileId;
@@ -489,6 +494,18 @@ class FileItem {
     }
     set Buffer(Value: ArrayBuffer) {
         this.$Store.Buffer = Value;
+    }
+    get InnerStore() {
+        return this.$Store;
+    }
+
+    public Clear() {
+        this.$Store.Base64 = null;
+        this.$Store.Buffer = null;
+        this.$Store.File = null;
+    }
+    public From(Item: FileItem) {
+        this.$Store = Item.InnerStore;
     }
 
     protected $ConvertFile() {
@@ -565,7 +582,7 @@ type ApiCallOption = {
     File?: ApiCallFile | (() => ApiCallFile),
     IsUpdateStore?: boolean,
 } & ApiCallback;
-type FileStoreType = Record<string, FileItem[]>;
+type FileStoreType = Record<string, FileItem[] | FileItem>;
 type StoreType = Record<string, any> & {
     FileStore: FileStoreType,
 };
@@ -588,6 +605,9 @@ type AddPropertyType = {
     Bind?: Array<any>,
     Target?: PathType,
 } & PropertyDescriptor;
+type AddFileStoreOption = {
+    Multi?: boolean;
+}
 //#endregion
 class ApiStore extends FuncBase {
 
@@ -1044,9 +1064,15 @@ class ApiStore extends FuncBase {
     //#endregion
 
     //#region File Store
-    public AddFileStore(FileStoreKey: string) {
-        if (this.FileStore[FileStoreKey] == null)
-            this.FileStore[FileStoreKey] = [];
+    public AddFileStore(FileStoreKey: string, Option?: AddFileStoreOption) {
+        Option ??= {};
+        if (this.FileStore[FileStoreKey] == null) {
+            if (Option.Multi == true)
+                this.FileStore[FileStoreKey] = [];
+            else {
+                this.FileStore[FileStoreKey] = new FileItem();
+            }
+        }
         return this;
     }
     public Files(FileStoreKey: string, WhereFunc: (FileArg: FileItem) => boolean = null): File[] {
@@ -1054,26 +1080,44 @@ class ApiStore extends FuncBase {
         if (GetFiles == null)
             return [];
 
+        if (!Array.isArray(GetFiles))
+            GetFiles = [GetFiles];
+
         if (WhereFunc != null)
             GetFiles = GetFiles.filter(Item => WhereFunc(Item));
 
         let Result = GetFiles.map(Item => Item.File);
         return Result;
     }
+    public File(FileStoreKey: string, WhereFunc: (FileArg: FileItem) => boolean = null): File {
+        let GetFiles = this.Files(FileStoreKey, WhereFunc);
+        if (GetFiles == null || GetFiles.length == 0)
+            return null;
+
+        return GetFiles[0];
+    }
     public AddFile(FileStoreKey: string, AddFile: FilesType, ConvertType: FileConvertType | FileConvertType[] = 'none') {
+        if (AddFile == null)
+            return;
+
         this.AddFileStore(FileStoreKey);
         let GetStore = this.FileStore[FileStoreKey];
-
-        if (Array.isArray(AddFile))
-            AddFile.forEach(Item => this.AddFile(FileStoreKey, Item));
-        else if (AddFile instanceof FileItem) {
-            GetStore.push(AddFile);
+        if (Array.isArray(AddFile)) {
+            if (Array.isArray(GetStore))
+                AddFile.forEach(Item => this.AddFile(FileStoreKey, Item));
+            else
+                this.AddFile(FileStoreKey, AddFile[0]);
         }
         else {
-            let NewFile = new FileItem(this.GenerateId(), AddFile, ConvertType);
-            GetStore.push(NewFile);
-        }
+            if (AddFile instanceof FileItem == false)
+                AddFile = new FileItem(AddFile, ConvertType);
 
+            if (Array.isArray(GetStore)) {
+                GetStore.push(AddFile);
+            } else {
+                GetStore.From(AddFile);
+            }
+        }
         return this;
     }
     public RemoveFile(FileStoreKey: string, DeleteFileId: string | string[]) {
@@ -1084,9 +1128,13 @@ class ApiStore extends FuncBase {
         if (Array.isArray(DeleteFileId))
             DeleteFileId.forEach(Item => this.RemoveFile(FileStoreKey, Item))
         else {
-            let DeleteIndex = GetStore.findIndex(Item => Item.FileId == DeleteFileId);
-            if (DeleteIndex >= 0)
-                GetStore.splice(DeleteIndex, 1);
+            if (Array.isArray(GetStore)) {
+                let DeleteIndex = GetStore.findIndex(Item => Item.FileId == DeleteFileId);
+                if (DeleteIndex >= 0)
+                    GetStore.splice(DeleteIndex, 1);
+            } else {
+                GetStore.Clear();
+            }
         }
         return this;
     }
@@ -1095,7 +1143,11 @@ class ApiStore extends FuncBase {
         if (GetStore == null)
             return this;
 
-        GetStore.splice(0, GetStore.length);
+        if (Array.isArray(GetStore)) {
+            GetStore.splice(0, GetStore.length);
+        } else {
+            GetStore.Clear();
+        }
         return this;
     }
     //#endregion
@@ -1292,6 +1344,7 @@ export type TreeSetType = {
     'v-on:change'?: PathType | Function | TreeSetOption,
     'v-on:click'?: PathType | Function | TreeSetOption,
     'watch'?: Function,
+    'using'?: (Paths: PathType) => void,
 
     [VModelCmd: `v-model:${string}`]: PathType | TreeSetOption,
     [VForCmd: `v-for(${string})`]: PathType | Function | TreeSetOption,
@@ -1304,6 +1357,7 @@ export type TreeSetType = {
 };
 export type TreeSetOption = CommandOption;
 export type AddCommandOption = PathType | Function | CommandOption;
+
 type TreeSetInfo = {
     Nodes?: QueryNode[],
     TreePaths: string[],
@@ -1321,7 +1375,7 @@ type AddV_ModelOption = {
 type AddV_FilePickerOption = string | {
     Store: string,
     Accept?: string | string[],
-    Multiple?: boolean;
+    Multi?: boolean;
     ConvertType?: FileConvertType | FileConvertType[];
 };
 type AddV_TreeOption = {
@@ -1464,29 +1518,30 @@ class VueCommand extends VueStore {
         let FileStorePath: string = null;
         let Accept: string = null;
         let ConvertType: FileConvertType | FileConvertType[] = 'none';
-        let Multiple: boolean = false;
+        let Multi: boolean = false;
 
         if (typeof (Option) == 'string')
             FileStorePath = Option;
         else {
             FileStorePath = Option.Store;
             ConvertType = Option.ConvertType;
-            Multiple = Option.Multiple;
+            Multi = Option.Multi;
 
             if (Array.isArray(Option.Accept))
                 Accept = Option.Accept.join(' ');
             else
                 Accept = Option.Accept;
         }
-
-        this.AddFileStore(FileStorePath);
+        this.AddFileStore(FileStorePath, {
+            Multi: Multi,
+        });
         this.AddV_Click(DomName, () => {
             let TempInput = document.createElement('input');
             TempInput.type = 'file';
             if (Accept != null)
                 TempInput.accept = Accept;
-            if (Multiple != null)
-                TempInput.multiple = Multiple;
+            if (Multi != null)
+                TempInput.multiple = Multi;
 
             TempInput.onchange = (Event) => {
                 if (TempInput.files == null || TempInput.files.length == 0)
@@ -1569,6 +1624,11 @@ class VueCommand extends VueStore {
                     return;
                 }
                 Model.AddV_Function(['event', ...Info.DomPaths, Info.CommandKey], Info.StoreValue);
+            },
+            'using': (Info, Option) => {
+                if (typeof (Info.StoreValue) === 'function') {
+                    Info.StoreValue(Info.DomPaths);
+                }
             }
         }
         for (let Info of AllSetInfo) {

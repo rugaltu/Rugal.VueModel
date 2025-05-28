@@ -8,7 +8,14 @@ Model
     'v-for(item, index)': 'Datas',
     'v-for': '(item, index) in Datas',
     'v-on:click(item, index)': (item, index) => {
-        debugger;
+    },
+    ':Btn': {
+        'using': (Paths) => {
+            Model.AddV_FilePicker(Paths, {
+                Store: 'a',
+                ConvertType: 'base64',
+            });
+        }
     }
 }, {
     UseTreePath: false,

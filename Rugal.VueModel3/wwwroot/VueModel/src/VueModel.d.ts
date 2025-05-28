@@ -84,15 +84,16 @@ export type ApiCallback = {
     OnError?: Function;
     OnComplete?: Function;
 };
+type FileItemStore = {
+    FileId?: string;
+    File?: File;
+    Base64?: string;
+    Buffer?: ArrayBuffer;
+    ConvertType?: FileConvertType | FileConvertType[];
+};
 declare class FileItem {
-    protected $Store: {
-        FileId: string;
-        File: File;
-        Base64?: string;
-        Buffer?: ArrayBuffer;
-        ConvertType?: FileConvertType | FileConvertType[];
-    };
-    constructor(FileId: string, File: File, ConvertType?: FileConvertType | FileConvertType[]);
+    protected $Store: FileItemStore;
+    constructor(File?: File, ConvertType?: FileConvertType | FileConvertType[]);
     get FileId(): string;
     set FileId(Value: string);
     get File(): File;
@@ -103,6 +104,9 @@ declare class FileItem {
     set Base64(Value: string);
     get Buffer(): ArrayBuffer;
     set Buffer(Value: ArrayBuffer);
+    get InnerStore(): FileItemStore;
+    Clear(): void;
+    From(Item: FileItem): void;
     protected $ConvertFile(): void;
     protected $ConvertBase64(IsForce?: boolean): this;
     protected $ConvertBuffer(): void;
@@ -135,7 +139,7 @@ type ApiCallOption = {
     File?: ApiCallFile | (() => ApiCallFile);
     IsUpdateStore?: boolean;
 } & ApiCallback;
-type FileStoreType = Record<string, FileItem[]>;
+type FileStoreType = Record<string, FileItem[] | FileItem>;
 type StoreType = Record<string, any> & {
     FileStore: FileStoreType;
 };
@@ -156,6 +160,9 @@ type AddPropertyType = {
     Bind?: Array<any>;
     Target?: PathType;
 } & PropertyDescriptor;
+type AddFileStoreOption = {
+    Multi?: boolean;
+};
 declare class ApiStore extends FuncBase {
     #private;
     protected $ApiStore: Record<string, ApiStoreValue>;
@@ -210,8 +217,9 @@ declare class ApiStore extends FuncBase {
         IsDeepSet: boolean;
     }): any;
     protected $DeepSetObject(StorePath: string, SetData: Record<string, any>, FindStore: any): void;
-    AddFileStore(FileStoreKey: string): this;
+    AddFileStore(FileStoreKey: string, Option?: AddFileStoreOption): this;
     Files(FileStoreKey: string, WhereFunc?: (FileArg: FileItem) => boolean): File[];
+    File(FileStoreKey: string, WhereFunc?: (FileArg: FileItem) => boolean): File;
     AddFile(FileStoreKey: string, AddFile: FilesType, ConvertType?: FileConvertType | FileConvertType[]): this;
     RemoveFile(FileStoreKey: string, DeleteFileId: string | string[]): this;
     ClearFile(FileStoreKey: string): this;
@@ -260,6 +268,7 @@ export type TreeSetType = {
     'v-on:change'?: PathType | Function | TreeSetOption;
     'v-on:click'?: PathType | Function | TreeSetOption;
     'watch'?: Function;
+    'using'?: (Paths: PathType) => void;
     [VModelCmd: `v-model:${string}`]: PathType | TreeSetOption;
     [VForCmd: `v-for(${string})`]: PathType | Function | TreeSetOption;
     [VBindCmd: `v-bind:${string}`]: PathType | Function | TreeSetOption;
@@ -277,7 +286,7 @@ type AddV_ModelOption = {
 type AddV_FilePickerOption = string | {
     Store: string;
     Accept?: string | string[];
-    Multiple?: boolean;
+    Multi?: boolean;
     ConvertType?: FileConvertType | FileConvertType[];
 };
 type AddV_TreeOption = {
