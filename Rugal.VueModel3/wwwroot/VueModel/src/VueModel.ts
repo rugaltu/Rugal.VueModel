@@ -1375,7 +1375,7 @@ type AddV_ModelOption = {
 type AddV_FilePickerOption = string | {
     Store: string,
     Accept?: string | string[],
-    Multi?: boolean;
+    Multiple?: boolean;
     ConvertType?: FileConvertType | FileConvertType[];
 };
 type AddV_TreeOption = {
@@ -1525,7 +1525,7 @@ class VueCommand extends VueStore {
         else {
             FileStorePath = Option.Store;
             ConvertType = Option.ConvertType;
-            Multi = Option.Multi;
+            Multi = Option.Multiple;
 
             if (Array.isArray(Option.Accept))
                 Accept = Option.Accept.join(' ');

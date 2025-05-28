@@ -1219,7 +1219,7 @@ class VueCommand extends VueStore {
         else {
             FileStorePath = Option.Store;
             ConvertType = Option.ConvertType;
-            Multi = Option.Multi;
+            Multi = Option.Multiple;
             if (Array.isArray(Option.Accept))
                 Accept = Option.Accept.join(' ');
             else

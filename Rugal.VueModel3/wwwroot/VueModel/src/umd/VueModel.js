@@ -1266,7 +1266,9 @@
                     Model.AddV_Function(['event', ...Info.DomPaths, Info.CommandKey], Info.StoreValue);
                 },
                 'using': (Info, Option) => {
-                    debugger;
+                    if (typeof (Info.StoreValue) === 'function') {
+                        Info.StoreValue(Info.DomPaths);
+                    }
                 }
             };
             for (let Info of AllSetInfo) {
