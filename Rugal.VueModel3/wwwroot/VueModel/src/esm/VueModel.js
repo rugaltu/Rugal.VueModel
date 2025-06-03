@@ -1,4 +1,4 @@
-class FuncBase {
+export class FuncBase {
     $NavigateToFunc;
     $DefaultDateJoinChar;
     constructor() {
@@ -343,7 +343,7 @@ class DomQueryer {
 }
 var Queryer = new DomQueryer();
 export { DomQueryer, Queryer };
-class FileItem {
+export class FileItem {
     $Store;
     constructor(File, ConvertType = 'none') {
         if (File == null)
@@ -438,7 +438,7 @@ class FileItem {
         Reader.onload = () => this.Buffer = Reader.result;
     }
 }
-class ApiStore extends FuncBase {
+export class ApiStore extends FuncBase {
     #ApiDomain = null;
     #RootRoute = null;
     #AccessToken = null;
@@ -969,7 +969,7 @@ class ApiStore extends FuncBase {
 }
 import { watch } from 'vue';
 import { createApp, reactive } from 'vue';
-class VueStore extends ApiStore {
+export class VueStore extends ApiStore {
     $VueProxy = null;
     $VueOption = {
         methods: {},
@@ -1039,7 +1039,7 @@ class VueStore extends ApiStore {
         return this.$VueProxy[RefName];
     }
 }
-class VueCommand extends VueStore {
+export class VueCommand extends VueStore {
     $IsInited = false;
     $QueryDomName = null;
     WithQueryDomName(QueryDomName) {
@@ -1161,7 +1161,7 @@ class VueCommand extends VueStore {
         else {
             FileStorePath = Option.Store;
             ConvertType = Option.ConvertType;
-            Multi = Option.Multi;
+            Multi = Option.Multiple;
             if (Array.isArray(Option.Accept))
                 Accept = Option.Accept.join(' ');
             else
@@ -1332,7 +1332,19 @@ class VueCommand extends VueStore {
             }
             let NextDomName = Model.ToJoin(Commands, ':');
             if (Command == '') {
-                this.$ParseTreeSet([...Paths, NextDomName], SetPair, Result);
+                if (typeof SetPair != 'function')
+                    this.$ParseTreeSet([...Paths, NextDomName], SetPair, Result);
+                else {
+                    Result.push({
+                        Command: 'using',
+                        CommandKey: null,
+                        StoreValue: SetPair,
+                        TreePaths: [...DomPaths],
+                        DomPaths: [...DomPaths, NextDomName],
+                        DomName: NextDomName,
+                        Params: Params,
+                    });
+                }
                 continue;
             }
             Result.push({
@@ -1486,7 +1498,7 @@ class VueCommand extends VueStore {
         return this.ToJoin(FullFuncPath);
     }
 }
-class VueModel extends VueCommand {
+export class VueModel extends VueCommand {
     $NativeWarn;
     $IsEnableVueWarn;
     $MountId = null;
@@ -1544,5 +1556,5 @@ class VueModel extends VueCommand {
 }
 const Model = new VueModel();
 window.Model = Model;
-export { Model, VueModel, FuncBase, ApiStore, VueStore, };
+export { Model, };
 //# sourceMappingURL=VueModel.js.map

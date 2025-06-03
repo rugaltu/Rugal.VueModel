@@ -9,14 +9,20 @@ Model
     'v-for': '(item, index) in Datas',
     'v-on:click(item, index)': (item, index) => {
     },
-    ':Btn': {
-        'using': (Paths) => {
-            Model.AddV_FilePicker(Paths, {
-                Store: 'a',
-                ConvertType: 'base64',
-            });
-        }
-    }
+    ':Btn': Paths => {
+        Model.AddV_FilePicker(Paths, {
+            Store: 'a',
+            ConvertType: 'base64',
+        });
+    },
+    //{
+    //    'using': (Paths) => {
+    //        Model.AddV_FilePicker(Paths, {
+    //            Store: 'a',
+    //            ConvertType: 'base64',
+    //        });
+    //    }
+    //}
 }, {
     UseTreePath: false,
 })

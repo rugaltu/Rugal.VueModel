@@ -4,7 +4,7 @@ export type PathType = PathBase | PathBase[];
 //#endregion
 
 //#region FuncBase
-class FuncBase {
+export class FuncBase {
     //#region Protected Property
     protected $NavigateToFunc: (Url: string) => {};
     protected $DefaultDateJoinChar: string;
@@ -448,7 +448,7 @@ type FileItemStore = {
     Buffer?: ArrayBuffer;
     ConvertType?: FileConvertType | FileConvertType[];
 }
-class FileItem {
+export class FileItem {
 
     protected $Store: FileItemStore;
     constructor(File?: File, ConvertType: FileConvertType | FileConvertType[] = 'none') {
@@ -609,7 +609,7 @@ type AddFileStoreOption = {
     Multi?: boolean;
 }
 //#endregion
-class ApiStore extends FuncBase {
+export class ApiStore extends FuncBase {
 
     //#region Private Property
     #ApiDomain: string = null;
@@ -1237,7 +1237,7 @@ class ApiStore extends FuncBase {
 }
 import { App, Plugin, watch } from 'vue';
 import { createApp, reactive } from 'vue';
-class VueStore extends ApiStore {
+export class VueStore extends ApiStore {
     protected $VueProxy: any = null;
     protected $VueOption: Record<string, any> = {
         methods: {},
@@ -1332,7 +1332,7 @@ type CommandOption = {
     FuncArgs?: PathType,
 };
 
-export type TreeSetType = {
+type TreeSetType = {
     'v-text'?: PathType | Function | TreeSetOption,
     'v-model'?: PathType,
     'v-for'?: PathType | Function | TreeSetOption,
@@ -1353,10 +1353,10 @@ export type TreeSetType = {
     [VSlotCmd: `v-slot:${string}`]: string,
 
     [FuncCmd: `func:${string}`]: Function,
-    [DomName: `:${string}`]: TreeSetType,
+    [DomName: `:${string}`]: ((Paths: PathType) => void) | TreeSetType,
 };
-export type TreeSetOption = CommandOption;
-export type AddCommandOption = PathType | Function | CommandOption;
+type TreeSetOption = CommandOption;
+type AddCommandOption = PathType | Function | CommandOption;
 
 type TreeSetInfo = {
     Nodes?: QueryNode[],
@@ -1384,7 +1384,7 @@ type AddV_TreeOption = {
     UseDomStore?: boolean,
 };
 //#endregion
-class VueCommand extends VueStore {
+export class VueCommand extends VueStore {
     protected $IsInited: boolean = false;
     $QueryDomName: string = null;
 
@@ -1463,8 +1463,10 @@ class VueCommand extends VueStore {
         this.$AddCommand(DomName, 'v-show', SetOption);
         return this;
     }
-    public AddV_Bind(DomName: PathType | QueryNode[], BindKey: string, Option: AddCommandOption) {
+    public AddV_Bind(DomName: PathType | QueryNode[], BindKey: string, Option: AddCommandOption, Args?: string) {
         let SetOption = this.$ConvertCommandOption(DomName, Option);
+        if (Args)
+            SetOption.FuncArgs = Args;
         SetOption.CommandKey = BindKey;
         this.$AddCommand(DomName, 'v-bind', SetOption);
         return this;
@@ -1599,7 +1601,7 @@ class VueCommand extends VueStore {
                 Model.AddV_Show(Option.TargetDom, Option.TargetValue);
             },
             'v-bind': (Info, Option) => {
-                Model.AddV_Bind(Option.TargetDom, Info.CommandKey, Option.TargetValue);
+                Model.AddV_Bind(Option.TargetDom, Info.CommandKey, Option.TargetValue, Info.Params);
             },
             'v-on': (Info, Option) => {
                 Model.AddV_On(Option.TargetDom, Info.CommandKey, Option.TargetValue, Info.Params);
@@ -1718,7 +1720,19 @@ class VueCommand extends VueStore {
 
             let NextDomName = Model.ToJoin(Commands, ':');
             if (Command == '') {
-                this.$ParseTreeSet([...Paths, NextDomName], SetPair, Result);
+                if (typeof SetPair != 'function')
+                    this.$ParseTreeSet([...Paths, NextDomName], SetPair as any, Result);
+                else {
+                    Result.push({
+                        Command: 'using',
+                        CommandKey: null,
+                        StoreValue: SetPair,
+                        TreePaths: [...DomPaths],
+                        DomPaths: [...DomPaths, NextDomName],
+                        DomName: NextDomName,
+                        Params: Params,
+                    });
+                }
                 continue;
             }
 
@@ -1901,7 +1915,7 @@ class VueCommand extends VueStore {
 
     //#endregion
 }
-class VueModel extends VueCommand {
+export class VueModel extends VueCommand {
     $NativeWarn: (...Message: any[]) => void;
     $IsEnableVueWarn: boolean;
     $MountId: string = null;
@@ -1975,8 +1989,4 @@ const Model = new VueModel();
 (window as any).Model = Model;
 export {
     Model,
-    VueModel,
-    FuncBase,
-    ApiStore,
-    VueStore,
 }

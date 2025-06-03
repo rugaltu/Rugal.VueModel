@@ -4,8 +4,10 @@ import { Queryer, Model } from 'vuemodel3';
 
 Model.WithQueryDomName('pv-name');
 
-let s = (a: any) => { };
+let s:any = (a: any) => { };
 let ss = s.prototype;
+
+
 
 Model
     .AddV_Tree('Root', {
@@ -13,14 +15,22 @@ Model
         'v-for': '(item, index) in Datas',
         'v-on:click(item, index)': (item: any, index: any) => {
         },
-        ':Btn': {
-            'using': (Paths) => {
-                Model.AddV_FilePicker(Paths, {
-                    Store: 'a',
-                    ConvertType: 'base64',
-                });
-            }
-        }
+        ':Btn': Paths => {
+            Model.AddV_FilePicker(Paths, {
+                Store: 'a',
+                ConvertType: 'base64',
+            });
+        },
+
+
+        //{
+        //    'using': (Paths) => {
+        //        Model.AddV_FilePicker(Paths, {
+        //            Store: 'a',
+        //            ConvertType: 'base64',
+        //        });
+        //    }
+        //}
     }, {
         UseTreePath: false,
     })

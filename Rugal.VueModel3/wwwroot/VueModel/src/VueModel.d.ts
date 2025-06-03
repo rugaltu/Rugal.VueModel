@@ -1,6 +1,6 @@
 type PathBase = string | string[];
 export type PathType = PathBase | PathBase[];
-declare class FuncBase {
+export declare class FuncBase {
     protected $NavigateToFunc: (Url: string) => {};
     protected $DefaultDateJoinChar: string;
     constructor();
@@ -91,7 +91,7 @@ type FileItemStore = {
     Buffer?: ArrayBuffer;
     ConvertType?: FileConvertType | FileConvertType[];
 };
-declare class FileItem {
+export declare class FileItem {
     protected $Store: FileItemStore;
     constructor(File?: File, ConvertType?: FileConvertType | FileConvertType[]);
     get FileId(): string;
@@ -163,7 +163,7 @@ type AddPropertyType = {
 type AddFileStoreOption = {
     Multi?: boolean;
 };
-declare class ApiStore extends FuncBase {
+export declare class ApiStore extends FuncBase {
     #private;
     protected $ApiStore: Record<string, ApiStoreValue>;
     constructor();
@@ -230,7 +230,7 @@ declare class ApiStore extends FuncBase {
     protected $AppendFileToFormData(FileKey: string, Form: FormData, FileData: FilesType): FormData;
 }
 import { App, Plugin } from 'vue';
-declare class VueStore extends ApiStore {
+export declare class VueStore extends ApiStore {
     #private;
     protected $VueProxy: any;
     protected $VueOption: Record<string, any>;
@@ -256,7 +256,7 @@ type CommandOption = {
     FuncAction?: boolean;
     FuncArgs?: PathType;
 };
-export type TreeSetType = {
+type TreeSetType = {
     'v-text'?: PathType | Function | TreeSetOption;
     'v-model'?: PathType;
     'v-for'?: PathType | Function | TreeSetOption;
@@ -275,10 +275,10 @@ export type TreeSetType = {
     [VOnCmd: `v-on:${string}`]: PathType | Function | TreeSetOption;
     [VSlotCmd: `v-slot:${string}`]: string;
     [FuncCmd: `func:${string}`]: Function;
-    [DomName: `:${string}`]: TreeSetType;
+    [DomName: `:${string}`]: ((Paths: PathType) => void) | TreeSetType;
 };
-export type TreeSetOption = CommandOption;
-export type AddCommandOption = PathType | Function | CommandOption;
+type TreeSetOption = CommandOption;
+type AddCommandOption = PathType | Function | CommandOption;
 type AddV_ModelOption = {
     ModelValue?: string;
     DefaultValue?: any;
@@ -286,7 +286,7 @@ type AddV_ModelOption = {
 type AddV_FilePickerOption = string | {
     Store: string;
     Accept?: string | string[];
-    Multi?: boolean;
+    Multiple?: boolean;
     ConvertType?: FileConvertType | FileConvertType[];
 };
 type AddV_TreeOption = {
@@ -294,7 +294,7 @@ type AddV_TreeOption = {
     UseTreePath?: boolean;
     UseDomStore?: boolean;
 };
-declare class VueCommand extends VueStore {
+export declare class VueCommand extends VueStore {
     protected $IsInited: boolean;
     $QueryDomName: string;
     WithQueryDomName(QueryDomName: string): this;
@@ -323,7 +323,7 @@ declare class VueCommand extends VueStore {
     protected $RandomFuncName(BaseFuncName: string): string;
     protected $GenerateEventFunction(DomName: PathType, EventFunc: Function, Command: string): string;
 }
-declare class VueModel extends VueCommand {
+export declare class VueModel extends VueCommand {
     $NativeWarn: (...Message: any[]) => void;
     $IsEnableVueWarn: boolean;
     $MountId: string;
@@ -335,4 +335,4 @@ declare class VueModel extends VueCommand {
     Using(UseFunc?: () => void): this;
 }
 declare const Model: VueModel;
-export { Model, VueModel, FuncBase, ApiStore, VueStore, };
+export { Model, };

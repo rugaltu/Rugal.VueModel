@@ -9,7 +9,7 @@
 })(function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.VueStore = exports.ApiStore = exports.FuncBase = exports.VueModel = exports.Model = exports.Queryer = exports.DomQueryer = void 0;
+    exports.Model = exports.VueModel = exports.VueCommand = exports.VueStore = exports.ApiStore = exports.FileItem = exports.Queryer = exports.DomQueryer = exports.FuncBase = void 0;
     class FuncBase {
         $NavigateToFunc;
         $DefaultDateJoinChar;
@@ -452,6 +452,7 @@
             Reader.onload = () => this.Buffer = Reader.result;
         }
     }
+    exports.FileItem = FileItem;
     class ApiStore extends FuncBase {
         #ApiDomain = null;
         #RootRoute = null;
@@ -1177,7 +1178,7 @@
             else {
                 FileStorePath = Option.Store;
                 ConvertType = Option.ConvertType;
-                Multi = Option.Multi;
+                Multi = Option.Multiple;
                 if (Array.isArray(Option.Accept))
                     Accept = Option.Accept.join(' ');
                 else
@@ -1348,7 +1349,19 @@
                 }
                 let NextDomName = Model.ToJoin(Commands, ':');
                 if (Command == '') {
-                    this.$ParseTreeSet([...Paths, NextDomName], SetPair, Result);
+                    if (typeof SetPair != 'function')
+                        this.$ParseTreeSet([...Paths, NextDomName], SetPair, Result);
+                    else {
+                        Result.push({
+                            Command: 'using',
+                            CommandKey: null,
+                            StoreValue: SetPair,
+                            TreePaths: [...DomPaths],
+                            DomPaths: [...DomPaths, NextDomName],
+                            DomName: NextDomName,
+                            Params: Params,
+                        });
+                    }
                     continue;
                 }
                 Result.push({
@@ -1502,6 +1515,7 @@
             return this.ToJoin(FullFuncPath);
         }
     }
+    exports.VueCommand = VueCommand;
     class VueModel extends VueCommand {
         $NativeWarn;
         $IsEnableVueWarn;

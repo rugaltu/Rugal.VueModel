@@ -1,6 +1,6 @@
 //#endregion
 //#region FuncBase
-class FuncBase {
+export class FuncBase {
     //#region Protected Property
     $NavigateToFunc;
     $DefaultDateJoinChar;
@@ -354,7 +354,7 @@ class DomQueryer {
 }
 var Queryer = new DomQueryer();
 export { DomQueryer, Queryer };
-class FileItem {
+export class FileItem {
     $Store;
     constructor(File, ConvertType = 'none') {
         if (File == null)
@@ -450,7 +450,7 @@ class FileItem {
     }
 }
 //#endregion
-class ApiStore extends FuncBase {
+export class ApiStore extends FuncBase {
     //#region Private Property
     #ApiDomain = null;
     #RootRoute = null;
@@ -1012,7 +1012,7 @@ class ApiStore extends FuncBase {
 }
 import { watch } from 'vue';
 import { createApp, reactive } from 'vue';
-class VueStore extends ApiStore {
+export class VueStore extends ApiStore {
     $VueProxy = null;
     $VueOption = {
         methods: {},
@@ -1090,7 +1090,7 @@ class VueStore extends ApiStore {
     }
 }
 //#endregion
-class VueCommand extends VueStore {
+export class VueCommand extends VueStore {
     $IsInited = false;
     $QueryDomName = null;
     //#region With Method
@@ -1162,8 +1162,10 @@ class VueCommand extends VueStore {
         this.$AddCommand(DomName, 'v-show', SetOption);
         return this;
     }
-    AddV_Bind(DomName, BindKey, Option) {
+    AddV_Bind(DomName, BindKey, Option, Args) {
         let SetOption = this.$ConvertCommandOption(DomName, Option);
+        if (Args)
+            SetOption.FuncArgs = Args;
         SetOption.CommandKey = BindKey;
         this.$AddCommand(DomName, 'v-bind', SetOption);
         return this;
@@ -1281,7 +1283,7 @@ class VueCommand extends VueStore {
                 Model.AddV_Show(Option.TargetDom, Option.TargetValue);
             },
             'v-bind': (Info, Option) => {
-                Model.AddV_Bind(Option.TargetDom, Info.CommandKey, Option.TargetValue);
+                Model.AddV_Bind(Option.TargetDom, Info.CommandKey, Option.TargetValue, Info.Params);
             },
             'v-on': (Info, Option) => {
                 Model.AddV_On(Option.TargetDom, Info.CommandKey, Option.TargetValue, Info.Params);
@@ -1390,7 +1392,19 @@ class VueCommand extends VueStore {
             }
             let NextDomName = Model.ToJoin(Commands, ':');
             if (Command == '') {
-                this.$ParseTreeSet([...Paths, NextDomName], SetPair, Result);
+                if (typeof SetPair != 'function')
+                    this.$ParseTreeSet([...Paths, NextDomName], SetPair, Result);
+                else {
+                    Result.push({
+                        Command: 'using',
+                        CommandKey: null,
+                        StoreValue: SetPair,
+                        TreePaths: [...DomPaths],
+                        DomPaths: [...DomPaths, NextDomName],
+                        DomName: NextDomName,
+                        Params: Params,
+                    });
+                }
                 continue;
             }
             Result.push({
@@ -1549,7 +1563,7 @@ class VueCommand extends VueStore {
         return this.ToJoin(FullFuncPath);
     }
 }
-class VueModel extends VueCommand {
+export class VueModel extends VueCommand {
     $NativeWarn;
     $IsEnableVueWarn;
     $MountId = null;
@@ -1610,5 +1624,5 @@ class VueModel extends VueCommand {
 }
 const Model = new VueModel();
 window.Model = Model;
-export { Model, VueModel, FuncBase, ApiStore, VueStore, };
+export { Model, };
 //# sourceMappingURL=VueModel.js.map
