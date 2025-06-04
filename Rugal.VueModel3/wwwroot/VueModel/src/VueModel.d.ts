@@ -306,7 +306,7 @@ export declare class VueCommand extends VueStore {
     AddV_ElseIf(DomName: PathType | QueryNode[], Option: AddCommandOption): this;
     AddV_Else(DomName: PathType | QueryNode[]): this;
     AddV_Show(DomName: PathType | QueryNode[], Option: AddCommandOption): this;
-    AddV_Bind(DomName: PathType | QueryNode[], BindKey: string, Option: AddCommandOption): this;
+    AddV_Bind(DomName: PathType | QueryNode[], BindKey: string, Option: AddCommandOption, Args?: string): this;
     AddV_On(DomName: PathType | QueryNode[], EventName: string, Option: AddCommandOption, Args?: string): this;
     AddV_Watch(WatchPath: PathType, Func: Function, Deep?: boolean, Option?: any): this;
     AddV_Function(FuncName: PathType, Func: Function): this;

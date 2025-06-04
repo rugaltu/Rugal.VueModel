@@ -1317,7 +1317,7 @@ export class VueStore extends ApiStore {
         if (!this.$VueProxy)
             return null;
 
-        return this.$VueProxy[RefName];
+        return this.$VueProxy.$refs[RefName];
     }
     //#endregion
 }

@@ -1123,8 +1123,10 @@
             this.$AddCommand(DomName, 'v-show', SetOption);
             return this;
         }
-        AddV_Bind(DomName, BindKey, Option) {
+        AddV_Bind(DomName, BindKey, Option, Args) {
             let SetOption = this.$ConvertCommandOption(DomName, Option);
+            if (Args)
+                SetOption.FuncArgs = Args;
             SetOption.CommandKey = BindKey;
             this.$AddCommand(DomName, 'v-bind', SetOption);
             return this;
@@ -1240,7 +1242,7 @@
                     Model.AddV_Show(Option.TargetDom, Option.TargetValue);
                 },
                 'v-bind': (Info, Option) => {
-                    Model.AddV_Bind(Option.TargetDom, Info.CommandKey, Option.TargetValue);
+                    Model.AddV_Bind(Option.TargetDom, Info.CommandKey, Option.TargetValue, Info.Params);
                 },
                 'v-on': (Info, Option) => {
                     Model.AddV_On(Option.TargetDom, Info.CommandKey, Option.TargetValue, Info.Params);
