@@ -1,13 +1,12 @@
 
 //import { ApiStore } from '../VueModel/src/testVueModel';
-import { Queryer, Model } from 'vuemodel3';
+import { Queryer, Model, PathType } from 'vuemodel3';
 
 Model.WithQueryDomName('pv-name');
 
-let s:any = (a: any) => { };
-let ss = s.prototype;
-
-
+let P1: PathType = ['A1', 'B2'];
+let P2: PathType = 'C3';
+let P3 = [P1, P2];
 
 Model
     .AddV_Tree('Root', {

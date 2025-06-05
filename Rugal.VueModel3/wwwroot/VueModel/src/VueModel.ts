@@ -1,6 +1,5 @@
 //#region Base Type
-type PathBase = string | string[];
-export type PathType = PathBase | PathBase[];
+export type PathType = string | string[] | PathType[];
 //#endregion
 
 //#region FuncBase
@@ -38,18 +37,17 @@ export class FuncBase {
         let Id = this.GenerateId().replaceAll('-', FillString);
         return Id;
     }
-    public GenerateUrl(Url: PathBase, UrlParam: string | Record<string, any> = null): string {
-        Url = this.Paths(Url);
-        if (Url == null || Url.length == 0 || Url[0].length == 0)
+    public GenerateUrl(Url: PathType, UrlParam: string | Record<string, any> = null): string {
+        let UrlPaths = this.Paths<string>(Url);
+        if (UrlPaths == null || UrlPaths.length == 0 || UrlPaths[0].length == 0)
             this.$Throw('Url can not be null or empty');
 
-        Url = Url.map(Item => Item.replace(/\/+$/g, '').replace(/^\/+/g, '/'));
-        let CombineUrl = this.ToJoin(Url, '/');
+        UrlPaths = UrlPaths.map(Item => Item.replace(/\/+$/g, '').replace(/^\/+/g, '/'));
+        let CombineUrl = this.ToJoin(UrlPaths, '/');
         if (UrlParam != null) {
             UrlParam = this.ConvertTo_UrlQuery(UrlParam);
             CombineUrl += `?${UrlParam}`;
         }
-
         return CombineUrl;
     }
     protected $BaseNavigateTo(Url: string) {
@@ -63,7 +61,7 @@ export class FuncBase {
         this.$BaseNavigateTo(RootUrl);
         return this;
     }
-    public NavigateTo(Url: PathBase, UrlParam: string | Record<string, any> = null) {
+    public NavigateTo(Url: PathType, UrlParam: string | Record<string, any> = null) {
         let TargetUrl = this.GenerateUrl(Url, UrlParam);
         this.$BaseNavigateTo(TargetUrl);
         return this;
@@ -76,7 +74,7 @@ export class FuncBase {
         Link.rel = 'noopener noreferrer';
         Link.click();
     }
-    public NavigateBlank(Url: PathBase, UrlParam: string | Record<string, any> = null) {
+    public NavigateBlank(Url: PathType, UrlParam: string | Record<string, any> = null) {
         let TargetUrl = this.GenerateUrl(Url, UrlParam);
         this.$BaseNavigateBlank(TargetUrl);
         return this;
@@ -198,11 +196,11 @@ export class FuncBase {
         let Result = ConvertArray.join(Separator);
         return Result;
     }
-    public Paths(...Value: any[]): any[] {
+    public Paths<T = any>(...Value: any[]): T[] {
         if (!Array.isArray(Value))
             return [Value];
 
-        let Result = [];
+        let Result: T[] = [];
         for (let Item of Value) {
             if (Item == null)
                 continue;
@@ -215,7 +213,7 @@ export class FuncBase {
             if (Item.length == 0)
                 continue;
 
-            Result.push(...this.Paths(...Item));
+            Result.push(...this.Paths<T>(...Item));
         }
         return Result;
     }
@@ -1313,11 +1311,11 @@ export class VueStore extends ApiStore {
         this.$VueProxy?.$forceUpdate();
         return this;
     }
-    public Refs(RefName: string) {
+    public Refs(RefName: PathType) {
         if (!this.$VueProxy)
             return null;
 
-        return this.$VueProxy.$refs[RefName];
+        return this.$VueProxy.$refs[Model.ToJoin(RefName)];
     }
     //#endregion
 }

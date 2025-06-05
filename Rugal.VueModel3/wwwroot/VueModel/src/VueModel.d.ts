@@ -1,5 +1,4 @@
-type PathBase = string | string[];
-export type PathType = PathBase | PathBase[];
+export type PathType = string | string[] | PathType[];
 export declare class FuncBase {
     protected $NavigateToFunc: (Url: string) => {};
     protected $DefaultDateJoinChar: string;
@@ -8,12 +7,12 @@ export declare class FuncBase {
     WithDateTextJoinChar(JoinChar: string): this;
     GenerateId(): string;
     GenerateIdReplace(FillString: string): string;
-    GenerateUrl(Url: PathBase, UrlParam?: string | Record<string, any>): string;
+    GenerateUrl(Url: PathType, UrlParam?: string | Record<string, any>): string;
     protected $BaseNavigateTo(Url: string): void;
     NavigateToRoot(): this;
-    NavigateTo(Url: PathBase, UrlParam?: string | Record<string, any>): this;
+    NavigateTo(Url: PathType, UrlParam?: string | Record<string, any>): this;
     protected $BaseNavigateBlank(Url: string): void;
-    NavigateBlank(Url: PathBase, UrlParam?: string | Record<string, any>): this;
+    NavigateBlank(Url: PathType, UrlParam?: string | Record<string, any>): this;
     ForEachObject<TValue>(Param: Record<string, TValue>, Func: (Key: string, Value: TValue) => void): void;
     DeepObjectExtend(Target: any, Source: any, MaxDepth?: number): any;
     ToDateInfo(QueryDate?: Date | string | DateTimeInfo): DateTimeInfo;
@@ -23,7 +22,7 @@ export declare class FuncBase {
     ConvertTo_UrlQuery(Param: string | Record<string, any>): string;
     ClearUrl(ApiUrl: string): string;
     ToJoin(Value: any, Separator?: string): string;
-    Paths(...Value: any[]): any[];
+    Paths<T = any>(...Value: any[]): T[];
     IsPathType(CheckPathType: any): boolean;
     protected $Throw(Message: string): void;
     protected $Error(Data: any): void;
@@ -246,7 +245,7 @@ export declare class VueStore extends ApiStore {
     WithComponent(Component?: {}): this;
     WithVueUse(...UsePlugin: Plugin[]): this;
     ForceUpdate(): this;
-    Refs(RefName: string): any;
+    Refs(RefName: PathType): any;
 }
 type CommandOption = {
     CommandKey?: string;
