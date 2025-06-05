@@ -33,11 +33,11 @@ export class FuncBase {
         return Id;
     }
     GenerateUrl(Url, UrlParam = null) {
-        Url = this.Paths(Url);
-        if (Url == null || Url.length == 0 || Url[0].length == 0)
+        let UrlPaths = this.Paths(Url);
+        if (UrlPaths == null || UrlPaths.length == 0 || UrlPaths[0].length == 0)
             this.$Throw('Url can not be null or empty');
-        Url = Url.map(Item => Item.replace(/\/+$/g, '').replace(/^\/+/g, '/'));
-        let CombineUrl = this.ToJoin(Url, '/');
+        UrlPaths = UrlPaths.map(Item => Item.replace(/\/+$/g, '').replace(/^\/+/g, '/'));
+        let CombineUrl = this.ToJoin(UrlPaths, '/');
         if (UrlParam != null) {
             UrlParam = this.ConvertTo_UrlQuery(UrlParam);
             CombineUrl += `?${UrlParam}`;
@@ -1086,7 +1086,7 @@ export class VueStore extends ApiStore {
     Refs(RefName) {
         if (!this.$VueProxy)
             return null;
-        return this.$VueProxy.$refs[RefName];
+        return this.$VueProxy.$refs[Model.ToJoin(RefName)];
     }
 }
 //#endregion

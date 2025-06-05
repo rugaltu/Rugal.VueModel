@@ -1,8 +1,9 @@
 //import { ApiStore } from '../VueModel/src/testVueModel';
 import { Model } from 'vuemodel3';
 Model.WithQueryDomName('pv-name');
-let s = (a) => { };
-let ss = s.prototype;
+let P1 = ['A1', 'B2'];
+let P2 = 'C3';
+let P3 = [P1, P2];
 Model
     .AddV_Tree('Root', {
     'v-for(item, index)': 'Datas',

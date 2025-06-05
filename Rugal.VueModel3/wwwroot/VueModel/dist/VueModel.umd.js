@@ -1052,7 +1052,7 @@
         Refs(RefName) {
             if (!this.$VueProxy)
                 return null;
-            return this.$VueProxy[RefName];
+            return this.$VueProxy.$refs[Model.ToJoin(RefName)];
         }
     }
     exports.VueStore = VueStore;

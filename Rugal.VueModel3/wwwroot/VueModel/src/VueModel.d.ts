@@ -1,5 +1,5 @@
 type PathBase = string | string[];
-export type PathType = PathBase | PathBase[];
+export type PathType = PathBase | PathBase[] | PathType[];
 export declare class FuncBase {
     protected $NavigateToFunc: (Url: string) => {};
     protected $DefaultDateJoinChar: string;
@@ -246,7 +246,7 @@ export declare class VueStore extends ApiStore {
     WithComponent(Component?: {}): this;
     WithVueUse(...UsePlugin: Plugin[]): this;
     ForceUpdate(): this;
-    Refs(RefName: string): any;
+    Refs(RefName: PathType): any;
 }
 type CommandOption = {
     CommandKey?: string;
