@@ -1421,6 +1421,8 @@ export class VueCommand extends VueStore {
     //#endregion
     //#region Property Method
     AddV_Property(PropertyPath, Option) {
+        if (PropertyPath == null)
+            return;
         let SetStore = this.Store;
         PropertyPath = this.ToJoin(PropertyPath);
         let PropertyKey = PropertyPath;
@@ -1437,6 +1439,8 @@ export class VueCommand extends VueStore {
             if (!Array.isArray(Option.Bind))
                 Option.Bind = [Option.Bind];
             for (let BindPath of Option.Bind) {
+                if (BindPath == null)
+                    continue;
                 this.AddV_Property(BindPath, {
                     Target: PropertyPath,
                 });

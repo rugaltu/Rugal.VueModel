@@ -1749,8 +1749,10 @@ export class VueCommand extends VueStore {
 
     //#region Property Method
     public AddV_Property(PropertyPath: PathType, Option: AddPropertyType) {
-        let SetStore = this.Store;
+        if (PropertyPath == null)
+            return;
 
+        let SetStore = this.Store;
         PropertyPath = this.ToJoin(PropertyPath);
         let PropertyKey = PropertyPath;
         if (PropertyPath.includes('.')) {
@@ -1767,6 +1769,8 @@ export class VueCommand extends VueStore {
                 Option.Bind = [Option.Bind];
 
             for (let BindPath of Option.Bind) {
+                if (BindPath == null)
+                    continue;
                 this.AddV_Property(BindPath, {
                     Target: PropertyPath,
                 });
