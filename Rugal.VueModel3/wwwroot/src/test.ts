@@ -20,8 +20,6 @@ Model
                 ConvertType: 'base64',
             });
         },
-
-
         //{
         //    'using': (Paths) => {
         //        Model.AddV_FilePicker(Paths, {
@@ -33,6 +31,11 @@ Model
     }, {
         UseTreePath: false,
     })
+    .AddV_OnMounted('Root', (props: any) => {
+    })
+    .AddV_OnUnMounted('Root', (props: any) => {
+    })
+
     .UpdateStore('C', 'aaa')
     .UpdateStore('Test.A', null)
     .AddV_Watch('Test.A', (Value: any) => {
@@ -42,7 +45,6 @@ Model
         alert('b');
     })
     .UpdateStore('Datas', [{ a: 'a' }, { b: 'b' }])
-
     .Init();
 
 //Model

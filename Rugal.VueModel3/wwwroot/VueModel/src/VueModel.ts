@@ -1234,7 +1234,7 @@ export class ApiStore extends FuncBase {
     //#endregion
 }
 import { App, Plugin, watch } from 'vue';
-import { createApp, reactive } from 'vue';
+import { createApp, reactive, Directive } from 'vue';
 export class VueStore extends ApiStore {
     protected $VueProxy: any = null;
     protected $VueOption: Record<string, any> = {
@@ -1246,6 +1246,7 @@ export class VueStore extends ApiStore {
     protected $VueUse: Plugin[] = [];
     protected $CoreStore: string = 'app';
     protected $MountedFuncs: Function[] = [];
+    protected $Directive: { Name: string, Directive: Directive }[] = [];
     constructor() {
         super();
         this.#Setup();
@@ -1302,6 +1303,13 @@ export class VueStore extends ApiStore {
         for (let Item of UsePlugin) {
             this.$VueUse.push(Item);
         }
+        return this;
+    }
+    public WithDirective(Name: string, Directive: Directive) {
+        this.$Directive.push({
+            Name,
+            Directive
+        });
         return this;
     }
     //#endregion
@@ -1922,12 +1930,12 @@ export class VueModel extends VueCommand {
     $IsEnableVueWarn: boolean;
     $MountId: string = null;
     Id: string;
-
     constructor() {
         super();
         this.Id = this.GenerateId();
         this.$MountId = 'app';
         this.WithVueWarn(false);
+        this.WithLifeCycleDirective();
     }
 
     //#region With Method
@@ -1951,6 +1959,20 @@ export class VueModel extends VueCommand {
             this.$NativeWarn(Message);
         }
         return this;
+    }
+    public WithLifeCycleDirective() {
+        this.WithDirective('on-mounted', {
+            mounted(el, binding, vnode) {
+                if (typeof binding.value === 'function')
+                    binding.value(vnode.props, vnode.el, vnode);
+            }
+        });
+        this.WithDirective('on-unmounted', {
+            unmounted(el, binding, vnode) {
+                if (typeof binding.value === 'function')
+                    binding.value(vnode.props, vnode.el, vnode);
+            }
+        });
     }
     //#endregion
 
@@ -1976,12 +1998,43 @@ export class VueModel extends VueCommand {
         for (let Item of this.$VueUse)
             this.$VueApp.use(Item);
 
+        for (let Item of this.$Directive)
+            this.$VueApp.directive(Item.Name, Item.Directive);
+
         this.$VueProxy = this.$VueApp.mount(`#${this.$MountId}`);
         this.$IsInited = true;
         return this;
     }
     public Using(UseFunc = () => { }) {
         UseFunc();
+        return this;
+    }
+    public UsingVueApp(UsingFunc: ((VueApp: App) => void)) {
+        UsingFunc?.call(this, this.$VueApp);
+        this.$VueApp.directive
+        return this;
+    }
+    //#endregion
+
+    //#region Customer Vue Command
+    public AddV_OnMounted(DomName: PathType | QueryNode[], Option: AddCommandOption, Args?: string) {
+        let SetOption = this.$ConvertCommandOption(DomName, Option);
+        if (Args) {
+            SetOption.FuncArgs = Args;
+            SetOption.TargetHead = '($props, $el, $vnode) => ';
+        }
+        SetOption.FuncAction = false;
+        this.$AddCommand(DomName, `v-on-mounted`, SetOption);
+        return this;
+    }
+    public AddV_OnUnMounted(DomName: PathType, Option: AddCommandOption, Args?: string) {
+        let SetOption = this.$ConvertCommandOption(DomName, Option);
+        if (Args) {
+            SetOption.FuncArgs = Args;
+            SetOption.TargetHead = '($props, $el, $vnode) => ';
+        }
+        SetOption.FuncAction = false;
+        this.$AddCommand(DomName, `v-on-unmounted`, SetOption);
         return this;
     }
     //#endregion

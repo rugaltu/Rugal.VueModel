@@ -996,6 +996,7 @@
         $VueUse = [];
         $CoreStore = 'app';
         $MountedFuncs = [];
+        $Directive = [];
         constructor() {
             super();
             this.#Setup();
@@ -1043,6 +1044,13 @@
             for (let Item of UsePlugin) {
                 this.$VueUse.push(Item);
             }
+            return this;
+        }
+        WithDirective(Name, Directive) {
+            this.$Directive.push({
+                Name,
+                Directive
+            });
             return this;
         }
         ForceUpdate() {
@@ -1378,6 +1386,8 @@
             }
         }
         AddV_Property(PropertyPath, Option) {
+            if (PropertyPath == null)
+                return;
             let SetStore = this.Store;
             PropertyPath = this.ToJoin(PropertyPath);
             let PropertyKey = PropertyPath;
@@ -1394,6 +1404,8 @@
                 if (!Array.isArray(Option.Bind))
                     Option.Bind = [Option.Bind];
                 for (let BindPath of Option.Bind) {
+                    if (BindPath == null)
+                        continue;
                     this.AddV_Property(BindPath, {
                         Target: PropertyPath,
                     });
@@ -1528,6 +1540,7 @@
             this.Id = this.GenerateId();
             this.$MountId = 'app';
             this.WithVueWarn(false);
+            this.WithLifeCycleDirective();
         }
         WithMountId(MountId) {
             this.$MountId = MountId;
@@ -1547,6 +1560,20 @@
             };
             return this;
         }
+        WithLifeCycleDirective() {
+            this.WithDirective('on-mounted', {
+                mounted(el, binding, vnode) {
+                    if (typeof binding.value === 'function')
+                        binding.value(vnode.props, vnode.el, vnode);
+                }
+            });
+            this.WithDirective('on-unmounted', {
+                unmounted(el, binding, vnode) {
+                    if (typeof binding.value === 'function')
+                        binding.value(vnode.props, vnode.el, vnode);
+                }
+            });
+        }
         Init() {
             if (this.$IsInited)
                 return this;
@@ -1565,12 +1592,39 @@
             });
             for (let Item of this.$VueUse)
                 this.$VueApp.use(Item);
+            for (let Item of this.$Directive)
+                this.$VueApp.directive(Item.Name, Item.Directive);
             this.$VueProxy = this.$VueApp.mount(`#${this.$MountId}`);
             this.$IsInited = true;
             return this;
         }
         Using(UseFunc = () => { }) {
             UseFunc();
+            return this;
+        }
+        UsingVueApp(UsingFunc) {
+            UsingFunc?.call(this, this.$VueApp);
+            this.$VueApp.directive;
+            return this;
+        }
+        AddV_OnMounted(DomName, Option, Args) {
+            let SetOption = this.$ConvertCommandOption(DomName, Option);
+            if (Args) {
+                SetOption.FuncArgs = Args;
+                SetOption.TargetHead = '($props, $el, $vnode) => ';
+            }
+            SetOption.FuncAction = false;
+            this.$AddCommand(DomName, `v-on-mounted`, SetOption);
+            return this;
+        }
+        AddV_OnUnMounted(DomName, Option, Args) {
+            let SetOption = this.$ConvertCommandOption(DomName, Option);
+            if (Args) {
+                SetOption.FuncArgs = Args;
+                SetOption.TargetHead = '($props, $el, $vnode) => ';
+            }
+            SetOption.FuncAction = false;
+            this.$AddCommand(DomName, `v-on-unmounted`, SetOption);
             return this;
         }
     }

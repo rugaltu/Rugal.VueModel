@@ -229,6 +229,7 @@ export declare class ApiStore extends FuncBase {
     protected $AppendFileToFormData(FileKey: string, Form: FormData, FileData: FilesType): FormData;
 }
 import { App, Plugin } from 'vue';
+import { Directive } from 'vue';
 export declare class VueStore extends ApiStore {
     #private;
     protected $VueProxy: any;
@@ -237,6 +238,10 @@ export declare class VueStore extends ApiStore {
     protected $VueUse: Plugin[];
     protected $CoreStore: string;
     protected $MountedFuncs: Function[];
+    protected $Directive: {
+        Name: string;
+        Directive: Directive;
+    }[];
     constructor();
     get Store(): StoreType;
     protected set Store(Store: StoreType);
@@ -244,6 +249,7 @@ export declare class VueStore extends ApiStore {
     WithMounted(MountedFunc?: () => void): this;
     WithComponent(Component?: {}): this;
     WithVueUse(...UsePlugin: Plugin[]): this;
+    WithDirective(Name: string, Directive: Directive): this;
     ForceUpdate(): this;
     Refs(RefName: PathType): any;
 }
@@ -330,8 +336,12 @@ export declare class VueModel extends VueCommand {
     constructor();
     WithMountId(MountId: string): this;
     WithVueWarn(Enable: boolean): this;
+    WithLifeCycleDirective(): void;
     Init(): this;
     Using(UseFunc?: () => void): this;
+    UsingVueApp(UsingFunc: ((VueApp: App) => void)): this;
+    AddV_OnMounted(DomName: PathType | QueryNode[], Option: AddCommandOption, Args?: string): this;
+    AddV_OnUnMounted(DomName: PathType, Option: AddCommandOption, Args?: string): this;
 }
 declare const Model: VueModel;
 export { Model, };

@@ -27,6 +27,10 @@ Model
 }, {
     UseTreePath: false,
 })
+    .AddV_OnMounted('Root', (props) => {
+})
+    .AddV_OnUnMounted('Root', (props) => {
+})
     .UpdateStore('C', 'aaa')
     .UpdateStore('Test.A', null)
     .AddV_Watch('Test.A', (Value) => {
