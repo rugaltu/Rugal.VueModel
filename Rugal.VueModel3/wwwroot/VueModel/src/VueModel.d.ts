@@ -123,6 +123,7 @@ type AddApiContent = {
     Query?: ApiCallQuery | (() => ApiCallQuery);
     Body?: ApiCallBody | (() => ApiCallBody);
     File?: ApiCallFile | (() => ApiCallFile);
+    Export?: boolean | ((ApiResult: any, ApiResponse: Response) => any);
     IsUpdateStore?: boolean;
 } & ApiCallback;
 type ApiStoreValue = {

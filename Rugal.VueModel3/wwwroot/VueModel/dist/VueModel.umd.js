@@ -601,8 +601,13 @@
                     throw ApiResponse;
                 let ConvertResult = await this.$ProcessApiReturn(ApiResponse);
                 if (IsUpdateStore) {
-                    if (this.#ExportSuccessStore != null) {
-                        ConvertResult = this.#ExportSuccessStore?.call(this, ConvertResult, ApiResponse);
+                    if (Api.Export != false) {
+                        if (typeof Api.Export === 'function') {
+                            ConvertResult = Api.Export?.call(this, ConvertResult, ApiResponse);
+                        }
+                        else if (this.#ExportSuccessStore != null) {
+                            ConvertResult = this.#ExportSuccessStore?.call(this, ConvertResult, ApiResponse);
+                        }
                     }
                     let StoreKey = Api.ApiKey;
                     this.UpdateStore(StoreKey, ConvertResult);
