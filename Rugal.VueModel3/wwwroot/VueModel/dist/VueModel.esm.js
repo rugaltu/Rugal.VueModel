@@ -1250,6 +1250,12 @@ export class VueCommand extends VueStore {
                 }
                 Model.AddV_Slot(Option.TargetDom, Info.CommandKey, Option.TargetPath);
             },
+            'v-on-mounted': (Info, Option) => {
+                Model.AddV_OnMounted(Option.TargetDom, Option.TargetValue, Info.CommandKey);
+            },
+            'v-on-unmounted': (Info, Option) => {
+                Model.AddV_OnUnMounted(Option.TargetDom, Option.TargetValue, Info.CommandKey);
+            },
             'watch': (Info, Option) => {
                 if (typeof (Info.StoreValue) != 'function') {
                     Model.$Error(`watch command value must be a function, path: ${this.ToJoin(Info.DomPaths)}`);
