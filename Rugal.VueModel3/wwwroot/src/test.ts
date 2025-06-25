@@ -20,6 +20,12 @@ Model
                 ConvertType: 'base64',
             });
         },
+        'v-on-mounted:item': (item: any) => {
+            debugger;
+        },
+        'v-on-unmounted:item': (item: any) => {
+            debugger;
+        }
         //{
         //    'using': (Paths) => {
         //        Model.AddV_FilePicker(Paths, {
@@ -31,10 +37,10 @@ Model
     }, {
         UseTreePath: false,
     })
-    .AddV_OnMounted('Root', (props: any) => {
-    })
-    .AddV_OnUnMounted('Root', (props: any) => {
-    })
+    //.AddV_OnMounted('Root', (props: any) => {
+    //})
+    //.AddV_OnUnMounted('Root', (props: any) => {
+    //})
 
     .UpdateStore('C', 'aaa')
     .UpdateStore('Test.A', null)

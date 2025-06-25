@@ -273,6 +273,8 @@ type TreeSetType = {
     'v-bind'?: PathType | Function | TreeSetOption;
     'v-on:change'?: PathType | Function | TreeSetOption;
     'v-on:click'?: PathType | Function | TreeSetOption;
+    'v-on-mounted'?: PathType | Function | TreeSetOption;
+    'v-on-unmounted'?: PathType | Function | TreeSetOption;
     'watch'?: Function;
     'using'?: (Paths: PathType) => void;
     [VModelCmd: `v-model:${string}`]: PathType | TreeSetOption;
@@ -280,6 +282,8 @@ type TreeSetType = {
     [VBindCmd: `v-bind:${string}`]: PathType | Function | TreeSetOption;
     [VOnCmd: `v-on:${string}`]: PathType | Function | TreeSetOption;
     [VSlotCmd: `v-slot:${string}`]: string;
+    [VSlotCmd: `v-on-mounted:${string}`]: PathType | Function | TreeSetOption;
+    [VSlotCmd: `v-on-unmounted:${string}`]: PathType | Function | TreeSetOption;
     [FuncCmd: `func:${string}`]: Function;
     [DomName: `:${string}`]: ((Paths: PathType) => void) | TreeSetType;
 };
@@ -342,7 +346,7 @@ export declare class VueModel extends VueCommand {
     Using(UseFunc?: () => void): this;
     UsingVueApp(UsingFunc: ((VueApp: App) => void)): this;
     AddV_OnMounted(DomName: PathType | QueryNode[], Option: AddCommandOption, Args?: string): this;
-    AddV_OnUnMounted(DomName: PathType, Option: AddCommandOption, Args?: string): this;
+    AddV_OnUnMounted(DomName: PathType | QueryNode[], Option: AddCommandOption, Args?: string): this;
 }
 declare const Model: VueModel;
 export { Model, };
