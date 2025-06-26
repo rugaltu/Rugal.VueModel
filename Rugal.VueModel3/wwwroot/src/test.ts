@@ -9,6 +9,7 @@ let P2: PathType = 'C3';
 let P3 = [P1, P2];
 
 Model
+    .UpdateStore('test', [{ value: 1 }, { value: 2 }])
     .AddV_Tree('Root', {
         'v-for(item, index)': 'Datas',
         'v-for': '(item, index) in Datas',
@@ -20,12 +21,13 @@ Model
                 ConvertType: 'base64',
             });
         },
-        'v-on-mounted:item': (item: any) => {
-            debugger;
-        },
-        'v-on-unmounted:item': (item: any) => {
-            debugger;
-        }
+        //'v-on-mounted:item': (item: any) => {
+        //    debugger;
+        //},
+        //'v-on-unmounted:item': (item: any) => {
+        //    debugger;
+        //}
+
         //{
         //    'using': (Paths) => {
         //        Model.AddV_FilePicker(Paths, {

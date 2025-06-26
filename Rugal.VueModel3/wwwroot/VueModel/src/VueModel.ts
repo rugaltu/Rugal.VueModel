@@ -997,9 +997,9 @@ export class ApiStore extends FuncBase {
         if (FindStore == null)
             return null;
 
+        StorePath = StorePath.replaceAll(/\[|\]/g, '.').replaceAll(']', '.').replace(/\.$/, '');
         let StorePaths = StorePath.split('.');
         let FirstKey = StorePaths.shift();
-
         if (FindStore[FirstKey] == null && Option.CreateIfNull) {
             if (Array.isArray(Option.DefaultValue))
                 FindStore[FirstKey] = [...Option.DefaultValue];
@@ -1019,6 +1019,7 @@ export class ApiStore extends FuncBase {
     protected $RCS_SetStore(StorePath: string, StoreData: any, FindStore: any, Option = {
         IsDeepSet: true,
     }): any {
+        StorePath = StorePath.replaceAll(/\[|\]/g, '.').replaceAll(']', '.').replace(/\.$/, '');
         if (StorePath.includes('.')) {
             let StorePaths = StorePath.split('.');
             let FirstKey = StorePaths.shift();
