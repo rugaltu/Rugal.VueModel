@@ -331,6 +331,7 @@ export declare class VueCommand extends VueStore {
     AddV_Tree(TreeRoot: PathType, TreeSet: TreeSetType, Option?: AddV_TreeOption): this;
     private $ParseTreeSet;
     AddV_Property(PropertyPath: PathType, Option: AddPropertyType): this;
+    AddV_PropertyFrom(SourceStore: any, PropertyPath: PathType, Option: AddPropertyType): this;
     protected $BaseAddProperty(PropertyStore: StoreType, PropertyKey: string, Option: AddPropertyType): StoreType;
     protected $ConvertCommandOption(DomName: PathType | QueryNode[], Option?: AddCommandOption): CommandOption;
     protected $AddCommand(DomName: PathType | QueryNode[], Command: string, Option: CommandOption): void;

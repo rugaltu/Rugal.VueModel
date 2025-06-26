@@ -1791,17 +1791,20 @@ export class VueCommand extends VueStore {
 
     //#region Property Method
     public AddV_Property(PropertyPath: PathType, Option: AddPropertyType) {
+        return this.AddV_PropertyFrom(this.Store, PropertyPath, Option);
+    }
+    public AddV_PropertyFrom(SourceStore: any, PropertyPath: PathType, Option: AddPropertyType) {
         if (PropertyPath == null)
             return;
 
-        let SetStore = this.Store;
+        let SetStore = SourceStore;
         PropertyPath = this.ToJoin(PropertyPath);
         let PropertyKey = PropertyPath;
         if (PropertyPath.includes('.')) {
             let PropertyPaths = PropertyPath.split('.');
             PropertyKey = PropertyPaths.pop();
             let FindPath = PropertyPaths.join('.');
-            SetStore = this.GetStore(FindPath, {
+            SetStore = this.GetStoreFrom(SourceStore, FindPath, {
                 CreateIfNull: true,
             });
         }

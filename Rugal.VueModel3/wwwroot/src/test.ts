@@ -8,6 +8,12 @@ let P1: PathType = ['A1', 'B2'];
 let P2: PathType = 'C3';
 let P3 = [P1, P2];
 
+let ss = {};
+Model.AddV_PropertyFrom(ss, 'aaa.bbb', {
+    Target: 'Datas',
+});
+(window as any).ss = ss;
+
 Model
     .UpdateStore('test', [{ value: 1 }, { value: 2 }])
     .AddV_Tree('Root', {

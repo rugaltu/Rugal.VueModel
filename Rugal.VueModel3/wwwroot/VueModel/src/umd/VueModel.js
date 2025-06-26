@@ -1414,16 +1414,19 @@
             }
         }
         AddV_Property(PropertyPath, Option) {
+            return this.AddV_PropertyFrom(this.Store, PropertyPath, Option);
+        }
+        AddV_PropertyFrom(SourceStore, PropertyPath, Option) {
             if (PropertyPath == null)
                 return;
-            let SetStore = this.Store;
+            let SetStore = SourceStore;
             PropertyPath = this.ToJoin(PropertyPath);
             let PropertyKey = PropertyPath;
             if (PropertyPath.includes('.')) {
                 let PropertyPaths = PropertyPath.split('.');
                 PropertyKey = PropertyPaths.pop();
                 let FindPath = PropertyPaths.join('.');
-                SetStore = this.GetStore(FindPath, {
+                SetStore = this.GetStoreFrom(SourceStore, FindPath, {
                     CreateIfNull: true,
                 });
             }

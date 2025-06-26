@@ -4,6 +4,11 @@ Model.WithQueryDomName('pv-name');
 let P1 = ['A1', 'B2'];
 let P2 = 'C3';
 let P3 = [P1, P2];
+let ss = {};
+Model.AddV_PropertyFrom(ss, 'aaa.bbb', {
+    Target: 'Datas',
+});
+window.ss = ss;
 Model
     .UpdateStore('test', [{ value: 1 }, { value: 2 }])
     .AddV_Tree('Root', {
