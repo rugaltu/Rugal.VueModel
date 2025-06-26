@@ -903,43 +903,23 @@ export class ApiStore extends FuncBase {
     //#region Store Control
 
     //#region Public Data Store Contorl
-    public UpdateStore<TStore = any>(StorePath: PathType, StoreData: TStore) {
-        StorePath = this.ToJoin(StorePath);
-        this.$RCS_SetStore(StorePath, StoreData, this.Store, {
-            IsDeepSet: true,
-        });
-        this.$EventTrigger<EventArg_UpdateStore>(this.#EventName.UpdateStore, {
-            Path: StorePath,
-            Data: StoreData,
-        });
-        return this;
+    public GetStore<TStore = any>(StorePath: PathType, Option?: GetStoreOption<TStore> | boolean): TStore {
+        return this.GetStoreFrom(this.Store, StorePath, Option);
     }
     public AddStore<TStore = any>(StorePath: PathType, StoreData: TStore = null) {
-        StorePath = this.ToJoin(StorePath);
-        if (this.GetStore(StorePath) != null)
-            return this;
-
-        this.$RCS_SetStore(StorePath, StoreData, this.Store, {
-            IsDeepSet: true,
-        });
-        this.$EventTrigger<EventArg_AddStore>(this.#EventName.AddStore, {
-            Path: StorePath,
-            Data: StoreData,
-        });
-        return this;
+        return this.AddStoreFrom(this.Store, StorePath, StoreData);
     }
     public SetStore<TStore = any>(StorePath: PathType, StoreData: TStore) {
-        StorePath = this.ToJoin(StorePath);
-        this.$RCS_SetStore(StorePath, StoreData, this.Store, {
-            IsDeepSet: false,
-        });
-        this.$EventTrigger<EventArg_SetStore>(this.#EventName.SetStore, {
-            Path: StorePath,
-            Data: StoreData,
-        });
-        return this;
+        return this.SetStoreFrom(this.Store, StorePath, StoreData);
     }
-    public GetStore<TStore = any>(StorePath: PathType, Option?: GetStoreOption<TStore> | boolean): TStore {
+    public UpdateStore<TStore = any>(StorePath: PathType, StoreData: TStore) {
+        return this.UpdateStoreFrom(this.Store, StorePath, StoreData);
+    }
+    public ClearStore(StorePath: PathType) {
+        return this.ClearStoreFrom(this.Store, StorePath);
+    }
+
+    public GetStoreFrom<TStore = any>(SourceStore: any, StorePath: PathType, Option?: GetStoreOption<TStore> | boolean): TStore {
         if (typeof Option == 'boolean')
             Option = { Clone: Option };
 
@@ -950,7 +930,7 @@ export class ApiStore extends FuncBase {
             Option.DefaultValue = {} as any;
 
         StorePath = this.ToJoin(StorePath);
-        let FindStore = this.$RCS_GetStore(StorePath, this.Store, {
+        let FindStore = this.$RCS_GetStore(StorePath, SourceStore, {
             CreateIfNull: Option.CreateIfNull,
             DefaultValue: Option.DefaultValue as any,
         });
@@ -968,8 +948,44 @@ export class ApiStore extends FuncBase {
 
         return FindStore as TStore;
     }
-    public ClearStore(StorePath: PathType) {
-        let TargetStore = this.GetStore(StorePath);
+    public AddStoreFrom<TStore = any>(SourceStore: any, StorePath: PathType, StoreData: TStore = null) {
+        StorePath = this.ToJoin(StorePath);
+        if (this.GetStore(StorePath) != null)
+            return this;
+
+        this.$RCS_SetStore(StorePath, StoreData, SourceStore, {
+            IsDeepSet: true,
+        });
+        this.$EventTrigger<EventArg_AddStore>(this.#EventName.AddStore, {
+            Path: StorePath,
+            Data: StoreData,
+        });
+        return this;
+    }
+    public SetStoreFrom<TStore = any>(SourceStore: any, StorePath: PathType, StoreData: TStore) {
+        StorePath = this.ToJoin(StorePath);
+        this.$RCS_SetStore(StorePath, StoreData, SourceStore, {
+            IsDeepSet: false,
+        });
+        this.$EventTrigger<EventArg_SetStore>(this.#EventName.SetStore, {
+            Path: StorePath,
+            Data: StoreData,
+        });
+        return this;
+    }
+    public UpdateStoreFrom<TStore = any>(SourceStore: any, StorePath: PathType, StoreData: TStore) {
+        StorePath = this.ToJoin(StorePath);
+        this.$RCS_SetStore(StorePath, StoreData, SourceStore, {
+            IsDeepSet: true,
+        });
+        this.$EventTrigger<EventArg_UpdateStore>(this.#EventName.UpdateStore, {
+            Path: StorePath,
+            Data: StoreData,
+        });
+        return this;
+    }
+    public ClearStoreFrom(SourceStore: any, StorePath: PathType) {
+        let TargetStore = this.GetStoreFrom(SourceStore, StorePath);
         if (TargetStore == null)
             return this;
         let AllProperty = Object.getOwnPropertyNames(TargetStore);

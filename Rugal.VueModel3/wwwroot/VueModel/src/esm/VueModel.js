@@ -688,42 +688,22 @@ export class ApiStore extends FuncBase {
         for (let Item of EventFuncs)
             Item(EventArg);
     }
-    UpdateStore(StorePath, StoreData) {
-        StorePath = this.ToJoin(StorePath);
-        this.$RCS_SetStore(StorePath, StoreData, this.Store, {
-            IsDeepSet: true,
-        });
-        this.$EventTrigger(this.#EventName.UpdateStore, {
-            Path: StorePath,
-            Data: StoreData,
-        });
-        return this;
+    GetStore(StorePath, Option) {
+        return this.GetStoreFrom(this.Store, StorePath, Option);
     }
     AddStore(StorePath, StoreData = null) {
-        StorePath = this.ToJoin(StorePath);
-        if (this.GetStore(StorePath) != null)
-            return this;
-        this.$RCS_SetStore(StorePath, StoreData, this.Store, {
-            IsDeepSet: true,
-        });
-        this.$EventTrigger(this.#EventName.AddStore, {
-            Path: StorePath,
-            Data: StoreData,
-        });
-        return this;
+        return this.AddStoreFrom(this.Store, StorePath, StoreData);
     }
     SetStore(StorePath, StoreData) {
-        StorePath = this.ToJoin(StorePath);
-        this.$RCS_SetStore(StorePath, StoreData, this.Store, {
-            IsDeepSet: false,
-        });
-        this.$EventTrigger(this.#EventName.SetStore, {
-            Path: StorePath,
-            Data: StoreData,
-        });
-        return this;
+        return this.SetStoreFrom(this.Store, StorePath, StoreData);
     }
-    GetStore(StorePath, Option) {
+    UpdateStore(StorePath, StoreData) {
+        return this.UpdateStoreFrom(this.Store, StorePath, StoreData);
+    }
+    ClearStore(StorePath) {
+        return this.ClearStoreFrom(this.Store, StorePath);
+    }
+    GetStoreFrom(SourceStore, StorePath, Option) {
         if (typeof Option == 'boolean')
             Option = { Clone: Option };
         Option ??= {};
@@ -732,7 +712,7 @@ export class ApiStore extends FuncBase {
         if (Option.DefaultValue == null)
             Option.DefaultValue = {};
         StorePath = this.ToJoin(StorePath);
-        let FindStore = this.$RCS_GetStore(StorePath, this.Store, {
+        let FindStore = this.$RCS_GetStore(StorePath, SourceStore, {
             CreateIfNull: Option.CreateIfNull,
             DefaultValue: Option.DefaultValue,
         });
@@ -747,8 +727,43 @@ export class ApiStore extends FuncBase {
         }
         return FindStore;
     }
-    ClearStore(StorePath) {
-        let TargetStore = this.GetStore(StorePath);
+    AddStoreFrom(SourceStore, StorePath, StoreData = null) {
+        StorePath = this.ToJoin(StorePath);
+        if (this.GetStore(StorePath) != null)
+            return this;
+        this.$RCS_SetStore(StorePath, StoreData, SourceStore, {
+            IsDeepSet: true,
+        });
+        this.$EventTrigger(this.#EventName.AddStore, {
+            Path: StorePath,
+            Data: StoreData,
+        });
+        return this;
+    }
+    SetStoreFrom(SourceStore, StorePath, StoreData) {
+        StorePath = this.ToJoin(StorePath);
+        this.$RCS_SetStore(StorePath, StoreData, SourceStore, {
+            IsDeepSet: false,
+        });
+        this.$EventTrigger(this.#EventName.SetStore, {
+            Path: StorePath,
+            Data: StoreData,
+        });
+        return this;
+    }
+    UpdateStoreFrom(SourceStore, StorePath, StoreData) {
+        StorePath = this.ToJoin(StorePath);
+        this.$RCS_SetStore(StorePath, StoreData, SourceStore, {
+            IsDeepSet: true,
+        });
+        this.$EventTrigger(this.#EventName.UpdateStore, {
+            Path: StorePath,
+            Data: StoreData,
+        });
+        return this;
+    }
+    ClearStoreFrom(SourceStore, StorePath) {
+        let TargetStore = this.GetStoreFrom(SourceStore, StorePath);
         if (TargetStore == null)
             return this;
         let AllProperty = Object.getOwnPropertyNames(TargetStore);

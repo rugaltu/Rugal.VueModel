@@ -204,11 +204,16 @@ export declare class ApiStore extends FuncBase {
     EventAdd_SetStore(EventFunc: (EventArg: EventArg_SetStore) => void): this;
     protected $EventAdd<EventArgType>(EventName: string, OnFunc: (EventArg: EventArgType) => void): void;
     protected $EventTrigger<EventArgType>(EventName: string, EventArg: EventArgType): void;
-    UpdateStore<TStore = any>(StorePath: PathType, StoreData: TStore): this;
+    GetStore<TStore = any>(StorePath: PathType, Option?: GetStoreOption<TStore> | boolean): TStore;
     AddStore<TStore = any>(StorePath: PathType, StoreData?: TStore): this;
     SetStore<TStore = any>(StorePath: PathType, StoreData: TStore): this;
-    GetStore<TStore = any>(StorePath: PathType, Option?: GetStoreOption<TStore> | boolean): TStore;
+    UpdateStore<TStore = any>(StorePath: PathType, StoreData: TStore): this;
     ClearStore(StorePath: PathType): this;
+    GetStoreFrom<TStore = any>(SourceStore: any, StorePath: PathType, Option?: GetStoreOption<TStore> | boolean): TStore;
+    AddStoreFrom<TStore = any>(SourceStore: any, StorePath: PathType, StoreData?: TStore): this;
+    SetStoreFrom<TStore = any>(SourceStore: any, StorePath: PathType, StoreData: TStore): this;
+    UpdateStoreFrom<TStore = any>(SourceStore: any, StorePath: PathType, StoreData: TStore): this;
+    ClearStoreFrom(SourceStore: any, StorePath: PathType): this;
     protected $RCS_GetStore(StorePath: string, FindStore: any, Option: {
         CreateIfNull: boolean;
         DefaultValue: object;
