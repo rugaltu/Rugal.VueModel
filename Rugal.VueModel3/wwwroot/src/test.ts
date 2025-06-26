@@ -21,6 +21,8 @@ Model
         'v-for': '(item, index) in Datas',
         'v-on:click(item, index)': (item: any, index: any) => {
         },
+
+
         ':Btn': Paths => {
             Model.AddV_FilePicker(Paths, {
                 Store: 'a',

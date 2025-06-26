@@ -286,9 +286,10 @@ type TreeSetType = {
     [VForCmd: `v-for(${string})`]: PathType | Function | TreeSetOption;
     [VBindCmd: `v-bind:${string}`]: PathType | Function | TreeSetOption;
     [VOnCmd: `v-on:${string}`]: PathType | Function | TreeSetOption;
+    [VOnParamCmd: `v-on:${string}(${string})`]: PathType | Function | TreeSetOption;
     [VSlotCmd: `v-slot:${string}`]: string;
-    [VSlotCmd: `v-on-mounted:${string}`]: PathType | Function | TreeSetOption;
-    [VSlotCmd: `v-on-unmounted:${string}`]: PathType | Function | TreeSetOption;
+    [VOnMountedCmd: `v-on-mounted(${string})`]: PathType | Function | TreeSetOption;
+    [VOnUnMountedCmd: `v-on-unmounted(${string})`]: PathType | Function | TreeSetOption;
     [FuncCmd: `func:${string}`]: Function;
     [DomName: `:${string}`]: ((Paths: PathType) => void) | TreeSetType;
 };
