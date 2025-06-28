@@ -361,9 +361,9 @@
         $Store;
         constructor(File, ConvertType = 'none') {
             if (File == null)
-                this.$Store = (0, vue_2.reactive)({});
+                this.$Store = (0, vue_1.reactive)({});
             else {
-                this.$Store = (0, vue_2.reactive)({
+                this.$Store = (0, vue_1.reactive)({
                     FileId: new FuncBase().GenerateId(),
                     File: File,
                     ConvertType: ConvertType,
@@ -1170,15 +1170,18 @@
             this.$AddCommand(DomName, `v-on`, SetOption);
             return this;
         }
-        AddV_Watch(WatchPath, Func, Deep = false, Option = {}) {
-            let SetWatch = {
-                handler: Func,
-                deep: Deep,
-                ...Option,
-            };
-            Model.WithMounted(() => {
+        Watch(WatchPath, Callback, Option = {}) {
+            if (typeof WatchPath == 'function')
+                (0, vue_2.watch)(WatchPath, Callback, Option);
+            else {
                 Model.AddStore(WatchPath);
-                (0, vue_1.watch)(() => Model.GetStore(WatchPath), Func, SetWatch);
+                (0, vue_2.watch)(() => Model.GetStore(WatchPath), Callback, Option);
+            }
+            return this;
+        }
+        AddV_Watch(WatchPath, Callback, Option = {}) {
+            Model.WithMounted(() => {
+                this.Watch(WatchPath, Callback, Option);
             });
             return this;
         }
@@ -1608,10 +1611,10 @@
         Init() {
             if (this.$IsInited)
                 return this;
-            this.Store = (0, vue_2.reactive)(this.Store);
+            this.Store = (0, vue_1.reactive)(this.Store);
             let GetStore = this.Store;
             let MountedFunc = this.$MountedFuncs;
-            this.$VueApp = (0, vue_2.createApp)({
+            this.$VueApp = (0, vue_1.createApp)({
                 ...this.$VueOption,
                 data() {
                     return GetStore;

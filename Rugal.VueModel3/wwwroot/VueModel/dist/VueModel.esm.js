@@ -989,8 +989,8 @@ export class ApiStore extends FuncBase {
         return Form;
     }
 }
+import { createApp, reactive, } from 'vue';
 import { watch } from 'vue';
-import { createApp, reactive } from 'vue';
 export class VueStore extends ApiStore {
     $VueProxy = null;
     $VueOption = {
@@ -1153,15 +1153,18 @@ export class VueCommand extends VueStore {
         this.$AddCommand(DomName, `v-on`, SetOption);
         return this;
     }
-    AddV_Watch(WatchPath, Func, Deep = false, Option = {}) {
-        let SetWatch = {
-            handler: Func,
-            deep: Deep,
-            ...Option,
-        };
-        Model.WithMounted(() => {
+    Watch(WatchPath, Callback, Option = {}) {
+        if (typeof WatchPath == 'function')
+            watch(WatchPath, Callback, Option);
+        else {
             Model.AddStore(WatchPath);
-            watch(() => Model.GetStore(WatchPath), Func, SetWatch);
+            watch(() => Model.GetStore(WatchPath), Callback, Option);
+        }
+        return this;
+    }
+    AddV_Watch(WatchPath, Callback, Option = {}) {
+        Model.WithMounted(() => {
+            this.Watch(WatchPath, Callback, Option);
         });
         return this;
     }

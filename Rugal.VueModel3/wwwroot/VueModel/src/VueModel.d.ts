@@ -234,8 +234,8 @@ export declare class ApiStore extends FuncBase {
     protected $ConvertTo_FormFile(FileParam: FormDataFileType, Form: FormData): FormData;
     protected $AppendFileToFormData(FileKey: string, Form: FormData, FileData: FilesType): FormData;
 }
-import { App, Plugin } from 'vue';
-import { Directive } from 'vue';
+import { App, Plugin, Directive } from 'vue';
+import { WatchCallback, WatchOptions } from 'vue';
 export declare class VueStore extends ApiStore {
     #private;
     protected $VueProxy: any;
@@ -280,7 +280,7 @@ type TreeSetType = {
     'v-on:click'?: PathType | Function | TreeSetOption;
     'v-on-mounted'?: PathType | Function | TreeSetOption;
     'v-on-unmounted'?: PathType | Function | TreeSetOption;
-    'watch'?: Function;
+    'watch'?: WatchCallback;
     'using'?: (Paths: PathType) => void;
     [VModelCmd: `v-model:${string}`]: PathType | TreeSetOption;
     [VForCmd: `v-for(${string})`]: PathType | Function | TreeSetOption;
@@ -324,7 +324,8 @@ export declare class VueCommand extends VueStore {
     AddV_Show(DomName: PathType | QueryNode[], Option: AddCommandOption): this;
     AddV_Bind(DomName: PathType | QueryNode[], BindKey: string, Option: AddCommandOption, Args?: string): this;
     AddV_On(DomName: PathType | QueryNode[], EventName: string, Option: AddCommandOption, Args?: string): this;
-    AddV_Watch(WatchPath: PathType, Func: Function, Deep?: boolean, Option?: any): this;
+    Watch(WatchPath: PathType | (() => any), Callback: WatchCallback, Option?: WatchOptions): this;
+    AddV_Watch(WatchPath: PathType | (() => any), Callback: WatchCallback, Option?: WatchOptions): this;
     AddV_Function(FuncName: PathType, Func: Function): this;
     AddV_OnChange(DomName: PathType | QueryNode[], ChangeFunc: AddCommandOption, Args?: string): this;
     AddV_Click(DomName: PathType | QueryNode[], Option: AddCommandOption, Args?: string): this;
