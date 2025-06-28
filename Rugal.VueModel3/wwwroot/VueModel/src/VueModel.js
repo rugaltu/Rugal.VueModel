@@ -1,31 +1,26 @@
-//#region Base Type
-export type PathType = string | string[] | PathType[];
 //#endregion
-
 //#region FuncBase
 export class FuncBase {
     //#region Protected Property
-    protected $NavigateToFunc: (Url: string) => {};
-    protected $DefaultDateJoinChar: string;
+    $NavigateToFunc;
+    $DefaultDateJoinChar;
     //#endregion
     constructor() {
         this.$NavigateToFunc = null;
         this.WithDateTextJoinChar('-');
     }
-
     //#region Public With Method
-    public WithNavigateTo(NavigateToFunc: (Url: string) => {}) {
+    WithNavigateTo(NavigateToFunc) {
         this.$NavigateToFunc = NavigateToFunc;
         return this;
     }
-    public WithDateTextJoinChar(JoinChar: string) {
+    WithDateTextJoinChar(JoinChar) {
         this.$DefaultDateJoinChar = JoinChar;
         return this;
     }
     //#endregion
-
     //#region Public Method
-    public GenerateId(): string {
+    GenerateId() {
         let NewId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (char) => {
             let RandomValue = crypto.getRandomValues(new Uint8Array(1))[0] & 15;
             let Id = char === 'x' ? RandomValue : (RandomValue & 0x3) | 0x8;
@@ -33,15 +28,14 @@ export class FuncBase {
         });
         return NewId;
     }
-    public GenerateIdReplace(FillString: string): string {
+    GenerateIdReplace(FillString) {
         let Id = this.GenerateId().replaceAll('-', FillString);
         return Id;
     }
-    public GenerateUrl(Url: PathType, UrlParam: string | Record<string, any> = null): string {
-        let UrlPaths = this.Paths<string>(Url);
+    GenerateUrl(Url, UrlParam = null) {
+        let UrlPaths = this.Paths(Url);
         if (UrlPaths == null || UrlPaths.length == 0 || UrlPaths[0].length == 0)
             this.$Throw('Url can not be null or empty');
-
         UrlPaths = UrlPaths.map(Item => Item.replace(/\/+$/g, '').replace(/^\/+/g, '/'));
         let CombineUrl = this.ToJoin(UrlPaths, '/');
         if (UrlParam != null) {
@@ -50,55 +44,49 @@ export class FuncBase {
         }
         return CombineUrl;
     }
-    protected $BaseNavigateTo(Url: string) {
+    $BaseNavigateTo(Url) {
         if (this.$NavigateToFunc)
             this.$NavigateToFunc(Url);
         else
             window.location.href = Url;
     }
-    public NavigateToRoot() {
+    NavigateToRoot() {
         let RootUrl = '/';
         this.$BaseNavigateTo(RootUrl);
         return this;
     }
-    public NavigateTo(Url: PathType, UrlParam: string | Record<string, any> = null) {
+    NavigateTo(Url, UrlParam = null) {
         let TargetUrl = this.GenerateUrl(Url, UrlParam);
         this.$BaseNavigateTo(TargetUrl);
         return this;
     }
-
-    protected $BaseNavigateBlank(Url: string) {
+    $BaseNavigateBlank(Url) {
         let Link = document.createElement('a');
         Link.href = Url;
         Link.target = '_blank';
         Link.rel = 'noopener noreferrer';
         Link.click();
     }
-    public NavigateBlank(Url: PathType, UrlParam: string | Record<string, any> = null) {
+    NavigateBlank(Url, UrlParam = null) {
         let TargetUrl = this.GenerateUrl(Url, UrlParam);
         this.$BaseNavigateBlank(TargetUrl);
         return this;
     }
-
-    public ForEachObject<TValue>(Param: Record<string, TValue>, Func: (Key: string, Value: TValue) => void): void;
-    public ForEachObject<TValue>(Param: Record<string, TValue>, Func: (Key: string, Value: TValue | any) => void): void {
+    ForEachObject(Param, Func) {
         for (let Key of Object.getOwnPropertyNames(Param)) {
             if (Key.match(/^$/g))
                 continue;
-
             let Value = Param[Key];
             if (Func != null)
                 Func.call(this, Key, Value);
         }
     }
-
-    public DeepObjectExtend(Target: any, Source: any, MaxDepth = 10) {
+    DeepObjectExtend(Target, Source, MaxDepth = 10) {
         if (MaxDepth == 0)
             return {
                 ...Target,
                 ...Source,
             };
-
         let AllKeys = Object.keys(Source);
         for (let i = 0; i < AllKeys.length; i++) {
             let Key = AllKeys[i];
@@ -115,20 +103,18 @@ export class FuncBase {
         }
         return Target;
     }
-    public ToDateInfo(QueryDate?: Date | string | DateTimeInfo) {
+    ToDateInfo(QueryDate) {
         QueryDate ??= new Date();
         let Info = this.$CreateDateInfo(QueryDate);
         return Info;
     }
-    public ToDateText(QueryDate?: Date | string | DateTimeInfo, Option?: DateTextOption | string) {
+    ToDateText(QueryDate, Option) {
         QueryDate = this.$CreateDateInfo(QueryDate);
         Option ??= {};
         if (typeof Option == 'string')
             Option = { Format: Option };
-
         Option.DateJoinChar ??= this.$DefaultDateJoinChar;
         Option.Format ??= `yyyy${Option.DateJoinChar}MM${Option.DateJoinChar}dd`;
-
         let Result = Option.Format;
         Result = Result.replaceAll('yyyy', QueryDate.Year.toString().padStart(4, '0'));
         Result = Result.replaceAll('MM', QueryDate.Month.toString().padStart(2, '0'));
@@ -136,32 +122,28 @@ export class FuncBase {
         Option.Format = Result;
         return Result;
     }
-    public ToDateTimeText(QueryDate?: Date | string | DateTimeInfo, Option?: DateTimeTextOption | string) {
+    ToDateTimeText(QueryDate, Option) {
         Option ??= {};
         if (typeof Option == 'string')
             Option = { Format: Option };
         Option.DateJoinChar ??= this.$DefaultDateJoinChar;
         Option.Format ??= `yyyy${Option.DateJoinChar}MM${Option.DateJoinChar}dd HH:mm:ss`;
         Option = { ...Option };
-
         QueryDate = this.$CreateDateInfo(QueryDate);
         this.ToDateText(QueryDate, Option);
-
         let Result = Option.Format;
         Result = Result.replaceAll('HH', QueryDate.Hour.toString().padStart(2, '0'));
         Result = Result.replaceAll('mm', QueryDate.Minute.toString().padStart(2, '0'));
         Result = Result.replaceAll('ss', QueryDate.Second.toString().padStart(2, '0'));
         return Result;
     }
-    protected $CreateDateInfo(DateOrText: Date | string | DateTimeInfo) {
+    $CreateDateInfo(DateOrText) {
         DateOrText ??= new Date();
         if (typeof DateOrText === 'string')
             DateOrText = new Date(DateOrText);
-
         if (DateOrText instanceof Date == false)
             return DateOrText;
-
-        let Result: DateTimeInfo = {
+        let Result = {
             Date: DateOrText,
             Year: DateOrText.getFullYear(),
             Month: DateOrText.getMonth() + 1,
@@ -173,51 +155,44 @@ export class FuncBase {
         return Result;
     }
     //#endregion
-
     //#region Process
-    public ConvertTo_UrlQuery(Param: string | Record<string, any>) {
+    ConvertTo_UrlQuery(Param) {
         if (typeof Param === 'string')
             return Param;
-
-        let AllParam: string[] = [];
+        let AllParam = [];
         this.ForEachObject(Param, (Key, Value) => {
             AllParam.push(`${Key}=${Value}`);
         });
-
         let QueryString = AllParam.join('&');
         return QueryString;
     }
-    public ClearUrl(ApiUrl: string) {
+    ClearUrl(ApiUrl) {
         let ClearUrl = ApiUrl.replace(/^\/+|\/+$/g, '');
         return ClearUrl;
     }
-    public ToJoin(Value: any, Separator: string = '.'): string {
+    ToJoin(Value, Separator = '.') {
         let ConvertArray = this.Paths(Value);
         let Result = ConvertArray.join(Separator);
         return Result;
     }
-    public Paths<T = any>(...Value: any[]): T[] {
+    Paths(...Value) {
         if (!Array.isArray(Value))
             return [Value];
-
-        let Result: T[] = [];
+        let Result = [];
         for (let Item of Value) {
             if (Item == null)
                 continue;
-
             if (!Array.isArray(Item)) {
                 Result.push(Item);
                 continue;
             }
-
             if (Item.length == 0)
                 continue;
-
-            Result.push(...this.Paths<T>(...Item));
+            Result.push(...this.Paths(...Item));
         }
         return Result;
     }
-    public IsPathType(CheckPathType: any): boolean {
+    IsPathType(CheckPathType) {
         if (Array.isArray(CheckPathType)) {
             for (let Item of CheckPathType) {
                 let IsTrue = this.IsPathType(Item);
@@ -225,68 +200,55 @@ export class FuncBase {
                     return false;
             }
             return true;
-        } else if (typeof (CheckPathType) == 'string') {
+        }
+        else if (typeof (CheckPathType) == 'string') {
             return true;
         }
         return false;
     }
     //#endregion
-
     //#region Console And Throw
-    protected $Throw(Message: string) {
+    $Throw(Message) {
         throw new Error(Message);
     }
-    protected $Error(Data: any) {
+    $Error(Data) {
         console.error(Data);
     }
-    //#endregion
 }
-//#endregion
-
-//#region DomQueryer
-type QueryModeType = 'Multi' | 'DeepMulti';
-type QueryOption = {
-    Mode: QueryModeType,
-    TargetNode?: QueryNode,
-};
 class QueryNode extends FuncBase {
-    Dom: HTMLElement;
-    DomName: string = null;
-    Parent: QueryNode = null;
-    Children: QueryNode[] = [];
-    ElementDeep: number = 0;
-    NodeDeep: number = 0;
-    constructor(Dom: HTMLElement) {
+    Dom;
+    DomName = null;
+    Parent = null;
+    Children = [];
+    ElementDeep = 0;
+    NodeDeep = 0;
+    constructor(Dom) {
         super();
         this.Dom = Dom;
     }
-
-    public Query(DomName: PathType, Option?: QueryOption): QueryNode[] {
+    Query(DomName, Option) {
         return this.$RCS_QueryChildrens(this, DomName, Option);
     }
-    public Selector(Selector: string) {
+    Selector(Selector) {
         return this.Dom.querySelector(Selector);
     }
-    public SelectorAll(Selector: string) {
+    SelectorAll(Selector) {
         return this.Dom.querySelectorAll(Selector);
     }
-    protected $RCS_QueryChildrens(TargetNode: QueryNode, DomName: PathType, Option: QueryOption): QueryNode[] {
+    $RCS_QueryChildrens(TargetNode, DomName, Option) {
         if (DomName == null)
             return null;
-
         DomName = this.Paths(DomName);
         if (DomName.length == 1)
             DomName = DomName[0];
-
         let Results = [];
         for (let Item of TargetNode.Children) {
             if (Array.isArray(DomName)) {
-                let Names: PathType = [...DomName];
+                let Names = [...DomName];
                 let FirstName = Names.shift();
                 if (Item.DomName == FirstName) {
                     if (Names.length == 1)
                         Names = Names[0];
-
                     let FindChildren = this.$RCS_QueryChildrens(Item, Names, Option);
                     if (FindChildren != null) {
                         Results.push(...FindChildren);
@@ -299,7 +261,6 @@ class QueryNode extends FuncBase {
                 if (Option.Mode == 'Multi')
                     continue;
             }
-
             let ChildrenResult = this.$RCS_QueryChildrens(Item, DomName, Option);
             if (ChildrenResult != null)
                 Results.push(...ChildrenResult);
@@ -308,27 +269,22 @@ class QueryNode extends FuncBase {
     }
 }
 class DomQueryer {
-
-    $Root: HTMLElement = null;
-    $RootNode: QueryNode = null;
-    $Nodes: QueryNode[] = [];
-    $QueryDomName: string = null;
-    IsInited: boolean = false;
-
-    public WithRoot(Filter: string) {
+    $Root = null;
+    $RootNode = null;
+    $Nodes = [];
+    $QueryDomName = null;
+    IsInited = false;
+    WithRoot(Filter) {
         this.$Root = document.querySelector(Filter);
         return this;
     }
-
-    public WithDomName(QueryDomName: string) {
+    WithDomName(QueryDomName) {
         this.$QueryDomName = QueryDomName;
         return this;
     }
-
-    public Init(IsReInited: boolean = false) {
+    Init(IsReInited = false) {
         if (this.IsInited && !IsReInited)
             return this;
-
         this.$Root ??= document.body;
         this.$RootNode = new QueryNode(this.$Root);
         this.$RCS_Visit(this.$Root, this.$RootNode, 0);
@@ -336,15 +292,13 @@ class DomQueryer {
         this.IsInited = true;
         return this;
     }
-
-    public Query(DomName: PathType, Option?: QueryOption | QueryNode): QueryNode[] {
+    Query(DomName, Option) {
         if (!Queryer.IsInited)
             Queryer.Init();
-
         if (Option == null) {
             Option = {
                 Mode: 'Multi',
-            }
+            };
         }
         else if (Option instanceof QueryNode) {
             Option = {
@@ -356,8 +310,7 @@ class DomQueryer {
             Option.TargetNode = this.$RootNode;
         return Option.TargetNode.Query(DomName, Option);
     }
-
-    public Using(DomName: PathType, UsingFunc: (Prop: { QueryNodes: QueryNode[] }) => void, TargetNode?: QueryNode) {
+    Using(DomName, UsingFunc, TargetNode) {
         let QueryNodes = this.Query(DomName, {
             Mode: 'Multi',
             TargetNode: TargetNode,
@@ -369,87 +322,41 @@ class DomQueryer {
         }
         return this;
     }
-
-    protected $RCS_Visit(DomNode: HTMLElement, Parent: QueryNode, ElementDeep: number) {
+    $RCS_Visit(DomNode, Parent, ElementDeep) {
         let NextNode = this.$AddNode(DomNode, Parent, ElementDeep);
         NextNode ??= Parent;
-
         let Children = DomNode.children;
         if (DomNode instanceof HTMLTemplateElement)
             Children = DomNode.content.children;
-
         if (Children == null || Children.length == 0)
             return;
-
         for (let i = 0; i < Children.length; i++) {
             let Item = Children[i];
             if (Item instanceof HTMLElement)
                 this.$RCS_Visit(Item, NextNode, ElementDeep + 1);
         }
     }
-    protected $AddNode(Dom: HTMLElement, Parent: QueryNode, ElementDeep: number) {
+    $AddNode(Dom, Parent, ElementDeep) {
         if (this.$QueryDomName != null && !Dom.matches(`[${this.$QueryDomName}]`))
             return null;
-
         let DomName = Dom.getAttribute(this.$QueryDomName);
-        let NewNode = new QueryNode(Dom,);
+        let NewNode = new QueryNode(Dom);
         NewNode.DomName = DomName;
         NewNode.ElementDeep = ElementDeep;
-
         this.$Nodes.push(NewNode);
-
         if (Parent != null) {
             NewNode.Parent = Parent;
             NewNode.NodeDeep = Parent.NodeDeep + 1;
             Parent.Children.push(NewNode);
         }
-
         return NewNode;
     }
 }
-
 var Queryer = new DomQueryer();
-
 export { DomQueryer, Queryer };
-//#endregion
-
-//#region FuncBase Type
-export type DateTimeInfo = {
-    Date: Date,
-    Year: number,
-    Month: number,
-    Day: number,
-    Hour: number,
-    Minute: number,
-    Second: number,
-}
-type DateTextOption = {
-    DateJoinChar?: string,
-    Format?: string,
-};
-type DateTimeTextOption = DateTextOption & {
-};
-//#endregion
-
-//#region Store Data Type
-export type ApiCallback = {
-    OnCalling?: Function,
-    OnSuccess?: Function,
-    OnError?: Function,
-    OnComplete?: Function,
-    //ProcessResult?: 'json' | 'text' | 'buffer',
-};
-type FileItemStore = {
-    FileId?: string;
-    File?: File;
-    Base64?: string;
-    Buffer?: ArrayBuffer;
-    ConvertType?: FileConvertType | FileConvertType[];
-}
 export class FileItem {
-
-    protected $Store: FileItemStore;
-    constructor(File?: File, ConvertType: FileConvertType | FileConvertType[] = 'none') {
+    $Store;
+    constructor(File, ConvertType = 'none') {
         if (File == null)
             this.$Store = reactive({});
         else {
@@ -466,56 +373,52 @@ export class FileItem {
     get FileId() {
         return this.$Store.FileId;
     }
-    set FileId(Value: string) {
+    set FileId(Value) {
         this.$Store.FileId = Value;
     }
     get File() {
         return this.$Store.File;
     }
-    set File(Value: File) {
+    set File(Value) {
         this.$Store.File = Value;
     }
     get ConvertType() {
         return this.$Store.ConvertType;
     }
-    set ConvertType(Value: FileConvertType | FileConvertType[]) {
+    set ConvertType(Value) {
         this.$Store.ConvertType = Value;
     }
     get Base64() {
         return this.$Store.Base64;
     }
-    set Base64(Value: string) {
+    set Base64(Value) {
         this.$Store.Base64 = Value;
     }
     get Buffer() {
         return this.$Store.Buffer;
     }
-    set Buffer(Value: ArrayBuffer) {
+    set Buffer(Value) {
         this.$Store.Buffer = Value;
     }
     get InnerStore() {
         return this.$Store;
     }
-
-    public Clear() {
+    Clear() {
         this.$Store.Base64 = null;
         this.$Store.Buffer = null;
         this.$Store.File = null;
     }
-    public From(Item: FileItem) {
+    From(Item) {
         this.$Store = Item.InnerStore;
     }
-
-    protected $ConvertFile() {
+    $ConvertFile() {
         if (this.ConvertType == null)
             return;
-
-        let GetConvertType: FileConvertType[] = [];
+        let GetConvertType = [];
         if (Array.isArray(this.ConvertType))
             GetConvertType = this.ConvertType;
         else
             GetConvertType = [this.ConvertType];
-
         for (let i = 0; i < GetConvertType.length; i++) {
             let TypeItem = GetConvertType[i];
             switch (TypeItem) {
@@ -530,92 +433,31 @@ export class FileItem {
             }
         }
     }
-    protected $ConvertBase64(IsForce: boolean = false) {
+    $ConvertBase64(IsForce = false) {
         if (this.File == null)
             return this;
-
         if (this.Base64 != null && IsForce == false)
             return this;
-
         let Reader = new FileReader();
         Reader.readAsDataURL(this.File);
-        Reader.onload = () => this.Base64 = Reader.result as string;
+        Reader.onload = () => this.Base64 = Reader.result;
         return this;
     }
-    protected $ConvertBuffer() {
+    $ConvertBuffer() {
         let Reader = new FileReader();
         Reader.readAsArrayBuffer(this.File);
-        Reader.onload = () => this.Buffer = Reader.result as ArrayBuffer;
+        Reader.onload = () => this.Buffer = Reader.result;
     }
-}
-type FileConvertType = 'none' | 'base64' | 'buffer';
-type FilesType = File | File[] | FileItem | FileItem[];
-
-type FormDataFileType = FilesType |
-    Record<string, File> | Record<string, FileItem> |
-    Record<string, File[]> | Record<string, FileItem[]>;
-type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
-type ApiCallQuery = string | object;
-type ApiCallBody = Record<string, any>;
-type ApiCallFile = FormDataFileType;
-type AddApiContent = {
-    Url: string,
-    Method: HttpMethod,
-    Query?: ApiCallQuery | (() => ApiCallQuery),
-    Body?: ApiCallBody | (() => ApiCallBody),
-    File?: ApiCallFile | (() => ApiCallFile),
-    Export?: boolean | ((ApiResult: any, ApiResponse: Response) => any),
-    IsUpdateStore?: boolean,
-} & ApiCallback;
-type ApiStoreValue = {
-    ApiKey: string,
-    IsCalling?: boolean,
-    IsComplete?: boolean,
-    IsError?: boolean,
-    IsSuccess?: boolean,
-} & AddApiContent;
-type ApiCallOption = {
-    Query?: ApiCallQuery | (() => ApiCallQuery),
-    Body?: ApiCallBody | (() => ApiCallBody),
-    File?: ApiCallFile | (() => ApiCallFile),
-    IsUpdateStore?: boolean,
-} & ApiCallback;
-type FileStoreType = Record<string, FileItem[] | FileItem>;
-type StoreType = Record<string, any> & {
-    FileStore: FileStoreType,
-};
-type GetStoreOption<TStore = any> = {
-    CreateIfNull?: boolean,
-    DefaultValue?: TStore,
-    Clone?: boolean,
-};
-
-type EventArg_AddApi = ApiStoreValue;
-type EventArg_UpdateStore = {
-    Path: string,
-    Data: any,
-};
-type EventArg_AddStore = EventArg_UpdateStore;
-type EventArg_SetStore = EventArg_UpdateStore;
-
-type AddPropertyType = {
-    Value?: any,
-    Bind?: Array<any>,
-    Target?: PathType,
-} & PropertyDescriptor;
-type AddFileStoreOption = {
-    Multi?: boolean;
 }
 //#endregion
 export class ApiStore extends FuncBase {
-
     //#region Private Property
-    #ApiDomain: string = null;
-    #RootRoute: string = null;
-    #AccessToken: string = null;
-    #RefreshToken: string = null;
-    #HeaderFuncs: ((Header: Headers) => void)[] = [];
-    #OnEventFunc: Record<string, Function[]> = {};
+    #ApiDomain = null;
+    #RootRoute = null;
+    #AccessToken = null;
+    #RefreshToken = null;
+    #HeaderFuncs = [];
+    #OnEventFunc = {};
     #OnEventName = {
         ApiStore: {
             AddApi: 'AddApi',
@@ -624,24 +466,22 @@ export class ApiStore extends FuncBase {
             SetStore: 'SetStore',
         }
     };
-    #OnSuccess: (Result: any, Reponse: Response) => void;
-    #OnError: (Except: any) => void;
-    #OnComplete: (Result: any, Reponse: Response) => void;
-    #ExportSuccessStore: (Result: any, Reponse: Response) => any;
-    #Store: StoreType = {
+    #OnSuccess;
+    #OnError;
+    #OnComplete;
+    #ExportSuccessStore;
+    #Store = {
         FileStore: {},
     };
-    #Func_ConvertTo_FormData: ((ConvertData: object, Form: FormData) => FormData | Record<string, any>)[] = [];
+    #Func_ConvertTo_FormData = [];
     //#endregion
-
     //#region Protected Property
-    protected $ApiStore: Record<string, ApiStoreValue> = {};
+    $ApiStore = {};
     //#endregion
     constructor() {
         super();
         this.SetStore('api', this.$ApiStore);
     }
-
     //#region Get/Set Property
     get ApiDomain() {
         if (this.#ApiDomain == null)
@@ -660,79 +500,74 @@ export class ApiStore extends FuncBase {
     get Store() {
         return this.#Store;
     }
-    protected set Store(Store: StoreType) {
+    set Store(Store) {
         this.#Store = Store;
     }
-    get FileStore(): FileStoreType {
+    get FileStore() {
         return this.Store.FileStore;
     }
     //#endregion
-
     //#region Public With Method
-    public WithAccessToken(AccessToken: string) {
+    WithAccessToken(AccessToken) {
         this.#AccessToken = AccessToken;
         return this;
     }
-    public WithRefreshToken(RefreshToken: string) {
+    WithRefreshToken(RefreshToken) {
         this.#RefreshToken = RefreshToken;
         return this;
     }
-    public WithApiDomain(ApiDomain: string) {
+    WithApiDomain(ApiDomain) {
         this.ApiDomain = ApiDomain;
         return this;
     }
-    public WithRootRoute(Route: string) {
+    WithRootRoute(Route) {
         this.#RootRoute = Route;
         return this;
     }
-    public WithHeader(Func: (Headers: Headers) => void) {
+    WithHeader(Func) {
         this.#HeaderFuncs.push(Func);
         return this;
     }
-    public WithOnSuccess(SuccessFunc: (Result: any, Reponse: Response) => void) {
+    WithOnSuccess(SuccessFunc) {
         this.#OnSuccess = SuccessFunc;
         return this;
     }
-    public WithOnError(ErrorFunc: (Exception: any) => void) {
+    WithOnError(ErrorFunc) {
         this.#OnError = ErrorFunc;
         return this;
     }
-    public WithOnComplete(CompleteFunc: (Result: any, Reponse: Response) => void) {
+    WithOnComplete(CompleteFunc) {
         this.#OnComplete = CompleteFunc;
         return this;
     }
-    public WithExportSuccessStore(ExportSuccessStoreFunc: (Result: any, Reponse: Response) => any) {
+    WithExportSuccessStore(ExportSuccessStoreFunc) {
         this.#ExportSuccessStore = ExportSuccessStoreFunc;
         return this;
     }
     //#endregion
-
     //#region ConvertTo Method
-    public WithConvertTo_FormParam(ConvertToFunc: (ConvertData: object, Form: FormData) => object) {
+    WithConvertTo_FormParam(ConvertToFunc) {
         this.#Func_ConvertTo_FormData.push(ConvertToFunc);
         return this;
     }
-    public ClearConvertTo_FormParam() {
+    ClearConvertTo_FormParam() {
         this.#Func_ConvertTo_FormData = [];
         return this;
     }
-    public ConvertTo_ApiUrl(Url: string, Param: string | object = null): string {
+    ConvertTo_ApiUrl(Url, Param = null) {
         let ApiDomainUrl = Url;
         if (this.ApiDomain != null && !ApiDomainUrl.includes('http'))
             ApiDomainUrl = `${this.ApiDomain}/${this.ClearUrl(ApiDomainUrl)}`;
-
         if (Param != null)
             ApiDomainUrl = `${ApiDomainUrl}?${this.ConvertTo_UrlQuery(Param)}`;
-
         return ApiDomainUrl;
     }
     //#endregion
-
     //#region Api Method
-    public AddApi(AddApi: Record<string, AddApiContent>) {
+    AddApi(AddApi) {
         for (let ApiKey in AddApi) {
             let ApiOption = AddApi[ApiKey];
-            let SetApi: ApiStoreValue = {
+            let SetApi = {
                 ApiKey,
                 ...ApiOption,
             };
@@ -741,20 +576,18 @@ export class ApiStore extends FuncBase {
         }
         return this;
     }
-    public ApiCall(ApiKey: string, Option: ApiCallOption = null) {
+    ApiCall(ApiKey, Option = null) {
         this.$BaseApiCall(ApiKey, Option, false);
         return this;
     }
-    public ApiCall_Form(ApiKey: string, Option: ApiCallOption = null) {
+    ApiCall_Form(ApiKey, Option = null) {
         this.$BaseApiCall(ApiKey, Option, true);
         return this;
     }
-    protected $BaseApiCall(ApiKey: string, Option: ApiCallOption, IsFormRequest: boolean) {
-
+    $BaseApiCall(ApiKey, Option, IsFormRequest) {
         let Api = this.$ApiStore[ApiKey];
         if (Api == null)
             this.$Throw(`Api setting not found of "${ApiKey}"`);
-
         let ParamQuery = Option?.Query ?? Api.Query;
         let ParamBody = Option?.Body ?? Api.Body;
         let ParamFile = Option?.File ?? Api.File;
@@ -764,79 +597,71 @@ export class ApiStore extends FuncBase {
             ParamBody = ParamBody();
         if (typeof (ParamFile) == 'function')
             ParamFile = ParamFile();
-
         let IsUpdateStore = Option?.IsUpdateStore ?? Api.IsUpdateStore ?? true;
         let Url = this.ConvertTo_ApiUrl(Api.Url, ParamQuery);
         let FetchRequest = this.$GenerateFetchRequest(Api, ParamBody, ParamFile, IsFormRequest);
-
         Api.IsCalling = true;
         Api.OnCalling?.call(this, FetchRequest);
         Option?.OnCalling?.call(this, FetchRequest);
         fetch(Url, FetchRequest)
-            .then(async ApiResponse => {
-                if (!ApiResponse.ok)
-                    throw ApiResponse;
-
-                let ConvertResult = await this.$ProcessApiReturn(ApiResponse);
-                if (IsUpdateStore) {
-                    if (Api.Export != false) {
-                        if (typeof Api.Export === 'function') {
-                            ConvertResult = Api.Export?.call(this, ConvertResult, ApiResponse);
-                        }
-                        else if (this.#ExportSuccessStore != null) {
-                            ConvertResult = this.#ExportSuccessStore?.call(this, ConvertResult, ApiResponse);
-                        }
+            .then(async (ApiResponse) => {
+            if (!ApiResponse.ok)
+                throw ApiResponse;
+            let ConvertResult = await this.$ProcessApiReturn(ApiResponse);
+            if (IsUpdateStore) {
+                if (Api.Export != false) {
+                    if (typeof Api.Export === 'function') {
+                        ConvertResult = Api.Export?.call(this, ConvertResult, ApiResponse);
                     }
-                    let StoreKey = Api.ApiKey;
-                    this.UpdateStore(StoreKey, ConvertResult);
+                    else if (this.#ExportSuccessStore != null) {
+                        ConvertResult = this.#ExportSuccessStore?.call(this, ConvertResult, ApiResponse);
+                    }
                 }
-                Api.IsSuccess = true;
-                Api.IsError = false;
-                Api.OnSuccess?.call(this, ConvertResult, ApiResponse);
-                Option?.OnSuccess?.call(this, ConvertResult, ApiResponse);
-                this.#OnSuccess?.call(this, ConvertResult, ApiResponse);
-                return { ConvertResult, ApiResponse };
-            })
+                let StoreKey = Api.ApiKey;
+                this.UpdateStore(StoreKey, ConvertResult);
+            }
+            Api.IsSuccess = true;
+            Api.IsError = false;
+            Api.OnSuccess?.call(this, ConvertResult, ApiResponse);
+            Option?.OnSuccess?.call(this, ConvertResult, ApiResponse);
+            this.#OnSuccess?.call(this, ConvertResult, ApiResponse);
+            return { ConvertResult, ApiResponse };
+        })
             .catch(ex => {
-                Api.IsError = true;
-                Api.IsSuccess = false;
-
-                this.$Error(ex.message);
-                Api.OnError?.call(this, ex);
-                Option?.OnError?.call(this, ex);
-                this.#OnError?.call(this, ex);
-            })
+            Api.IsError = true;
+            Api.IsSuccess = false;
+            this.$Error(ex.message);
+            Api.OnError?.call(this, ex);
+            Option?.OnError?.call(this, ex);
+            this.#OnError?.call(this, ex);
+        })
             .then(Result => {
-                Api.IsCalling = false;
-                Api.IsComplete = true;
-                if (Result instanceof Object) {
-                    Api.OnComplete?.call(this, Result.ConvertResult, Result.ApiResponse);
-                    Option?.OnComplete?.call(this, Result.ConvertResult, Result.ApiResponse);
-                    this.#OnComplete?.call(this, Result.ConvertResult, Result.ApiResponse);
-                }
-                else {
-                    Api.OnComplete?.call(this);
-                    Option?.OnComplete?.call(this);
-                    this.#OnComplete?.call(this, null, null);
-                }
-            });
+            Api.IsCalling = false;
+            Api.IsComplete = true;
+            if (Result instanceof Object) {
+                Api.OnComplete?.call(this, Result.ConvertResult, Result.ApiResponse);
+                Option?.OnComplete?.call(this, Result.ConvertResult, Result.ApiResponse);
+                this.#OnComplete?.call(this, Result.ConvertResult, Result.ApiResponse);
+            }
+            else {
+                Api.OnComplete?.call(this);
+                Option?.OnComplete?.call(this);
+                this.#OnComplete?.call(this, null, null);
+            }
+        });
     }
-    protected $GenerateFetchRequest(Api: ApiStoreValue, ParamBody: ApiCallBody, ParamFile: ApiCallFile, IsFormRequest: boolean): RequestInit {
-
-        let Header: HeadersInit = new Headers();
+    $GenerateFetchRequest(Api, ParamBody, ParamFile, IsFormRequest) {
+        let Header = new Headers();
         Header.set('Authorization', `Bearer ${this.#AccessToken}`);
-
         if (this.#HeaderFuncs.length > 0) {
             for (let Func of this.#HeaderFuncs) {
                 Func(Header);
             }
         }
-
-        let FetchRequest: RequestInit = {
+        let FetchRequest = {
             method: Api.Method,
             headers: Header,
         };
-
         if (IsFormRequest) {
             let SendForm = this.$ConvertTo_FormData(ParamBody, new FormData());
             SendForm = this.$ConvertTo_FormFile(ParamFile, SendForm);
@@ -846,145 +671,130 @@ export class ApiStore extends FuncBase {
         else {
             Header.set('content-type', 'application/json');
             if (Api.Method != 'GET')
-                FetchRequest.body = JSON.stringify(ParamBody ?? {})
+                FetchRequest.body = JSON.stringify(ParamBody ?? {});
         }
-
         return FetchRequest;
     }
     //#endregion
-
     //#region Default Use Method
-    public UseFormJsonBody(JsonBodyKey = 'Body') {
+    UseFormJsonBody(JsonBodyKey = 'Body') {
         this.WithConvertTo_FormParam((FormDataBody, Form) => {
-            let ConvertParam: Record<string, any> = {};
+            let ConvertParam = {};
             ConvertParam[JsonBodyKey] = JSON.stringify(FormDataBody);
             return ConvertParam;
         });
         return this;
     }
     //#endregion
-
     //#region Public Event Add
-    public EventAdd_AddApi(EventFunc: (EventArg: EventArg_AddApi) => void) {
+    EventAdd_AddApi(EventFunc) {
         this.$EventAdd(this.#EventName.AddApi, EventFunc);
         return this;
     }
-    public EventAdd_UpdateStore(EventFunc: (EventArg: EventArg_UpdateStore) => void) {
+    EventAdd_UpdateStore(EventFunc) {
         this.$EventAdd(this.#EventName.UpdateStore, EventFunc);
         return this;
     }
-    public EventAdd_AddStore(EventFunc: (EventArg: EventArg_AddStore) => void) {
+    EventAdd_AddStore(EventFunc) {
         this.$EventAdd(this.#EventName.AddStore, EventFunc);
         return this;
     }
-    public EventAdd_SetStore(EventFunc: (EventArg: EventArg_SetStore) => void) {
+    EventAdd_SetStore(EventFunc) {
         this.$EventAdd(this.#EventName.SetStore, EventFunc);
         return this;
     }
     //#endregion
-
     //#region Protected Event Process
-    protected $EventAdd<EventArgType>(EventName: string, OnFunc: (EventArg: EventArgType) => void) {
+    $EventAdd(EventName, OnFunc) {
         if (EventName in this.#OnEventFunc == false)
             this.#OnEventFunc[EventName] = [];
-
         this.#OnEventFunc[EventName].push(OnFunc);
     }
-    protected $EventTrigger<EventArgType>(EventName: string, EventArg: EventArgType) {
+    $EventTrigger(EventName, EventArg) {
         let EventFuncs = this.#OnEventFunc[EventName];
         if (EventFuncs == null)
             return;
-
         for (let Item of EventFuncs)
             Item(EventArg);
     }
     //#endregion
-
     //#region Store Control
-
     //#region Public Data Store Contorl
-    public GetStore<TStore = any>(StorePath: PathType, Option?: GetStoreOption<TStore> | boolean): TStore {
+    GetStore(StorePath, Option) {
         return this.GetStoreFrom(this.Store, StorePath, Option);
     }
-    public AddStore<TStore = any>(StorePath: PathType, StoreData: TStore = null) {
+    AddStore(StorePath, StoreData = null) {
         return this.AddStoreFrom(this.Store, StorePath, StoreData);
     }
-    public SetStore<TStore = any>(StorePath: PathType, StoreData: TStore) {
+    SetStore(StorePath, StoreData) {
         return this.SetStoreFrom(this.Store, StorePath, StoreData);
     }
-    public UpdateStore<TStore = any>(StorePath: PathType, StoreData: TStore) {
+    UpdateStore(StorePath, StoreData) {
         return this.UpdateStoreFrom(this.Store, StorePath, StoreData);
     }
-    public ClearStore(StorePath: PathType) {
+    ClearStore(StorePath) {
         return this.ClearStoreFrom(this.Store, StorePath);
     }
-
-    public GetStoreFrom<TStore = any>(SourceStore: any, StorePath: PathType, Option?: GetStoreOption<TStore> | boolean): TStore {
+    GetStoreFrom(SourceStore, StorePath, Option) {
         if (typeof Option == 'boolean')
             Option = { Clone: Option };
-
         Option ??= {};
         Option.Clone ??= false;
         Option.CreateIfNull ??= false;
         if (Option.DefaultValue == null)
-            Option.DefaultValue = {} as any;
-
+            Option.DefaultValue = {};
         StorePath = this.ToJoin(StorePath);
         let FindStore = this.$RCS_GetStore(StorePath, SourceStore, {
             CreateIfNull: Option.CreateIfNull,
-            DefaultValue: Option.DefaultValue as any,
+            DefaultValue: Option.DefaultValue,
         });
-
         if (Option.Clone) {
-            let CloneResult: any = {};
+            let CloneResult = {};
             let AllKeys = Object.getOwnPropertyNames(FindStore);
             for (let Key of AllKeys) {
                 if (!Key.match(/^\$/g))
                     CloneResult[Key] = FindStore[Key];
             }
-
             return CloneResult;
         }
-
-        return FindStore as TStore;
+        return FindStore;
     }
-    public AddStoreFrom<TStore = any>(SourceStore: any, StorePath: PathType, StoreData: TStore = null) {
+    AddStoreFrom(SourceStore, StorePath, StoreData = null) {
         StorePath = this.ToJoin(StorePath);
         if (this.GetStore(StorePath) != null)
             return this;
-
         this.$RCS_SetStore(StorePath, StoreData, SourceStore, {
             IsDeepSet: true,
         });
-        this.$EventTrigger<EventArg_AddStore>(this.#EventName.AddStore, {
+        this.$EventTrigger(this.#EventName.AddStore, {
             Path: StorePath,
             Data: StoreData,
         });
         return this;
     }
-    public SetStoreFrom<TStore = any>(SourceStore: any, StorePath: PathType, StoreData: TStore) {
+    SetStoreFrom(SourceStore, StorePath, StoreData) {
         StorePath = this.ToJoin(StorePath);
         this.$RCS_SetStore(StorePath, StoreData, SourceStore, {
             IsDeepSet: false,
         });
-        this.$EventTrigger<EventArg_SetStore>(this.#EventName.SetStore, {
+        this.$EventTrigger(this.#EventName.SetStore, {
             Path: StorePath,
             Data: StoreData,
         });
         return this;
     }
-    public UpdateStoreFrom<TStore = any>(SourceStore: any, StorePath: PathType, StoreData: TStore) {
+    UpdateStoreFrom(SourceStore, StorePath, StoreData) {
         StorePath = this.ToJoin(StorePath);
         this.$RCS_SetStore(StorePath, StoreData, SourceStore, {
             IsDeepSet: true,
         });
-        this.$EventTrigger<EventArg_UpdateStore>(this.#EventName.UpdateStore, {
+        this.$EventTrigger(this.#EventName.UpdateStore, {
             Path: StorePath,
             Data: StoreData,
         });
         return this;
     }
-    public ClearStoreFrom(SourceStore: any, StorePath: PathType) {
+    ClearStoreFrom(SourceStore, StorePath) {
         let TargetStore = this.GetStoreFrom(SourceStore, StorePath);
         if (TargetStore == null)
             return this;
@@ -996,7 +806,8 @@ export class ApiStore extends FuncBase {
             if (typeof (Value) == 'function')
                 continue;
             if (Array.isArray(Value)) {
-                Value.splice(0, Value.length);;
+                Value.splice(0, Value.length);
+                ;
                 continue;
             }
             TargetStore[Key] = null;
@@ -1004,15 +815,10 @@ export class ApiStore extends FuncBase {
         return this;
     }
     //#endregion
-
     //#region Protected Data Store Process
-    protected $RCS_GetStore(StorePath: string, FindStore: any, Option: {
-        CreateIfNull: boolean,
-        DefaultValue: object
-    }): any {
+    $RCS_GetStore(StorePath, FindStore, Option) {
         if (FindStore == null)
             return null;
-
         StorePath = StorePath.replaceAll(/\[|\]/g, '.').replace(/\.+/g, '.').replace(/\.$/, '');
         let StorePaths = StorePath.split('.');
         let FirstKey = StorePaths.shift();
@@ -1020,33 +826,29 @@ export class ApiStore extends FuncBase {
             if (Array.isArray(Option.DefaultValue))
                 FindStore[FirstKey] = [...Option.DefaultValue];
             else if (typeof Option.DefaultValue == 'object')
-                FindStore[FirstKey] = { ...Option.DefaultValue }
+                FindStore[FirstKey] = { ...Option.DefaultValue };
             else
                 FindStore[FirstKey] = Option.DefaultValue;
         }
-
         let NextStore = FindStore[FirstKey];
         if (StorePaths.length == 0)
             return NextStore;
-
         let NextKey = StorePaths.join('.');
         return this.$RCS_GetStore(NextKey, NextStore, Option);
     }
-    protected $RCS_SetStore(StorePath: string, StoreData: any, FindStore: any, Option = {
+    $RCS_SetStore(StorePath, StoreData, FindStore, Option = {
         IsDeepSet: true,
-    }): any {
+    }) {
         StorePath = StorePath.replaceAll(/\[|\]/g, '.').replace(/\.+/g, '.').replace(/\.$/, '');
         if (StorePath.includes('.')) {
             let StorePaths = StorePath.split('.');
             let FirstKey = StorePaths.shift();
             if (FindStore[FirstKey] == null)
                 FindStore[FirstKey] = {};
-
             let NextStore = FindStore[FirstKey];
             let NextKey = StorePaths.join('.');
             return this.$RCS_SetStore(NextKey, StoreData, NextStore, Option);
         }
-
         let IsAwaysSet = !Option.IsDeepSet ||
             FindStore[StorePath] == null ||
             StoreData == null || typeof StoreData != 'object';
@@ -1054,16 +856,14 @@ export class ApiStore extends FuncBase {
             FindStore[StorePath] = StoreData;
             return StoreData;
         }
-
         this.$DeepSetObject(StorePath, StoreData, FindStore);
         return StoreData;
     }
-    protected $DeepSetObject(StorePath: string, SetData: Record<string, any>, FindStore: any) {
+    $DeepSetObject(StorePath, SetData, FindStore) {
         if (SetData == null) {
             FindStore[StorePath] = SetData;
             return;
         }
-
         if (!Array.isArray(SetData)) {
             this.ForEachObject(SetData, (Key, Value) => {
                 if (Array.isArray(Value) || typeof Value == 'object') {
@@ -1078,13 +878,11 @@ export class ApiStore extends FuncBase {
         }
         if (!Array.isArray(FindStore[StorePath]))
             FindStore[StorePath] = [];
-
         FindStore[StorePath] = SetData.slice();
     }
     //#endregion
-
     //#region File Store
-    public AddFileStore(FileStoreKey: string, Option?: AddFileStoreOption) {
+    AddFileStore(FileStoreKey, Option) {
         Option ??= {};
         if (this.FileStore[FileStoreKey] == null) {
             if (Option.Multi == true)
@@ -1095,31 +893,26 @@ export class ApiStore extends FuncBase {
         }
         return this;
     }
-    public Files(FileStoreKey: string, WhereFunc: (FileArg: FileItem) => boolean = null): File[] {
+    Files(FileStoreKey, WhereFunc = null) {
         let GetFiles = this.FileStore[FileStoreKey];
         if (GetFiles == null)
             return [];
-
         if (!Array.isArray(GetFiles))
             GetFiles = [GetFiles];
-
         if (WhereFunc != null)
             GetFiles = GetFiles.filter(Item => WhereFunc(Item));
-
         let Result = GetFiles.map(Item => Item.File);
         return Result;
     }
-    public File(FileStoreKey: string, WhereFunc: (FileArg: FileItem) => boolean = null): File {
+    File(FileStoreKey, WhereFunc = null) {
         let GetFiles = this.Files(FileStoreKey, WhereFunc);
         if (GetFiles == null || GetFiles.length == 0)
             return null;
-
         return GetFiles[0];
     }
-    public AddFile(FileStoreKey: string, AddFile: FilesType, ConvertType: FileConvertType | FileConvertType[] = 'none') {
+    AddFile(FileStoreKey, AddFile, ConvertType = 'none') {
         if (AddFile == null)
             return;
-
         this.AddFileStore(FileStoreKey);
         let GetStore = this.FileStore[FileStoreKey];
         if (Array.isArray(AddFile)) {
@@ -1131,117 +924,103 @@ export class ApiStore extends FuncBase {
         else {
             if (AddFile instanceof FileItem == false)
                 AddFile = new FileItem(AddFile, ConvertType);
-
             if (Array.isArray(GetStore)) {
                 GetStore.push(AddFile);
-            } else {
+            }
+            else {
                 GetStore.From(AddFile);
             }
         }
         return this;
     }
-    public RemoveFile(FileStoreKey: string, DeleteFileId: string | string[]) {
+    RemoveFile(FileStoreKey, DeleteFileId) {
         let GetStore = this.FileStore[FileStoreKey];
         if (GetStore == null)
             return this;
-
         if (Array.isArray(DeleteFileId))
-            DeleteFileId.forEach(Item => this.RemoveFile(FileStoreKey, Item))
+            DeleteFileId.forEach(Item => this.RemoveFile(FileStoreKey, Item));
         else {
             if (Array.isArray(GetStore)) {
                 let DeleteIndex = GetStore.findIndex(Item => Item.FileId == DeleteFileId);
                 if (DeleteIndex >= 0)
                     GetStore.splice(DeleteIndex, 1);
-            } else {
+            }
+            else {
                 GetStore.Clear();
             }
         }
         return this;
     }
-    public ClearFile(FileStoreKey: string) {
+    ClearFile(FileStoreKey) {
         let GetStore = this.FileStore[FileStoreKey];
         if (GetStore == null)
             return this;
-
         if (Array.isArray(GetStore)) {
             GetStore.splice(0, GetStore.length);
-        } else {
+        }
+        else {
             GetStore.Clear();
         }
         return this;
     }
     //#endregion
-
     //#endregion
-
     //#region Protected Process
-    protected $ProcessApiReturn(ApiResponse: Response): Promise<any> {
+    $ProcessApiReturn(ApiResponse) {
         let GetContentType = ApiResponse.headers.get("content-type");
         if (GetContentType.includes('application/json')) {
             return ApiResponse.json();
         }
-
         if (GetContentType.includes('text')) {
             return ApiResponse.text();
         }
-
-        return new Promise(reslove => { reslove(ApiResponse) });
+        return new Promise(reslove => { reslove(ApiResponse); });
     }
     //#endregion
-
     //#region Override Method
-    public NavigateToRoot() {
+    NavigateToRoot() {
         let RootUrl = this.#RootRoute ?? '/';
         super.$BaseNavigateTo(RootUrl);
         return this;
     }
     //#endregion
-
     //#region Protected ConvertTo
-    protected $ConvertTo_FormData(ConvertFormData: FormData | Record<string, any>, Form: FormData): FormData {
-
+    $ConvertTo_FormData(ConvertFormData, Form) {
         Form ??= new FormData();
         if (ConvertFormData == null)
             return Form;
-
         this.#Func_ConvertTo_FormData.forEach(Func => {
             ConvertFormData = Func(ConvertFormData, Form);
         });
-
         if (ConvertFormData instanceof FormData)
             return ConvertFormData;
-
         this.ForEachObject(ConvertFormData, (Key, Value) => {
             Form.append(Key, Value);
         });
         return Form;
     }
-    protected $ConvertTo_FormFile(FileParam: FormDataFileType, Form: FormData): FormData {
+    $ConvertTo_FormFile(FileParam, Form) {
         Form ??= new FormData();
         if (FileParam == null)
             return Form;
-
         let DefaultKey = 'Files';
         if (Array.isArray(FileParam)) {
             this.$AppendFileToFormData(DefaultKey, Form, FileParam);
             return Form;
         }
-
         if (FileParam instanceof File || FileParam instanceof FileItem) {
             this.$AppendFileToFormData(DefaultKey, Form, FileParam);
             return Form;
         }
-
         let Keys = Object.keys(FileParam);
         for (let i = 0; i < Keys.length; i++) {
             let FileKey = Keys[i];
             let FileValue = FileParam[FileKey];
             this.$AppendFileToFormData(FileKey, Form, FileValue);
         }
-
         return Form;
     }
-    protected $AppendFileToFormData(FileKey: string, Form: FormData, FileData: FilesType) {
+    $AppendFileToFormData(FileKey, Form, FileData) {
         if (Array.isArray(FileData)) {
             for (let i = 0; i < FileData.length; i++)
                 this.$AppendFileToFormData(FileKey, Form, FileData[i]);
@@ -1250,84 +1029,78 @@ export class ApiStore extends FuncBase {
             Form.append(FileKey, FileData);
         else
             Form.append(FileKey, FileData.File);
-
         return Form;
     }
-    //#endregion
 }
-import { App, Plugin, createApp, reactive, Directive, } from 'vue';
-import { watch, WatchCallback, WatchOptions } from 'vue';
+import { createApp, reactive, } from 'vue';
+import { watch } from 'vue';
 export class VueStore extends ApiStore {
-    protected $VueProxy: any = null;
-    protected $VueOption: Record<string, any> = {
+    $VueProxy = null;
+    $VueOption = {
         methods: {},
         components: {},
         computed: {},
     };
-    protected $VueApp: App = null;
-    protected $VueUse: Plugin[] = [];
-    protected $CoreStore: string = 'app';
-    protected $MountedFuncs: Function[] = [];
-    protected $Directive: { Name: string, Directive: Directive }[] = [];
+    $VueApp = null;
+    $VueUse = [];
+    $CoreStore = 'app';
+    $MountedFuncs = [];
+    $Directive = [];
     constructor() {
         super();
         this.#Setup();
     }
-
     //#region Private Setup
     #Setup() {
         this
             .EventAdd_AddApi(Arg => {
-                this.AddStore(Arg.ApiKey);
-            })
+            this.AddStore(Arg.ApiKey);
+        })
             .EventAdd_UpdateStore(() => {
-                this.ForceUpdate();
-            })
+            this.ForceUpdate();
+        })
             .EventAdd_AddStore(() => {
-                this.ForceUpdate();
-            })
+            this.ForceUpdate();
+        })
             .EventAdd_SetStore(() => {
-                this.ForceUpdate();
-            })
+            this.ForceUpdate();
+        })
             .AddStore(this.$CoreStore, {})
             .WithMounted(() => {
-                this.UpdateStore([this.$CoreStore, 'IsMounted'], true);
-            });
+            this.UpdateStore([this.$CoreStore, 'IsMounted'], true);
+        });
     }
     //#endregion
-
     //#region Get/Set Property
-    get Store(): StoreType {
+    get Store() {
         if (this.$VueProxy != null)
             return this.$VueProxy;
-
         return super.Store;
     }
-    protected set Store(Store: StoreType) {
+    set Store(Store) {
         super.Store = Store;
     }
     //#endregion
-
     //#region Public With Method
-    public WithVueOption(VueOption = {}) {
+    WithVueOption(VueOption = {}) {
         this.$VueOption = this.DeepObjectExtend(this.$VueOption, VueOption);
         return this;
     }
-    public WithMounted(MountedFunc = () => { }) {
+    WithMounted(MountedFunc = () => { }) {
         this.$MountedFuncs.push(MountedFunc);
         return this;
     }
-    public WithComponent(Component = {}) {
+    WithComponent(Component = {}) {
         this.$VueOption.components = this.DeepObjectExtend(this.$VueOption.components, Component);
         return this;
     }
-    public WithVueUse(...UsePlugin: Plugin[]) {
+    WithVueUse(...UsePlugin) {
         for (let Item of UsePlugin) {
             this.$VueUse.push(Item);
         }
         return this;
     }
-    public WithDirective(Name: string, Directive: Directive) {
+    WithDirective(Name, Directive) {
         this.$Directive.push({
             Name,
             Directive
@@ -1335,129 +1108,54 @@ export class VueStore extends ApiStore {
         return this;
     }
     //#endregion
-
     //#region Public Method
-    public ForceUpdate() {
+    ForceUpdate() {
         this.$VueProxy?.$forceUpdate();
         return this;
     }
-    public Refs(RefName: PathType) {
+    Refs(RefName) {
         if (!this.$VueProxy)
             return null;
-
         return this.$VueProxy.$refs[Model.ToJoin(RefName)];
     }
-    //#endregion
 }
-
-//#region VueCommand Data Type
-type CommandOption = {
-    CommandKey?: string,
-    Target: PathType | Function,
-    TargetHead?: PathType,
-    TargetTail?: PathType,
-    FuncAction?: boolean;
-    FuncArgs?: PathType,
-};
-
-type TreeSetType = {
-    'v-text'?: PathType | Function | TreeSetOption,
-    'v-model'?: PathType,
-    'v-for'?: PathType | Function | TreeSetOption,
-    'v-if'?: PathType | Function | TreeSetOption,
-    'v-else'?: null,
-    'v-else-if'?: PathType | Function | TreeSetOption,
-    'v-show'?: PathType | Function | TreeSetOption,
-    'v-bind'?: PathType | Function | TreeSetOption,
-    'v-on:change'?: PathType | Function | TreeSetOption,
-    'v-on:click'?: PathType | Function | TreeSetOption,
-    'v-on-mounted'?: PathType | Function | TreeSetOption,
-    'v-on-unmounted'?: PathType | Function | TreeSetOption,
-
-    'watch'?: WatchCallback,
-    'using'?: (Paths: PathType) => void,
-
-    [VModelCmd: `v-model:${string}`]: PathType | TreeSetOption,
-    [VForCmd: `v-for(${string})`]: PathType | Function | TreeSetOption,
-    [VBindCmd: `v-bind:${string}`]: PathType | Function | TreeSetOption,
-    [VOnCmd: `v-on:${string}`]: PathType | Function | TreeSetOption,
-    [VOnParamCmd: `v-on:${string}(${string})`]: PathType | Function | TreeSetOption,
-    [VSlotCmd: `v-slot:${string}`]: string,
-    [VOnMountedCmd: `v-on-mounted(${string})`]: PathType | Function | TreeSetOption,
-    [VOnUnMountedCmd: `v-on-unmounted(${string})`]: PathType | Function | TreeSetOption,
-    [FuncCmd: `func:${string}`]: Function,
-    [DomName: `:${string}`]: ((Paths: PathType) => void) | TreeSetType,
-};
-type TreeSetOption = CommandOption;
-type AddCommandOption = PathType | Function | CommandOption;
-
-type TreeSetInfo = {
-    Nodes?: QueryNode[],
-    TreePaths: string[],
-    DomPaths: string[],
-    DomName?: string,
-    StoreValue: PathType | Function,
-    Command: string,
-    CommandKey?: string,
-    Params?: string,
-}
-type AddV_ModelOption = {
-    ModelValue?: string,
-    DefaultValue?: any,
-};
-type AddV_FilePickerOption = string | {
-    Store: string,
-    Accept?: string | string[],
-    Multiple?: boolean;
-    ConvertType?: FileConvertType | FileConvertType[];
-};
-type AddV_TreeOption = {
-    UseDeepQuery?: boolean,
-    UseTreePath?: boolean,
-    UseDomStore?: boolean,
-};
 //#endregion
 export class VueCommand extends VueStore {
-    protected $IsInited: boolean = false;
-    $QueryDomName: string = null;
-
+    $IsInited = false;
+    $QueryDomName = null;
     //#region With Method
-    public WithQueryDomName(QueryDomName: string) {
+    WithQueryDomName(QueryDomName) {
         this.$QueryDomName = QueryDomName;
         Queryer.WithDomName(this.$QueryDomName);
         return this;
     }
     //#endregion
-
     //#region Path Command
-    public AddV_Text(DomName: PathType | QueryNode[], Option: AddCommandOption) {
+    AddV_Text(DomName, Option) {
         let SetOption = this.$ConvertCommandOption(DomName, Option);
         if (typeof SetOption.Target != 'function')
             Model.AddStore(SetOption.Target);
-
         this.$AddCommand(DomName, 'v-text', SetOption);
         return this;
     }
-    public AddV_Model(DomName: PathType | QueryNode[], StorePath: PathType, Option?: AddV_ModelOption) {
+    AddV_Model(DomName, StorePath, Option) {
         let SetOption = this.$ConvertCommandOption(StorePath);
         Option ??= {};
         Option.DefaultValue ??= null;
-
         SetOption.CommandKey = Option.ModelValue;
         this.AddStore(StorePath, Option.DefaultValue);
         this.$AddCommand(DomName, 'v-model', SetOption);
         return this;
     }
-    public AddV_Slot(DomName: PathType | QueryNode[], SlotKey: string, StorePath: PathType) {
+    AddV_Slot(DomName, SlotKey, StorePath) {
         let SetOption = this.$ConvertCommandOption(StorePath);
         SetOption.CommandKey = SlotKey;
         this.$AddCommand(DomName, `v-slot`, SetOption);
         return this;
     }
     //#endregion
-
     //#region Path/Function Command
-    public AddV_For(DomName: PathType | QueryNode[], Option?: AddCommandOption, ForKey?: PathType) {
+    AddV_For(DomName, Option, ForKey) {
         let SetOption = this.$ConvertCommandOption(DomName, Option);
         if (ForKey) {
             ForKey = this.ToJoin(ForKey);
@@ -1465,7 +1163,6 @@ export class VueCommand extends VueStore {
                 ForKey = `(${ForKey}`;
             if (!/\)$/.test(ForKey))
                 ForKey += ')';
-
             SetOption.TargetHead = `${ForKey} in `;
         }
         let Target = Model.ToJoin(SetOption.Target);
@@ -1474,29 +1171,28 @@ export class VueCommand extends VueStore {
         this.$AddCommand(DomName, 'v-for', SetOption);
         return this;
     }
-    public AddV_If(DomName: PathType | QueryNode[], Option: AddCommandOption) {
+    AddV_If(DomName, Option) {
         let SetOption = this.$ConvertCommandOption(DomName, Option);
         this.$AddCommand(DomName, 'v-if', SetOption);
         return this;
     }
-    public AddV_ElseIf(DomName: PathType | QueryNode[], Option: AddCommandOption) {
+    AddV_ElseIf(DomName, Option) {
         let SetOption = this.$ConvertCommandOption(DomName, Option);
         this.$AddCommand(DomName, 'v-else-if', SetOption);
         return this;
     }
-    public AddV_Else(DomName: PathType | QueryNode[]) {
+    AddV_Else(DomName) {
         let SetOption = this.$ConvertCommandOption(DomName);
         SetOption.Target = '';
         this.$AddCommand(DomName, 'v-else', SetOption);
         return this;
     }
-
-    public AddV_Show(DomName: PathType | QueryNode[], Option: AddCommandOption) {
+    AddV_Show(DomName, Option) {
         let SetOption = this.$ConvertCommandOption(DomName, Option);
         this.$AddCommand(DomName, 'v-show', SetOption);
         return this;
     }
-    public AddV_Bind(DomName: PathType | QueryNode[], BindKey: string, Option: AddCommandOption, Args?: string) {
+    AddV_Bind(DomName, BindKey, Option, Args) {
         let SetOption = this.$ConvertCommandOption(DomName, Option);
         if (Args)
             SetOption.FuncArgs = Args;
@@ -1504,7 +1200,7 @@ export class VueCommand extends VueStore {
         this.$AddCommand(DomName, 'v-bind', SetOption);
         return this;
     }
-    public AddV_On(DomName: PathType | QueryNode[], EventName: string, Option: AddCommandOption, Args?: string) {
+    AddV_On(DomName, EventName, Option, Args) {
         let SetOption = this.$ConvertCommandOption(DomName, Option);
         if (Args)
             SetOption.FuncArgs = Args;
@@ -1514,9 +1210,8 @@ export class VueCommand extends VueStore {
         return this;
     }
     //#endregion
-
     //#region Customer Command
-    public Watch(WatchPath: PathType | (() => any), Callback: WatchCallback, Option: WatchOptions = {}) {
+    Watch(WatchPath, Callback, Option = {}) {
         if (typeof WatchPath == 'function')
             watch(WatchPath, Callback, Option);
         else {
@@ -1525,46 +1220,41 @@ export class VueCommand extends VueStore {
         }
         return this;
     }
-    public AddV_Watch(WatchPath: PathType | (() => any), Callback: WatchCallback, Option: WatchOptions = {}) {
+    AddV_Watch(WatchPath, Callback, Option = {}) {
         Model.WithMounted(() => {
             this.Watch(WatchPath, Callback, Option);
         });
         return this;
     }
-    public AddV_Function(FuncName: PathType, Func: Function) {
+    AddV_Function(FuncName, Func) {
         if (this.$IsInited && !Array.isArray(FuncName))
             this.$VueOption.methods[FuncName] = Func;
         else
             Model.UpdateStore(FuncName, Func);
         return this;
     }
-
-    public AddV_OnChange(DomName: PathType | QueryNode[], ChangeFunc: AddCommandOption, Args?: string) {
+    AddV_OnChange(DomName, ChangeFunc, Args) {
         this.AddV_On(DomName, 'change', ChangeFunc, Args);
         return this;
     }
-    public AddV_Click(DomName: PathType | QueryNode[], Option: AddCommandOption, Args?: string) {
+    AddV_Click(DomName, Option, Args) {
         let SetOption = this.$ConvertCommandOption(DomName, Option);
         if (Args)
             SetOption.FuncArgs = Args;
-
         this.AddV_On(DomName, 'click', SetOption);
         return this;
     }
-    public AddV_FilePicker(DomName: PathType | QueryNode[], Option: AddV_FilePickerOption) {
-
-        let FileStorePath: string = null;
-        let Accept: string = null;
-        let ConvertType: FileConvertType | FileConvertType[] = 'none';
-        let Multi: boolean = false;
-
+    AddV_FilePicker(DomName, Option) {
+        let FileStorePath = null;
+        let Accept = null;
+        let ConvertType = 'none';
+        let Multi = false;
         if (typeof (Option) == 'string')
             FileStorePath = Option;
         else {
             FileStorePath = Option.Store;
             ConvertType = Option.ConvertType;
             Multi = Option.Multiple;
-
             if (Array.isArray(Option.Accept))
                 Accept = Option.Accept.join(' ');
             else
@@ -1580,11 +1270,9 @@ export class VueCommand extends VueStore {
                 TempInput.accept = Accept;
             if (Multi != null)
                 TempInput.multiple = Multi;
-
             TempInput.onchange = (Event) => {
                 if (TempInput.files == null || TempInput.files.length == 0)
                     return;
-
                 let Files = TempInput.files;
                 for (let i = 0; i < Files.length; i++) {
                     let PickFile = Files[i];
@@ -1593,22 +1281,13 @@ export class VueCommand extends VueStore {
             };
             TempInput.click();
         });
-
         return this;
     }
-
-    public AddV_Tree(TreeRoot: PathType, TreeSet: TreeSetType, Option?: AddV_TreeOption): this {
-
-        let AllSetInfo: TreeSetInfo[] = [];
+    AddV_Tree(TreeRoot, TreeSet, Option) {
+        let AllSetInfo = [];
         let RootPaths = this.Paths(TreeRoot);
         this.$ParseTreeSet(RootPaths, TreeSet, AllSetInfo);
-
-        type TreeSetInfoOption = {
-            TargetDom: PathType | QueryNode[],
-            TargetValue: PathType | Function,
-            TargetPath: PathType,
-        };
-        let CommandMap: Record<string, (Info: TreeSetInfo, Option: TreeSetInfoOption) => void> = {
+        let CommandMap = {
             'v-text': (Info, Option) => {
                 Model.AddV_Text(Option.TargetDom, Option.TargetValue);
             },
@@ -1660,7 +1339,7 @@ export class VueCommand extends VueStore {
                     Model.$Error(`watch command value must be a function, path: ${this.ToJoin(Info.DomPaths)}`);
                     return;
                 }
-                Model.AddV_Watch(Info.DomPaths, Info.StoreValue as any);
+                Model.AddV_Watch(Info.DomPaths, Info.StoreValue);
             },
             'func': (Info, Option) => {
                 if (typeof (Info.StoreValue) != 'function') {
@@ -1674,7 +1353,7 @@ export class VueCommand extends VueStore {
                     Info.StoreValue(Info.DomPaths);
                 }
             }
-        }
+        };
         for (let Info of AllSetInfo) {
             let ActionSet = CommandMap[Info.Command];
             if (ActionSet == null) {
@@ -1687,45 +1366,38 @@ export class VueCommand extends VueStore {
                 });
                 Info.Nodes = QueryNodes;
             }
-
-            let TargetDom: PathType | QueryNode[] = Option?.UseDeepQuery ? Info.Nodes : Info.DomPaths;
-            let TargetPath: PathType = [];
-            let TargetValue: PathType | Function;
-
+            let TargetDom = Option?.UseDeepQuery ? Info.Nodes : Info.DomPaths;
+            let TargetPath = [];
+            let TargetValue;
             if (typeof (Info.StoreValue) != 'function') {
                 if (Option?.UseTreePath)
                     TargetPath = [...Info.TreePaths];
-
                 if (Option?.UseDomStore || Info.StoreValue == '.')
                     TargetPath.push(Info.DomName);
                 else if (Info.StoreValue != null && Info.StoreValue != '')
                     TargetPath = this.Paths(TargetPath, Info.StoreValue);
             }
             TargetValue = TargetPath.length > 0 ? TargetPath : Info.StoreValue;
-
             ActionSet(Info, {
                 TargetDom: TargetDom,
                 TargetPath: TargetPath,
                 TargetValue: TargetValue,
             });
-
         }
         return this;
     }
-    private $ParseTreeSet(Paths: string[], TreeSet: TreeSetType, Result: TreeSetInfo[]) {
+    $ParseTreeSet(Paths, TreeSet, Result) {
         let AllKeys = Object.keys(TreeSet);
         let ParamRegex = /^(.+?)\(([^)]*)\)$/;
-
         for (let i = 0; i < AllKeys.length; i++) {
             let Command = AllKeys[i];
-            let SetPair = TreeSet[Command as any];
-
+            let SetPair = TreeSet[Command];
             let DomPaths = [...Paths];
             let TreePaths = [...Paths];
             let DomName = TreePaths.pop();
             if (!Command.includes(':')) {
                 let HasParams = Command.match(ParamRegex);
-                let CommandKey: string = null;
+                let CommandKey = null;
                 if (HasParams && HasParams.length >= 3) {
                     Command = HasParams[1];
                     CommandKey = HasParams[2];
@@ -1740,15 +1412,13 @@ export class VueCommand extends VueStore {
                 });
                 continue;
             }
-
             let Commands = Command.split(':');
             if (Command.length < 2) {
                 Model.$Error(`command ${Command} invalid`);
                 continue;
             }
-
             Command = Commands.shift();
-            let Params: string = null;
+            let Params = null;
             if (Commands.length > 0) {
                 let LastCommand = Commands.pop();
                 let HasParams = LastCommand.match(ParamRegex);
@@ -1759,11 +1429,10 @@ export class VueCommand extends VueStore {
                 else
                     Commands.push(LastCommand);
             }
-
             let NextDomName = Model.ToJoin(Commands, ':');
             if (Command == '') {
                 if (typeof SetPair != 'function')
-                    this.$ParseTreeSet([...Paths, NextDomName], SetPair as any, Result);
+                    this.$ParseTreeSet([...Paths, NextDomName], SetPair, Result);
                 else {
                     Result.push({
                         Command: 'using',
@@ -1777,7 +1446,6 @@ export class VueCommand extends VueStore {
                 }
                 continue;
             }
-
             Result.push({
                 Command: Command,
                 CommandKey: NextDomName,
@@ -1790,15 +1458,13 @@ export class VueCommand extends VueStore {
         }
     }
     //#endregion
-
     //#region Property Method
-    public AddV_Property(PropertyPath: PathType, Option: AddPropertyType) {
+    AddV_Property(PropertyPath, Option) {
         return this.AddV_PropertyFrom(this.Store, PropertyPath, Option);
     }
-    public AddV_PropertyFrom(SourceStore: any, PropertyPath: PathType, Option: AddPropertyType) {
+    AddV_PropertyFrom(SourceStore, PropertyPath, Option) {
         if (PropertyPath == null)
             return;
-
         let SetStore = SourceStore;
         PropertyPath = this.ToJoin(PropertyPath);
         let PropertyKey = PropertyPath;
@@ -1814,7 +1480,6 @@ export class VueCommand extends VueStore {
         if (Option.Bind) {
             if (!Array.isArray(Option.Bind))
                 Option.Bind = [Option.Bind];
-
             for (let BindPath of Option.Bind) {
                 if (BindPath == null)
                     continue;
@@ -1826,13 +1491,12 @@ export class VueCommand extends VueStore {
         }
         return this;
     }
-    protected $BaseAddProperty(PropertyStore: StoreType, PropertyKey: string, Option: AddPropertyType) {
+    $BaseAddProperty(PropertyStore, PropertyKey, Option) {
         let ThisModel = this;
-        let PropertyContent: PropertyDescriptor = {
+        let PropertyContent = {
             get() {
                 if (Option.get)
                     return Option.get();
-
                 return this.$get(PropertyKey);
             },
             set(Value) {
@@ -1843,73 +1507,62 @@ export class VueCommand extends VueStore {
                 this.$set(PropertyKey, Value);
             }
         };
-
         if (Option.get)
             PropertyContent.get = Option.get;
         if (Option.set != null)
             PropertyContent.set = Option.set;
-
         let SetProperty = Object.defineProperty(PropertyStore, PropertyKey, PropertyContent);
         SetProperty.$properties ??= {};
         SetProperty.$properties[PropertyKey] = { ...Option };
-        SetProperty.$get ??= (PropertyKey: string) => {
+        SetProperty.$get ??= (PropertyKey) => {
             let PropertyOption = SetProperty.$properties[PropertyKey];
             if (PropertyOption?.Target == null)
                 return PropertyOption[`$${PropertyKey}`];
             return ThisModel.GetStore(PropertyOption.Target);
         };
-        SetProperty.$set ??= (PropertyKey: string, Value: any) => {
+        SetProperty.$set ??= (PropertyKey, Value) => {
             let PropertyOption = SetProperty.$properties[PropertyKey];
             if (PropertyOption?.Target)
                 ThisModel.SetStore(PropertyOption.Target, Value);
             else
                 PropertyOption[`$${PropertyKey}`] = Value;
-        }
-
+        };
         if (SetProperty[PropertyKey] == null && Option.Value != null)
             SetProperty[PropertyKey] = Option.Value;
-
         return SetProperty;
     }
     //#endregion
-
     //#region Protected Process
-    protected $ConvertCommandOption(DomName: PathType | QueryNode[], Option?: AddCommandOption): CommandOption {
+    $ConvertCommandOption(DomName, Option) {
         if (Option == null) {
             if (this.IsPathType(DomName))
-                return { Target: DomName as PathType, FuncAction: false };
+                return { Target: DomName, FuncAction: false };
             else {
-                let Nodes = DomName as QueryNode[];
+                let Nodes = DomName;
                 let NodeNames = Nodes.map(Item => Item.DomName);
                 return { Target: NodeNames, FuncAction: false };
             }
         }
-
         if (typeof Option == 'string' || typeof Option == 'function' || Array.isArray(Option))
             return { Target: Option, FuncAction: true };
-
         Option.FuncAction ??= true;
         return Option;
     }
-    protected $AddCommand(DomName: PathType | QueryNode[], Command: string, Option: CommandOption) {
+    $AddCommand(DomName, Command, Option) {
         if (DomName == null)
             return;
-
         if (!Array.isArray(DomName))
             DomName = [DomName];
-
         let IsFromQueryNode = DomName[0] instanceof QueryNode;
-        let QueryNodes: QueryNode[];
+        let QueryNodes;
         if (IsFromQueryNode)
-            QueryNodes = DomName as QueryNode[];
+            QueryNodes = DomName;
         else
-            QueryNodes = Queryer.Query(DomName as PathType);
-
+            QueryNodes = Queryer.Query(DomName);
         let Target = Option.Target;
         if (typeof (Target) == 'function') {
-            let FuncDomName = DomName as PathType;
+            let FuncDomName = DomName;
             Target = this.$GenerateEventFunction(FuncDomName, Target, Command);
-
             if (Option.FuncArgs) {
                 let Args = this.ToJoin(Option.FuncArgs, ',');
                 if (!/^\(/.test(Args))
@@ -1924,23 +1577,19 @@ export class VueCommand extends VueStore {
         }
         else
             Target = this.ToJoin(Target);
-
         if (Option.TargetHead)
             Target = Option.TargetHead + Target;
-
         if (Option.TargetTail)
             Target += Option.TargetTail;
-
         if (Option.CommandKey)
             Command += `:${Option.CommandKey}`;
-
         for (let i = 0; i < QueryNodes.length; i++) {
             let NodeItem = QueryNodes[i];
             let Dom = NodeItem.Dom;
             this.$SetAttribute(Dom, Command, Target);
         }
     }
-    protected $SetAttribute(Dom: HTMLElement, AttrName: string, AttrValue: string) {
+    $SetAttribute(Dom, AttrName, AttrValue) {
         if (Dom == null) {
             let Message = `Dom Element is null. ${AttrValue}`;
             console.warn(Message);
@@ -1948,27 +1597,23 @@ export class VueCommand extends VueStore {
         }
         Dom.setAttribute(AttrName, AttrValue);
     }
-
     //#region Function Control
-    protected $RandomFuncName(BaseFuncName: string) {
+    $RandomFuncName(BaseFuncName) {
         return `${BaseFuncName}${this.GenerateIdReplace('')}`.replace(/[-:.]/g, '_');
     }
-    protected $GenerateEventFunction(DomName: PathType, EventFunc: Function, Command: string) {
+    $GenerateEventFunction(DomName, EventFunc, Command) {
         let FuncName = this.$RandomFuncName(`${Command}_`);
         DomName = this.Paths(DomName);
         let FullFuncPath = ['event', ...DomName, FuncName];
         this.AddV_Function(FullFuncPath, EventFunc);
         return this.ToJoin(FullFuncPath);
     }
-    //#endregion
-
-    //#endregion
 }
 export class VueModel extends VueCommand {
-    $NativeWarn: (...Message: any[]) => void;
-    $IsEnableVueWarn: boolean;
-    $MountId: string = null;
-    Id: string;
+    $NativeWarn;
+    $IsEnableVueWarn;
+    $MountId = null;
+    Id;
     constructor() {
         super();
         this.Id = this.GenerateId();
@@ -1976,30 +1621,26 @@ export class VueModel extends VueCommand {
         this.WithVueWarn(false);
         this.WithLifeCycleDirective();
     }
-
     //#region With Method
-    public WithMountId(MountId: string) {
+    WithMountId(MountId) {
         this.$MountId = MountId;
         return this;
     }
-    public WithVueWarn(Enable: boolean) {
+    WithVueWarn(Enable) {
         this.$IsEnableVueWarn = Enable;
         this.$NativeWarn = console.warn;
-        console.warn = (...Message: any[]) => {
+        console.warn = (...Message) => {
             if (Message == null)
                 return;
-
             if (Message.length == 0)
                 return;
-
             if (Message[0].toLowerCase().includes('[vue warn]') && this.$IsEnableVueWarn == false)
                 return;
-
             this.$NativeWarn(Message);
-        }
+        };
         return this;
     }
-    public WithLifeCycleDirective() {
+    WithLifeCycleDirective() {
         this.WithDirective('on-mounted', {
             mounted(el, binding, vnode) {
                 if (typeof binding.value === 'function')
@@ -2014,13 +1655,11 @@ export class VueModel extends VueCommand {
         });
     }
     //#endregion
-
     //#region Public Method
-    public Init() {
+    Init() {
         if (this.$IsInited)
             return this;
-
-        this.Store = reactive<StoreType>(this.Store);
+        this.Store = reactive(this.Store);
         let GetStore = this.Store;
         let MountedFunc = this.$MountedFuncs;
         this.$VueApp = createApp({
@@ -2033,30 +1672,26 @@ export class VueModel extends VueCommand {
                     Func();
             }
         });
-
         for (let Item of this.$VueUse)
             this.$VueApp.use(Item);
-
         for (let Item of this.$Directive)
             this.$VueApp.directive(Item.Name, Item.Directive);
-
         this.$VueProxy = this.$VueApp.mount(`#${this.$MountId}`);
         this.$IsInited = true;
         return this;
     }
-    public Using(UseFunc = () => { }) {
+    Using(UseFunc = () => { }) {
         UseFunc();
         return this;
     }
-    public UsingVueApp(UsingFunc: ((VueApp: App) => void)) {
+    UsingVueApp(UsingFunc) {
         UsingFunc?.call(this, this.$VueApp);
-        this.$VueApp.directive
+        this.$VueApp.directive;
         return this;
     }
     //#endregion
-
     //#region Customer Vue Command
-    public AddV_OnMounted(DomName: PathType | QueryNode[], Option: AddCommandOption, Args?: string) {
+    AddV_OnMounted(DomName, Option, Args) {
         let SetOption = this.$ConvertCommandOption(DomName, Option);
         if (Args) {
             SetOption.FuncArgs = Args;
@@ -2066,7 +1701,7 @@ export class VueModel extends VueCommand {
         this.$AddCommand(DomName, `v-on-mounted`, SetOption);
         return this;
     }
-    public AddV_OnUnMounted(DomName: PathType | QueryNode[], Option: AddCommandOption, Args?: string) {
+    AddV_OnUnMounted(DomName, Option, Args) {
         let SetOption = this.$ConvertCommandOption(DomName, Option);
         if (Args) {
             SetOption.FuncArgs = Args;
@@ -2076,11 +1711,8 @@ export class VueModel extends VueCommand {
         this.$AddCommand(DomName, `v-on-unmounted`, SetOption);
         return this;
     }
-    //#endregion
 }
-
 const Model = new VueModel();
-(window as any).Model = Model;
-export {
-    Model,
-}
+window.Model = Model;
+export { Model, };
+//# sourceMappingURL=VueModel.js.map
