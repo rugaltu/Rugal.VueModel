@@ -1256,7 +1256,7 @@ export class ApiStore extends FuncBase {
     //#endregion
 }
 import { App, Plugin, createApp, reactive, Directive, } from 'vue';
-import { watch, WatchCallback, WatchOptions } from 'vue';
+import { watch, WatchCallback, WatchOptions, WatchHandle } from 'vue';
 export class VueStore extends ApiStore {
     protected $VueProxy: any = null;
     protected $VueOption: Record<string, any> = {
@@ -1516,14 +1516,15 @@ export class VueCommand extends VueStore {
     //#endregion
 
     //#region Customer Command
-    public Watch(WatchPath: PathType | (() => any), Callback: WatchCallback, Option: WatchOptions = {}) {
+    public Watch(WatchPath: PathType | (() => any), Callback: WatchCallback, Option: WatchOptions = {}): WatchHandle {
+        let Handle: WatchHandle;
         if (typeof WatchPath == 'function')
-            watch(WatchPath, Callback, Option);
+            Handle = watch(WatchPath, Callback, Option);
         else {
             Model.AddStore(WatchPath);
-            watch(() => Model.GetStore(WatchPath), Callback, Option);
+            Handle = watch(() => Model.GetStore(WatchPath), Callback, Option);
         }
-        return this;
+        return Handle;
     }
     public AddV_Watch(WatchPath: PathType | (() => any), Callback: WatchCallback, Option: WatchOptions = {}) {
         Model.WithMounted(() => {
