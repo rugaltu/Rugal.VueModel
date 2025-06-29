@@ -235,7 +235,7 @@ export declare class ApiStore extends FuncBase {
     protected $AppendFileToFormData(FileKey: string, Form: FormData, FileData: FilesType): FormData;
 }
 import { App, Plugin, Directive } from 'vue';
-import { WatchCallback, WatchOptions } from 'vue';
+import { WatchCallback, WatchOptions, WatchHandle } from 'vue';
 export declare class VueStore extends ApiStore {
     #private;
     protected $VueProxy: any;
@@ -324,7 +324,7 @@ export declare class VueCommand extends VueStore {
     AddV_Show(DomName: PathType | QueryNode[], Option: AddCommandOption): this;
     AddV_Bind(DomName: PathType | QueryNode[], BindKey: string, Option: AddCommandOption, Args?: string): this;
     AddV_On(DomName: PathType | QueryNode[], EventName: string, Option: AddCommandOption, Args?: string): this;
-    Watch(WatchPath: PathType | (() => any), Callback: WatchCallback, Option?: WatchOptions): this;
+    Watch(WatchPath: PathType | (() => any), Callback: WatchCallback, Option?: WatchOptions): WatchHandle;
     AddV_Watch(WatchPath: PathType | (() => any), Callback: WatchCallback, Option?: WatchOptions): this;
     AddV_Function(FuncName: PathType, Func: Function): this;
     AddV_OnChange(DomName: PathType | QueryNode[], ChangeFunc: AddCommandOption, Args?: string): this;

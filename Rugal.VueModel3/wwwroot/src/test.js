@@ -47,7 +47,7 @@ Model
     .UpdateStore('Test.A', null)
     .AddV_Watch('Test.A', (Value) => {
     alert('a');
-}, true)
+})
     .AddV_Watch('Test.A', (Value) => {
     alert('b');
 })
