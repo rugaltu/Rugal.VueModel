@@ -1452,6 +1452,7 @@ export class VueCommand extends VueStore {
             PropertyContent.get = Option.get;
         if (Option.set != null)
             PropertyContent.set = Option.set;
+        let OriginalValue = PropertyStore[PropertyKey];
         let SetProperty = Object.defineProperty(PropertyStore, PropertyKey, PropertyContent);
         SetProperty.$properties ??= {};
         SetProperty.$properties[PropertyKey] = { ...Option };
@@ -1468,8 +1469,10 @@ export class VueCommand extends VueStore {
             else
                 PropertyOption[`$${PropertyKey}`] = Value;
         };
-        if (SetProperty[PropertyKey] == null && Option.Value != null)
+        if (Option.Value != null)
             SetProperty[PropertyKey] = Option.Value;
+        else if (OriginalValue != null)
+            SetProperty[PropertyKey] = OriginalValue;
         return SetProperty;
     }
     $ConvertCommandOption(DomName, Option) {
