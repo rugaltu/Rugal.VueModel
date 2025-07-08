@@ -448,6 +448,9 @@ type FileItemStore = {
 }
 export class FileItem {
 
+    public OnChangeBase64: Function;
+    public OnChangeBuffer: Function;
+
     protected $Store: FileItemStore;
     constructor(File?: File, ConvertType: FileConvertType | FileConvertType[] = 'none') {
         if (File == null)
@@ -486,12 +489,14 @@ export class FileItem {
     }
     set Base64(Value: string) {
         this.$Store.Base64 = Value;
+        this.OnChangeBase64?.call(this, this.$Store.Base64);
     }
     get Buffer() {
         return this.$Store.Buffer;
     }
     set Buffer(Value: ArrayBuffer) {
         this.$Store.Buffer = Value;
+        this.OnChangeBuffer?.call(this, this.$Store.Buffer);
     }
     get InnerStore() {
         return this.$Store;

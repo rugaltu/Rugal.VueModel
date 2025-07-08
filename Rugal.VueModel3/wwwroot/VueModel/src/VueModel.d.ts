@@ -91,6 +91,8 @@ type FileItemStore = {
     ConvertType?: FileConvertType | FileConvertType[];
 };
 export declare class FileItem {
+    OnChangeBase64: Function;
+    OnChangeBuffer: Function;
     protected $Store: FileItemStore;
     constructor(File?: File, ConvertType?: FileConvertType | FileConvertType[]);
     get FileId(): string;

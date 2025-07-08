@@ -358,6 +358,8 @@
     var Queryer = new DomQueryer();
     exports.Queryer = Queryer;
     class FileItem {
+        OnChangeBase64;
+        OnChangeBuffer;
         $Store;
         constructor(File, ConvertType = 'none') {
             if (File == null)
@@ -396,12 +398,14 @@
         }
         set Base64(Value) {
             this.$Store.Base64 = Value;
+            this.OnChangeBase64?.call(this, this.$Store.Base64);
         }
         get Buffer() {
             return this.$Store.Buffer;
         }
         set Buffer(Value) {
             this.$Store.Buffer = Value;
+            this.OnChangeBuffer?.call(this, this.$Store.Buffer);
         }
         get InnerStore() {
             return this.$Store;
