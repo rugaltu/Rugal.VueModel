@@ -44,6 +44,8 @@ export class FuncBase {
 
         UrlPaths = UrlPaths.map(Item => Item.replace(/\/+$/g, '').replace(/^\/+/g, '/'));
         let CombineUrl = this.ToJoin(UrlPaths, '/');
+        if (CombineUrl == null || CombineUrl == '')
+            CombineUrl = '/';
         if (UrlParam != null) {
             UrlParam = this.ConvertTo_UrlQuery(UrlParam);
             CombineUrl += `?${UrlParam}`;

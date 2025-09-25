@@ -43,6 +43,8 @@
                 this.$Throw('Url can not be null or empty');
             UrlPaths = UrlPaths.map(Item => Item.replace(/\/+$/g, '').replace(/^\/+/g, '/'));
             let CombineUrl = this.ToJoin(UrlPaths, '/');
+            if (CombineUrl == null || CombineUrl == '')
+                CombineUrl = '/';
             if (UrlParam != null) {
                 UrlParam = this.ConvertTo_UrlQuery(UrlParam);
                 CombineUrl += `?${UrlParam}`;
