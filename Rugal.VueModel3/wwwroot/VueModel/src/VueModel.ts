@@ -1643,6 +1643,8 @@ export class VueCommand extends VueStore {
                 Model.AddV_Show(Option.TargetDom, Option.TargetValue);
             },
             'v-bind': (Info, Option) => {
+                if (!Option.TargetValue)
+                    return;
                 Model.AddV_Bind(Option.TargetDom, Info.CommandKey, Option.TargetValue, Info.Params);
             },
             'v-on': (Info, Option) => {

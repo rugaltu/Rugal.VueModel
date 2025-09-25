@@ -1280,6 +1280,8 @@
                     Model.AddV_Show(Option.TargetDom, Option.TargetValue);
                 },
                 'v-bind': (Info, Option) => {
+                    if (!Option.TargetValue)
+                        return;
                     Model.AddV_Bind(Option.TargetDom, Info.CommandKey, Option.TargetValue, Info.Params);
                 },
                 'v-on': (Info, Option) => {
@@ -1342,6 +1344,8 @@
                         TargetPath = this.Paths(TargetPath, Info.StoreValue);
                 }
                 TargetValue = TargetPath.length > 0 ? TargetPath : Info.StoreValue;
+                if (TargetValue == '')
+                    continue;
                 ActionSet(Info, {
                     TargetDom: TargetDom,
                     TargetPath: TargetPath,
