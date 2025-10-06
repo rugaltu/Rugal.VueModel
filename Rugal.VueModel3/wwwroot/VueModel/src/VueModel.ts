@@ -1476,7 +1476,7 @@ export class VueCommand extends VueStore {
             SetOption.TargetHead = `${ForKey} in `;
         }
         let Target = Model.ToJoin(SetOption.Target);
-        if (!Target.includes('in'))
+        if (!/\b(in|of)\b/.test(Target))
             SetOption.TargetHead ??= '(item, index) in ';
         this.$AddCommand(DomName, 'v-for', SetOption);
         return this;
