@@ -266,6 +266,9 @@ class QueryNode extends FuncBase {
     public Query(DomName: PathType, Option?: QueryOption): QueryNode[] {
         return this.$RCS_QueryChildrens(this, DomName, Option);
     }
+    public QueryCss(Selector: string, Option?: QueryOption): QueryNode[] {
+        return this.$RCS_QueryCssChildrens(this, Selector, Option);
+    }
     public Selector(Selector: string) {
         return this.Dom.querySelector(Selector);
     }
@@ -281,28 +284,43 @@ class QueryNode extends FuncBase {
             DomName = DomName[0];
 
         let Results = [];
-        for (let Item of TargetNode.Children) {
+        for (let NodeItem of TargetNode.Children) {
             if (Array.isArray(DomName)) {
                 let Names: PathType = [...DomName];
                 let FirstName = Names.shift();
-                if (Item.DomName == FirstName) {
+                if (NodeItem.DomName == FirstName) {
                     if (Names.length == 1)
                         Names = Names[0];
 
-                    let FindChildren = this.$RCS_QueryChildrens(Item, Names, Option);
+                    let FindChildren = this.$RCS_QueryChildrens(NodeItem, Names, Option);
                     if (FindChildren != null) {
                         Results.push(...FindChildren);
                         continue;
                     }
                 }
             }
-            else if (Item.DomName == DomName) {
-                Results.push(Item);
+            else if (NodeItem.DomName == DomName) {
+                Results.push(NodeItem);
                 if (Option.Mode == 'Multi')
                     continue;
             }
 
-            let ChildrenResult = this.$RCS_QueryChildrens(Item, DomName, Option);
+            let ChildrenResult = this.$RCS_QueryChildrens(NodeItem, DomName, Option);
+            if (ChildrenResult != null)
+                Results.push(...ChildrenResult);
+        }
+        return Results;
+    }
+    protected $RCS_QueryCssChildrens(TargetNode: QueryNode, Selector: string, Option: QueryOption): QueryNode[] {
+        let Results = [];
+        for (let NodeItem of TargetNode.Children) {
+            if (NodeItem.Dom.matches(Selector)) {
+                Results.push(NodeItem);
+                if (Option.Mode == 'Multi')
+                    continue;
+            }
+
+            let ChildrenResult = this.$RCS_QueryCssChildrens(NodeItem, Selector, Option);
             if (ChildrenResult != null)
                 Results.push(...ChildrenResult);
         }
@@ -357,6 +375,25 @@ class DomQueryer {
         if (Option.TargetNode == null)
             Option.TargetNode = this.$RootNode;
         return Option.TargetNode.Query(DomName, Option);
+    }
+    public QueryCss(Selector: string, Option?: QueryOption | QueryNode) {
+        if (!Queryer.IsInited)
+            Queryer.Init();
+
+        if (Option == null) {
+            Option = {
+                Mode: 'Multi',
+            }
+        }
+        else if (Option instanceof QueryNode) {
+            Option = {
+                Mode: 'Multi',
+                TargetNode: Option,
+            };
+        }
+        if (Option.TargetNode == null)
+            Option.TargetNode = this.$RootNode;
+        return Option.TargetNode.QueryCss(Selector, Option);
     }
 
     public Using(DomName: PathType, UsingFunc: (Prop: { QueryNodes: QueryNode[] }) => void, TargetNode?: QueryNode) {

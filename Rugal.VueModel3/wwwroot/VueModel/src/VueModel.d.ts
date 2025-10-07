@@ -41,9 +41,11 @@ declare class QueryNode extends FuncBase {
     NodeDeep: number;
     constructor(Dom: HTMLElement);
     Query(DomName: PathType, Option?: QueryOption): QueryNode[];
+    QueryCss(Selector: string, Option?: QueryOption): QueryNode[];
     Selector(Selector: string): Element;
     SelectorAll(Selector: string): NodeListOf<Element>;
     protected $RCS_QueryChildrens(TargetNode: QueryNode, DomName: PathType, Option: QueryOption): QueryNode[];
+    protected $RCS_QueryCssChildrens(TargetNode: QueryNode, Selector: string, Option: QueryOption): QueryNode[];
 }
 declare class DomQueryer {
     $Root: HTMLElement;
@@ -55,6 +57,7 @@ declare class DomQueryer {
     WithDomName(QueryDomName: string): this;
     Init(IsReInited?: boolean): this;
     Query(DomName: PathType, Option?: QueryOption | QueryNode): QueryNode[];
+    QueryCss(Selector: string, Option?: QueryOption | QueryNode): QueryNode[];
     Using(DomName: PathType, UsingFunc: (Prop: {
         QueryNodes: QueryNode[];
     }) => void, TargetNode?: QueryNode): this;
