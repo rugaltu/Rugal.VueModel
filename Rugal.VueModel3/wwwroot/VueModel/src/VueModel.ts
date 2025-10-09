@@ -10,7 +10,7 @@ export class FuncBase {
     //#endregion
     constructor() {
         this.$NavigateToFunc = null;
-        this.WithDateTextJoinChar('-');
+        this.WithDateTextJoinChar('/');
     }
 
     //#region Public With Method

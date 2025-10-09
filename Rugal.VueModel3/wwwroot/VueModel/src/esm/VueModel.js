@@ -3,7 +3,7 @@ export class FuncBase {
     $DefaultDateJoinChar;
     constructor() {
         this.$NavigateToFunc = null;
-        this.WithDateTextJoinChar('-');
+        this.WithDateTextJoinChar('/');
     }
     WithNavigateTo(NavigateToFunc) {
         this.$NavigateToFunc = NavigateToFunc;
