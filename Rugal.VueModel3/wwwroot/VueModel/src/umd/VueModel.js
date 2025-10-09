@@ -1137,8 +1137,12 @@
         }
         AddV_Text(DomName, Option) {
             let SetOption = this.$ConvertCommandOption(DomName, Option);
-            if (typeof SetOption.Target != 'function')
-                Model.AddStore(SetOption.Target);
+            if (typeof SetOption.Target != 'function') {
+                let FullPaths = Model.ToJoin(SetOption.Target);
+                if (/^[A-Za-z_$][A-Za-z0-9_$]*(\.[A-Za-z_$][A-Za-z0-9_$]*)*$/.test(FullPaths)) {
+                    Model.AddStore(SetOption.Target);
+                }
+            }
             this.$AddCommand(DomName, 'v-text', SetOption);
             return this;
         }
