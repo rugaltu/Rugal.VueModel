@@ -9,7 +9,7 @@
 })(function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Model = exports.VueModel = exports.VueCommand = exports.VueStore = exports.ApiStore = exports.FileItem = exports.Queryer = exports.DomQueryer = exports.FuncBase = void 0;
+    exports.Model = exports.VueModel = exports.VueCommand = exports.VueStore = exports.ApiStore = exports.FileItem = exports.Queryer = exports.DomQueryer = exports.QueryNode = exports.FuncBase = void 0;
     class FuncBase {
         $NavigateToFunc;
         $DefaultDateJoinChar;
@@ -289,6 +289,7 @@
             return Results;
         }
     }
+    exports.QueryNode = QueryNode;
     class DomQueryer {
         $Root = null;
         $RootNode = null;
@@ -314,8 +315,8 @@
             return this;
         }
         Query(DomName, Option) {
-            if (!Queryer.IsInited)
-                Queryer.Init();
+            if (!exports.Queryer.IsInited)
+                exports.Queryer.Init();
             if (Option == null) {
                 Option = {
                     Mode: 'Multi',
@@ -332,8 +333,8 @@
             return Option.TargetNode.Query(DomName, Option);
         }
         QueryCss(Selector, Option) {
-            if (!Queryer.IsInited)
-                Queryer.Init();
+            if (!exports.Queryer.IsInited)
+                exports.Queryer.Init();
             if (Option == null) {
                 Option = {
                     Mode: 'Multi',
@@ -392,8 +393,7 @@
         }
     }
     exports.DomQueryer = DomQueryer;
-    var Queryer = new DomQueryer();
-    exports.Queryer = Queryer;
+    exports.Queryer = new DomQueryer();
     class FileItem {
         OnChangeBase64;
         OnChangeBuffer;
@@ -1132,7 +1132,7 @@
         $QueryDomName = null;
         WithQueryDomName(QueryDomName) {
             this.$QueryDomName = QueryDomName;
-            Queryer.WithDomName(this.$QueryDomName);
+            exports.Queryer.WithDomName(this.$QueryDomName);
             return this;
         }
         AddV_Text(DomName, Option) {
@@ -1290,7 +1290,11 @@
         }
         AddV_Tree(TreeRoot, TreeSet, Option) {
             let AllSetInfo = [];
-            let RootPaths = this.Paths(TreeRoot);
+            let RootNode;
+            let UsingRootNode = TreeRoot instanceof QueryNode;
+            if (UsingRootNode)
+                RootNode = TreeRoot;
+            let RootPaths = UsingRootNode ? [] : this.Paths(TreeRoot);
             this.$ParseTreeSet(RootPaths, TreeSet, AllSetInfo);
             let CommandMap = {
                 'v-text': (Info, Option) => {
@@ -1367,13 +1371,23 @@
                     Model.$Error(`${Info.Command} command is not allowed, path: ${this.ToJoin(Info.DomPaths)}`);
                     continue;
                 }
+                let NeedQuery = false;
+                let QueryOption = {
+                    Mode: 'Multi',
+                };
+                if (UsingRootNode) {
+                    NeedQuery = true;
+                    QueryOption.TargetNode = RootNode;
+                }
                 if (Option?.UseDeepQuery) {
-                    let QueryNodes = Queryer.Query(Info.DomPaths, {
-                        Mode: 'DeepMulti',
-                    });
+                    NeedQuery = true;
+                    QueryOption.Mode = 'DeepMulti';
+                }
+                if (NeedQuery) {
+                    let QueryNodes = exports.Queryer.Query(Info.DomPaths, QueryOption);
                     Info.Nodes = QueryNodes;
                 }
-                let TargetDom = Option?.UseDeepQuery ? Info.Nodes : Info.DomPaths;
+                let TargetDom = NeedQuery ? Info.Nodes : Info.DomPaths;
                 let TargetPath = [];
                 let TargetValue;
                 if (typeof (Info.StoreValue) != 'function') {
@@ -1566,7 +1580,7 @@
             if (IsFromQueryNode)
                 QueryNodes = DomName;
             else
-                QueryNodes = Queryer.Query(DomName);
+                QueryNodes = exports.Queryer.Query(DomName);
             let Target = Option.Target;
             if (typeof (Target) == 'function') {
                 let FuncDomName = DomName;

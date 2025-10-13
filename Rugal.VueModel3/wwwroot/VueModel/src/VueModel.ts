@@ -251,7 +251,7 @@ type QueryOption = {
     Mode: QueryModeType,
     TargetNode?: QueryNode,
 };
-class QueryNode extends FuncBase {
+export class QueryNode extends FuncBase {
     Dom: HTMLElement;
     DomName: string = null;
     Parent: QueryNode = null;
@@ -327,7 +327,7 @@ class QueryNode extends FuncBase {
         return Results;
     }
 }
-class DomQueryer {
+export class DomQueryer {
 
     $Root: HTMLElement = null;
     $RootNode: QueryNode = null;
@@ -447,9 +447,7 @@ class DomQueryer {
     }
 }
 
-var Queryer = new DomQueryer();
-
-export { DomQueryer, Queryer };
+export var Queryer = new DomQueryer();
 //#endregion
 
 //#region FuncBase Type
@@ -1646,10 +1644,14 @@ export class VueCommand extends VueStore {
         return this;
     }
 
-    public AddV_Tree(TreeRoot: PathType, TreeSet: TreeSetType, Option?: AddV_TreeOption): this {
+    public AddV_Tree(TreeRoot: PathType | QueryNode, TreeSet: TreeSetType, Option?: AddV_TreeOption): this {
 
         let AllSetInfo: TreeSetInfo[] = [];
-        let RootPaths = this.Paths(TreeRoot);
+        let RootNode: QueryNode;
+        let UsingRootNode = TreeRoot instanceof QueryNode;
+        if (UsingRootNode)
+            RootNode = TreeRoot as QueryNode;
+        let RootPaths = UsingRootNode ? [] : this.Paths(TreeRoot)
         this.$ParseTreeSet(RootPaths, TreeSet, AllSetInfo);
 
         type TreeSetInfoOption = {
@@ -1732,14 +1734,25 @@ export class VueCommand extends VueStore {
                 Model.$Error(`${Info.Command} command is not allowed, path: ${this.ToJoin(Info.DomPaths)}`);
                 continue;
             }
+
+            let NeedQuery = false;
+            let QueryOption: QueryOption = {
+                Mode: 'Multi',
+            };
+            if (UsingRootNode) {
+                NeedQuery = true;
+                QueryOption.TargetNode = RootNode;
+            }
             if (Option?.UseDeepQuery) {
-                let QueryNodes = Queryer.Query(Info.DomPaths, {
-                    Mode: 'DeepMulti',
-                });
+                NeedQuery = true;
+                QueryOption.Mode = 'DeepMulti';
+            }
+            if (NeedQuery) {
+                let QueryNodes = Queryer.Query(Info.DomPaths, QueryOption);
                 Info.Nodes = QueryNodes;
             }
 
-            let TargetDom: PathType | QueryNode[] = Option?.UseDeepQuery ? Info.Nodes : Info.DomPaths;
+            let TargetDom: PathType | QueryNode[] = NeedQuery ? Info.Nodes : Info.DomPaths;
             let TargetPath: PathType = [];
             let TargetValue: PathType | Function;
 

@@ -32,7 +32,7 @@ type QueryOption = {
     Mode: QueryModeType;
     TargetNode?: QueryNode;
 };
-declare class QueryNode extends FuncBase {
+export declare class QueryNode extends FuncBase {
     Dom: HTMLElement;
     DomName: string;
     Parent: QueryNode;
@@ -47,7 +47,7 @@ declare class QueryNode extends FuncBase {
     protected $RCS_QueryChildrens(TargetNode: QueryNode, DomName: PathType, Option: QueryOption): QueryNode[];
     protected $RCS_QueryCssChildrens(TargetNode: QueryNode, Selector: string, Option: QueryOption): QueryNode[];
 }
-declare class DomQueryer {
+export declare class DomQueryer {
     $Root: HTMLElement;
     $RootNode: QueryNode;
     $Nodes: QueryNode[];
@@ -64,8 +64,7 @@ declare class DomQueryer {
     protected $RCS_Visit(DomNode: HTMLElement, Parent: QueryNode, ElementDeep: number): void;
     protected $AddNode(Dom: HTMLElement, Parent: QueryNode, ElementDeep: number): QueryNode;
 }
-declare var Queryer: DomQueryer;
-export { DomQueryer, Queryer };
+export declare var Queryer: DomQueryer;
 export type DateTimeInfo = {
     Date: Date;
     Year: number;
@@ -335,7 +334,7 @@ export declare class VueCommand extends VueStore {
     AddV_OnChange(DomName: PathType | QueryNode[], ChangeFunc: AddCommandOption, Args?: string): this;
     AddV_Click(DomName: PathType | QueryNode[], Option: AddCommandOption, Args?: string): this;
     AddV_FilePicker(DomName: PathType | QueryNode[], Option: AddV_FilePickerOption): this;
-    AddV_Tree(TreeRoot: PathType, TreeSet: TreeSetType, Option?: AddV_TreeOption): this;
+    AddV_Tree(TreeRoot: PathType | QueryNode, TreeSet: TreeSetType, Option?: AddV_TreeOption): this;
     private $ParseTreeSet;
     AddV_Property(PropertyPath: PathType, Option: AddPropertyType): this;
     AddV_PropertyFrom(SourceStore: any, PropertyPath: PathType, Option: AddPropertyType): this;

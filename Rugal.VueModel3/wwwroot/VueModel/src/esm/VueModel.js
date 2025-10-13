@@ -206,7 +206,7 @@ export class FuncBase {
         console.error(Data);
     }
 }
-class QueryNode extends FuncBase {
+export class QueryNode extends FuncBase {
     Dom;
     DomName = null;
     Parent = null;
@@ -276,7 +276,7 @@ class QueryNode extends FuncBase {
         return Results;
     }
 }
-class DomQueryer {
+export class DomQueryer {
     $Root = null;
     $RootNode = null;
     $Nodes = [];
@@ -378,8 +378,7 @@ class DomQueryer {
         return NewNode;
     }
 }
-var Queryer = new DomQueryer();
-export { DomQueryer, Queryer };
+export var Queryer = new DomQueryer();
 export class FileItem {
     OnChangeBase64;
     OnChangeBuffer;
@@ -1273,7 +1272,11 @@ export class VueCommand extends VueStore {
     }
     AddV_Tree(TreeRoot, TreeSet, Option) {
         let AllSetInfo = [];
-        let RootPaths = this.Paths(TreeRoot);
+        let RootNode;
+        let UsingRootNode = TreeRoot instanceof QueryNode;
+        if (UsingRootNode)
+            RootNode = TreeRoot;
+        let RootPaths = UsingRootNode ? [] : this.Paths(TreeRoot);
         this.$ParseTreeSet(RootPaths, TreeSet, AllSetInfo);
         let CommandMap = {
             'v-text': (Info, Option) => {
@@ -1350,13 +1353,23 @@ export class VueCommand extends VueStore {
                 Model.$Error(`${Info.Command} command is not allowed, path: ${this.ToJoin(Info.DomPaths)}`);
                 continue;
             }
+            let NeedQuery = false;
+            let QueryOption = {
+                Mode: 'Multi',
+            };
+            if (UsingRootNode) {
+                NeedQuery = true;
+                QueryOption.TargetNode = RootNode;
+            }
             if (Option?.UseDeepQuery) {
-                let QueryNodes = Queryer.Query(Info.DomPaths, {
-                    Mode: 'DeepMulti',
-                });
+                NeedQuery = true;
+                QueryOption.Mode = 'DeepMulti';
+            }
+            if (NeedQuery) {
+                let QueryNodes = Queryer.Query(Info.DomPaths, QueryOption);
                 Info.Nodes = QueryNodes;
             }
-            let TargetDom = Option?.UseDeepQuery ? Info.Nodes : Info.DomPaths;
+            let TargetDom = NeedQuery ? Info.Nodes : Info.DomPaths;
             let TargetPath = [];
             let TargetValue;
             if (typeof (Info.StoreValue) != 'function') {
