@@ -1393,6 +1393,7 @@ export class VueStore extends ApiStore {
 }
 
 //#region VueCommand Data Type
+type UsingFunctionType = ((Paths: PathType, Node?: QueryNode[]) => void);
 type CommandOption = {
     CommandKey?: string,
     Target: PathType | Function,
@@ -1417,7 +1418,7 @@ type TreeSetType = {
     'v-on-unmounted'?: '' | PathType | Function | TreeSetOption,
 
     'watch'?: '' | WatchCallback,
-    'using'?: '' | ((Paths: PathType) => void),
+    'using'?: '' | UsingFunctionType,
 
     [VModelCmd: `v-model:${string}`]: '' | PathType | TreeSetOption,
     [VForCmd: `v-for(${string})`]: '' | PathType | Function | TreeSetOption,
@@ -1428,7 +1429,7 @@ type TreeSetType = {
     [VOnMountedCmd: `v-on-mounted(${string})`]: '' | PathType | Function | TreeSetOption,
     [VOnUnMountedCmd: `v-on-unmounted(${string})`]: '' | PathType | Function | TreeSetOption,
     [FuncCmd: `func:${string}`]: '' | Function,
-    [DomName: `:${string}`]: '' | ((Paths: PathType) => void) | TreeSetType,
+    [DomName: `:${string}`]: '' | UsingFunctionType | TreeSetType,
 };
 type TreeSetOption = CommandOption;
 type AddCommandOption = PathType | Function | CommandOption;
@@ -1724,7 +1725,7 @@ export class VueCommand extends VueStore {
             },
             'using': (Info, Option) => {
                 if (typeof (Info.StoreValue) === 'function') {
-                    Info.StoreValue(Info.DomPaths);
+                    Info.StoreValue(Info.DomPaths, Info.Nodes);
                 }
             }
         }

@@ -1361,7 +1361,7 @@
                 },
                 'using': (Info, Option) => {
                     if (typeof (Info.StoreValue) === 'function') {
-                        Info.StoreValue(Info.DomPaths);
+                        Info.StoreValue(Info.DomPaths, Info.Nodes);
                     }
                 }
             };

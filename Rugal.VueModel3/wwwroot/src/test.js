@@ -5,9 +5,9 @@ Model.UpdateStore('bbb', '123');
 Model.UpdateStore('ccc', '456');
 let Root = Queryer.Query('B')[0];
 Model.AddV_Tree(Root, {
-    ':C': {
-        'v-text': 'ccc'
-    }
+    ':C': (Paths, Nodes) => {
+        Model.AddV_Text(Nodes, 'ccc');
+    },
 });
 //Model
 //    .WithQueryAttribute('pv-name')
