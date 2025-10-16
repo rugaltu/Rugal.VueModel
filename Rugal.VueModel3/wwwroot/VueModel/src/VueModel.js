@@ -1,10 +1,15 @@
+//#endregion
+//#region FuncBase
 export class FuncBase {
+    //#region Protected Property
     $NavigateToFunc;
     $DefaultDateJoinChar;
+    //#endregion
     constructor() {
         this.$NavigateToFunc = null;
         this.WithDateTextJoinChar('/');
     }
+    //#region Public With Method
     WithNavigateTo(NavigateToFunc) {
         this.$NavigateToFunc = NavigateToFunc;
         return this;
@@ -13,6 +18,8 @@ export class FuncBase {
         this.$DefaultDateJoinChar = JoinChar;
         return this;
     }
+    //#endregion
+    //#region Public Method
     GenerateId() {
         let NewId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (char) => {
             let RandomValue = crypto.getRandomValues(new Uint8Array(1))[0] & 15;
@@ -149,6 +156,8 @@ export class FuncBase {
         };
         return Result;
     }
+    //#endregion
+    //#region Process
     ConvertTo_UrlQuery(Param) {
         if (typeof Param === 'string')
             return Param;
@@ -199,6 +208,8 @@ export class FuncBase {
         }
         return false;
     }
+    //#endregion
+    //#region Console And Throw
     $Throw(Message) {
         throw new Error(Message);
     }
@@ -478,7 +489,9 @@ export class FileItem {
         Reader.onload = () => this.Buffer = Reader.result;
     }
 }
+//#endregion
 export class ApiStore extends FuncBase {
+    //#region Private Property
     #ApiDomain = null;
     #RootRoute = null;
     #AccessToken = null;
@@ -501,11 +514,15 @@ export class ApiStore extends FuncBase {
         FileStore: {},
     };
     #Func_ConvertTo_FormData = [];
+    //#endregion
+    //#region Protected Property
     $ApiStore = {};
+    //#endregion
     constructor() {
         super();
         this.SetStore('api', this.$ApiStore);
     }
+    //#region Get/Set Property
     get ApiDomain() {
         if (this.#ApiDomain == null)
             return null;
@@ -529,6 +546,8 @@ export class ApiStore extends FuncBase {
     get FileStore() {
         return this.Store.FileStore;
     }
+    //#endregion
+    //#region Public With Method
     WithAccessToken(AccessToken) {
         this.#AccessToken = AccessToken;
         return this;
@@ -565,6 +584,8 @@ export class ApiStore extends FuncBase {
         this.#ExportSuccessStore = ExportSuccessStoreFunc;
         return this;
     }
+    //#endregion
+    //#region ConvertTo Method
     WithConvertTo_FormParam(ConvertToFunc) {
         this.#Func_ConvertTo_FormData.push(ConvertToFunc);
         return this;
@@ -581,6 +602,8 @@ export class ApiStore extends FuncBase {
             ApiDomainUrl = `${ApiDomainUrl}?${this.ConvertTo_UrlQuery(Param)}`;
         return ApiDomainUrl;
     }
+    //#endregion
+    //#region Api Method
     AddApi(AddApi) {
         for (let ApiKey in AddApi) {
             let ApiOption = AddApi[ApiKey];
@@ -692,6 +715,8 @@ export class ApiStore extends FuncBase {
         }
         return FetchRequest;
     }
+    //#endregion
+    //#region Default Use Method
     UseFormJsonBody(JsonBodyKey = 'Body') {
         this.WithConvertTo_FormParam((FormDataBody, Form) => {
             let ConvertParam = {};
@@ -700,6 +725,8 @@ export class ApiStore extends FuncBase {
         });
         return this;
     }
+    //#endregion
+    //#region Public Event Add
     EventAdd_AddApi(EventFunc) {
         this.$EventAdd(this.#EventName.AddApi, EventFunc);
         return this;
@@ -716,6 +743,8 @@ export class ApiStore extends FuncBase {
         this.$EventAdd(this.#EventName.SetStore, EventFunc);
         return this;
     }
+    //#endregion
+    //#region Protected Event Process
     $EventAdd(EventName, OnFunc) {
         if (EventName in this.#OnEventFunc == false)
             this.#OnEventFunc[EventName] = [];
@@ -728,6 +757,9 @@ export class ApiStore extends FuncBase {
         for (let Item of EventFuncs)
             Item(EventArg);
     }
+    //#endregion
+    //#region Store Control
+    //#region Public Data Store Contorl
     GetStore(StorePath, Option) {
         return this.GetStoreFrom(this.Store, StorePath, Option);
     }
@@ -740,8 +772,8 @@ export class ApiStore extends FuncBase {
     UpdateStore(StorePath, StoreData) {
         return this.UpdateStoreFrom(this.Store, StorePath, StoreData);
     }
-    ClearStore(StorePath) {
-        return this.ClearStoreFrom(this.Store, StorePath);
+    ClearStore(StorePath, Option) {
+        return this.ClearStoreFrom(this.Store, StorePath, Option);
     }
     GetStoreFrom(SourceStore, StorePath, Option) {
         if (typeof Option == 'boolean')
@@ -781,7 +813,8 @@ export class ApiStore extends FuncBase {
         return this;
     }
     SetStoreFrom(SourceStore, StorePath, StoreData) {
-        StorePath = this.ToJoin(StorePath);
+        if (StorePath != null)
+            StorePath = this.ToJoin(StorePath);
         this.$RCS_SetStore(StorePath, StoreData, SourceStore, {
             IsDeepSet: false,
         });
@@ -792,9 +825,8 @@ export class ApiStore extends FuncBase {
         return this;
     }
     UpdateStoreFrom(SourceStore, StorePath, StoreData) {
-        if (StorePath == null) {
-        }
-        StorePath = this.ToJoin(StorePath);
+        if (StorePath != null)
+            StorePath = this.ToJoin(StorePath);
         this.$RCS_SetStore(StorePath, StoreData, SourceStore, {
             IsDeepSet: true,
         });
@@ -804,26 +836,18 @@ export class ApiStore extends FuncBase {
         });
         return this;
     }
-    ClearStoreFrom(SourceStore, StorePath) {
-        let TargetStore = this.GetStoreFrom(SourceStore, StorePath);
+    ClearStoreFrom(SourceStore, StorePath, Option) {
+        Option ??= {};
+        if (typeof Option === 'boolean')
+            Option = { DeepClear: Option };
+        let TargetStore = StorePath == null ? SourceStore : this.GetStoreFrom(SourceStore, StorePath);
         if (TargetStore == null)
             return this;
-        let AllProperty = Object.getOwnPropertyNames(TargetStore);
-        for (let Key of AllProperty) {
-            if (Key.match(/^\$/g))
-                continue;
-            let Value = TargetStore[Key];
-            if (typeof (Value) == 'function')
-                continue;
-            if (Array.isArray(Value)) {
-                Value.splice(0, Value.length);
-                ;
-                continue;
-            }
-            TargetStore[Key] = null;
-        }
+        this.$RCS_ClearStore(TargetStore, Option);
         return this;
     }
+    //#endregion
+    //#region Protected Data Store Process
     $RCS_GetStore(StorePath, FindStore, Option) {
         if (FindStore == null)
             return null;
@@ -847,6 +871,10 @@ export class ApiStore extends FuncBase {
     $RCS_SetStore(StorePath, StoreData, FindStore, Option = {
         IsDeepSet: true,
     }) {
+        if (StorePath == null) {
+            this.$DeepSetObject(StoreData, FindStore);
+            return StoreData;
+        }
         StorePath = StorePath.replaceAll(/\[|\]/g, '.').replace(/\.+/g, '.').replace(/\.$/, '');
         if (StorePath.includes('.')) {
             let StorePaths = StorePath.split('.');
@@ -857,37 +885,67 @@ export class ApiStore extends FuncBase {
             let NextKey = StorePaths.join('.');
             return this.$RCS_SetStore(NextKey, StoreData, NextStore, Option);
         }
-        let IsAwaysSet = !Option.IsDeepSet ||
+        let IsAwaysSet = StoreData == null ||
+            !Option.IsDeepSet ||
             FindStore[StorePath] == null ||
-            StoreData == null || typeof StoreData != 'object';
+            typeof StoreData != 'object';
         if (IsAwaysSet) {
             FindStore[StorePath] = StoreData;
             return StoreData;
         }
-        this.$DeepSetObject(StorePath, StoreData, FindStore);
-        return StoreData;
+        return this.$RCS_SetStore(null, StoreData, FindStore[StorePath]);
     }
-    $DeepSetObject(StorePath, SetData, FindStore) {
+    $RCS_ClearStore(TargetStore, Option) {
+        if (typeof TargetStore != 'object')
+            return;
+        if (Array.isArray(TargetStore)) {
+            TargetStore.length = 0;
+            return;
+        }
+        let AllProperty = Object.getOwnPropertyNames(TargetStore);
+        for (let Key of AllProperty) {
+            if (Key.match(/^\$/g))
+                continue;
+            if (typeof TargetStore[Key] === 'function')
+                continue;
+            else if (Option.DeepClear && typeof TargetStore[Key] === 'object')
+                this.$RCS_ClearStore(TargetStore[Key], Option);
+            else
+                TargetStore[Key] = null;
+        }
+    }
+    $DeepSetObject(SetData, FindStore) {
         if (SetData == null) {
-            FindStore[StorePath] = SetData;
+            this.ClearStoreFrom(FindStore);
             return;
         }
-        if (!Array.isArray(SetData)) {
-            this.ForEachObject(SetData, (Key, Value) => {
-                if (Array.isArray(Value) || typeof Value == 'object') {
-                    this.$DeepSetObject(Key, Value, FindStore[StorePath]);
-                    return;
-                }
-                if (FindStore[StorePath] == null)
-                    FindStore[StorePath] = {};
-                FindStore[StorePath][Key] = Value;
-            });
+        if (Array.isArray(SetData)) {
+            if (!Array.isArray(FindStore))
+                return;
+            FindStore.length = 0;
+            FindStore.push.apply(FindStore, SetData);
             return;
         }
-        if (!Array.isArray(FindStore[StorePath]))
-            FindStore[StorePath] = [];
-        FindStore[StorePath] = SetData.slice();
+        this.ForEachObject(SetData, (Key, Value) => {
+            let IsGoNext = false;
+            if (Array.isArray(Value)) {
+                if (FindStore[Key] == null || !Array.isArray(FindStore[Key]))
+                    FindStore[Key] = [];
+                IsGoNext = true;
+            }
+            else if (typeof Value == 'object') {
+                if (FindStore[Key] == null || typeof FindStore[Key] != 'object')
+                    FindStore[Key] = {};
+                IsGoNext = true;
+            }
+            if (IsGoNext)
+                this.$DeepSetObject(Value, FindStore[Key]);
+            else
+                FindStore[Key] = Value;
+        });
     }
+    //#endregion
+    //#region File Store
     AddFileStore(FileStoreKey, Option) {
         Option ??= {};
         if (this.FileStore[FileStoreKey] == null) {
@@ -969,6 +1027,9 @@ export class ApiStore extends FuncBase {
         }
         return this;
     }
+    //#endregion
+    //#endregion
+    //#region Protected Process
     $ProcessApiReturn(ApiResponse) {
         let GetContentType = ApiResponse.headers.get("content-type");
         if (GetContentType.includes('application/json')) {
@@ -979,11 +1040,15 @@ export class ApiStore extends FuncBase {
         }
         return new Promise(reslove => { reslove(ApiResponse); });
     }
+    //#endregion
+    //#region Override Method
     NavigateToRoot() {
         let RootUrl = this.#RootRoute ?? '/';
         super.$BaseNavigateTo(RootUrl);
         return this;
     }
+    //#endregion
+    //#region Protected ConvertTo
     $ConvertTo_FormData(ConvertFormData, Form) {
         Form ??= new FormData();
         if (ConvertFormData == null)
@@ -1049,6 +1114,7 @@ export class VueStore extends ApiStore {
         super();
         this.#Setup();
     }
+    //#region Private Setup
     #Setup() {
         this
             .EventAdd_AddApi(Arg => {
@@ -1068,6 +1134,8 @@ export class VueStore extends ApiStore {
             this.UpdateStore([this.$CoreStore, 'IsMounted'], true);
         });
     }
+    //#endregion
+    //#region Get/Set Property
     get Store() {
         if (this.$VueProxy != null)
             return this.$VueProxy;
@@ -1076,6 +1144,8 @@ export class VueStore extends ApiStore {
     set Store(Store) {
         super.Store = Store;
     }
+    //#endregion
+    //#region Public With Method
     WithVueOption(VueOption = {}) {
         this.$VueOption = this.DeepObjectExtend(this.$VueOption, VueOption);
         return this;
@@ -1101,6 +1171,8 @@ export class VueStore extends ApiStore {
         });
         return this;
     }
+    //#endregion
+    //#region Public Method
     ForceUpdate() {
         this.$VueProxy?.$forceUpdate();
         return this;
@@ -1111,14 +1183,18 @@ export class VueStore extends ApiStore {
         return this.$VueProxy.$refs[Model.ToJoin(RefName)];
     }
 }
+//#endregion
 export class VueCommand extends VueStore {
     $IsInited = false;
     $QueryDomName = null;
+    //#region With Method
     WithQueryDomName(QueryDomName) {
         this.$QueryDomName = QueryDomName;
         Queryer.WithDomName(this.$QueryDomName);
         return this;
     }
+    //#endregion
+    //#region Path Command
     AddV_Text(DomName, Option) {
         let SetOption = this.$ConvertCommandOption(DomName, Option);
         if (typeof SetOption.Target != 'function') {
@@ -1145,6 +1221,8 @@ export class VueCommand extends VueStore {
         this.$AddCommand(DomName, `v-slot`, SetOption);
         return this;
     }
+    //#endregion
+    //#region Path/Function Command
     AddV_For(DomName, Option, ForKey) {
         let SetOption = this.$ConvertCommandOption(DomName, Option);
         if (ForKey) {
@@ -1199,6 +1277,8 @@ export class VueCommand extends VueStore {
         this.$AddCommand(DomName, `v-on`, SetOption);
         return this;
     }
+    //#endregion
+    //#region Customer Command
     Watch(WatchPath, Callback, Option = {}) {
         let Handle;
         if (typeof WatchPath == 'function')
@@ -1464,6 +1544,8 @@ export class VueCommand extends VueStore {
             });
         }
     }
+    //#endregion
+    //#region Property Method
     AddV_Property(PropertyPath, Option) {
         return this.AddV_PropertyFrom(this.Store, PropertyPath, Option);
     }
@@ -1539,6 +1621,8 @@ export class VueCommand extends VueStore {
             SetProperty[PropertyKey] = OriginalValue;
         return SetProperty;
     }
+    //#endregion
+    //#region Protected Process
     $ConvertCommandOption(DomName, Option) {
         if (Option == null) {
             if (this.IsPathType(DomName))
@@ -1603,6 +1687,7 @@ export class VueCommand extends VueStore {
         }
         Dom.setAttribute(AttrName, AttrValue);
     }
+    //#region Function Control
     $RandomFuncName(BaseFuncName) {
         return `${BaseFuncName}${this.GenerateIdReplace('')}`.replace(/[-:.]/g, '_');
     }
@@ -1626,6 +1711,7 @@ export class VueModel extends VueCommand {
         this.WithVueWarn(false);
         this.WithLifeCycleDirective();
     }
+    //#region With Method
     WithMountId(MountId) {
         this.$MountId = MountId;
         return this;
@@ -1658,6 +1744,8 @@ export class VueModel extends VueCommand {
             }
         });
     }
+    //#endregion
+    //#region Public Method
     Init() {
         if (this.$IsInited)
             return this;
@@ -1691,6 +1779,8 @@ export class VueModel extends VueCommand {
         this.$VueApp.directive;
         return this;
     }
+    //#endregion
+    //#region Customer Vue Command
     AddV_OnMounted(DomName, Option, Args) {
         let SetOption = this.$ConvertCommandOption(DomName, Option);
         if (Args) {

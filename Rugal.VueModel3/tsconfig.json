@@ -12,7 +12,7 @@
     "moduleResolution": "node",
     "baseUrl": ".",
     "paths": {
-      "vuemodel3": [ "wwwroot/VueModel/src/VueModel.d.ts" ]
+      "vuemodel3": [ "wwwroot/VueModel/src/VueModel.ts" ]
     }
   },
   "exclude": [

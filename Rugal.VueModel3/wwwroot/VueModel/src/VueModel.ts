@@ -631,6 +631,9 @@ type GetStoreOption<TStore = any> = {
     DefaultValue?: TStore,
     Clone?: boolean,
 };
+type ClearStoreOption = {
+    DeepClear?: boolean,
+}
 
 type EventArg_AddApi = ApiStoreValue;
 type EventArg_UpdateStore = {
@@ -957,8 +960,8 @@ export class ApiStore extends FuncBase {
     public UpdateStore<TStore = any>(StorePath: PathType, StoreData: TStore) {
         return this.UpdateStoreFrom(this.Store, StorePath, StoreData);
     }
-    public ClearStore(StorePath: PathType) {
-        return this.ClearStoreFrom(this.Store, StorePath);
+    public ClearStore(StorePath: PathType, Option?: boolean | ClearStoreOption) {
+        return this.ClearStoreFrom(this.Store, StorePath, Option);
     }
 
     public GetStoreFrom<TStore = any>(SourceStore: any, StorePath: PathType, Option?: GetStoreOption<TStore> | boolean): TStore {
@@ -1005,44 +1008,41 @@ export class ApiStore extends FuncBase {
         return this;
     }
     public SetStoreFrom<TStore = any>(SourceStore: any, StorePath: PathType, StoreData: TStore) {
-        StorePath = this.ToJoin(StorePath);
-        this.$RCS_SetStore(StorePath, StoreData, SourceStore, {
+        if (StorePath != null)
+            StorePath = this.ToJoin(StorePath);
+
+        this.$RCS_SetStore(StorePath as string, StoreData, SourceStore, {
             IsDeepSet: false,
         });
         this.$EventTrigger<EventArg_SetStore>(this.#EventName.SetStore, {
-            Path: StorePath,
+            Path: StorePath as string,
             Data: StoreData,
         });
         return this;
     }
     public UpdateStoreFrom<TStore = any>(SourceStore: any, StorePath: PathType, StoreData: TStore) {
-        StorePath = this.ToJoin(StorePath);
-        this.$RCS_SetStore(StorePath, StoreData, SourceStore, {
+        if (StorePath != null)
+            StorePath = this.ToJoin(StorePath);
+
+        this.$RCS_SetStore(StorePath as string, StoreData, SourceStore, {
             IsDeepSet: true,
         });
         this.$EventTrigger<EventArg_UpdateStore>(this.#EventName.UpdateStore, {
-            Path: StorePath,
+            Path: StorePath as string,
             Data: StoreData,
         });
         return this;
     }
-    public ClearStoreFrom(SourceStore: any, StorePath: PathType) {
-        let TargetStore = this.GetStoreFrom(SourceStore, StorePath);
+    public ClearStoreFrom(SourceStore: any, StorePath?: PathType, Option?: boolean | ClearStoreOption) {
+        Option ??= {};
+        if (typeof Option === 'boolean')
+            Option = { DeepClear: Option };
+
+        let TargetStore = StorePath == null ? SourceStore : this.GetStoreFrom(SourceStore, StorePath);
         if (TargetStore == null)
             return this;
-        let AllProperty = Object.getOwnPropertyNames(TargetStore);
-        for (let Key of AllProperty) {
-            if (Key.match(/^\$/g))
-                continue;
-            let Value = TargetStore[Key];
-            if (typeof (Value) == 'function')
-                continue;
-            if (Array.isArray(Value)) {
-                Value.splice(0, Value.length);;
-                continue;
-            }
-            TargetStore[Key] = null;
-        }
+
+        this.$RCS_ClearStore(TargetStore, Option);
         return this;
     }
     //#endregion
@@ -1077,6 +1077,11 @@ export class ApiStore extends FuncBase {
     protected $RCS_SetStore(StorePath: string, StoreData: any, FindStore: any, Option = {
         IsDeepSet: true,
     }): any {
+        if (StorePath == null) {
+            this.$DeepSetObject(StoreData, FindStore);
+            return StoreData;
+        }
+
         StorePath = StorePath.replaceAll(/\[|\]/g, '.').replace(/\.+/g, '.').replace(/\.$/, '');
         if (StorePath.includes('.')) {
             let StorePaths = StorePath.split('.');
@@ -1089,39 +1094,72 @@ export class ApiStore extends FuncBase {
             return this.$RCS_SetStore(NextKey, StoreData, NextStore, Option);
         }
 
-        let IsAwaysSet = !Option.IsDeepSet ||
+        let IsAwaysSet =
+            StoreData == null ||
+            !Option.IsDeepSet ||
             FindStore[StorePath] == null ||
-            StoreData == null || typeof StoreData != 'object';
+            typeof StoreData != 'object';
+
         if (IsAwaysSet) {
             FindStore[StorePath] = StoreData;
             return StoreData;
         }
 
-        this.$DeepSetObject(StorePath, StoreData, FindStore);
-        return StoreData;
+        return this.$RCS_SetStore(null, StoreData, FindStore[StorePath])
     }
-    protected $DeepSetObject(StorePath: string, SetData: Record<string, any>, FindStore: any) {
+    protected $RCS_ClearStore(TargetStore: any, Option: ClearStoreOption) {
+        if (typeof TargetStore != 'object')
+            return;
+
+        if (Array.isArray(TargetStore)) {
+            TargetStore.length = 0;
+            return;
+        }
+
+        let AllProperty = Object.getOwnPropertyNames(TargetStore);
+        for (let Key of AllProperty) {
+            if (Key.match(/^\$/g))
+                continue;
+
+            if (typeof TargetStore[Key] === 'function')
+                continue;
+            else if (Option.DeepClear && typeof TargetStore[Key] === 'object')
+                this.$RCS_ClearStore(TargetStore[Key], Option);
+            else
+                TargetStore[Key] = null;
+        }
+    }
+    protected $DeepSetObject(SetData: Record<string, any>, FindStore: any) {
         if (SetData == null) {
-            FindStore[StorePath] = SetData;
+            this.ClearStoreFrom(FindStore);
             return;
         }
 
-        if (!Array.isArray(SetData)) {
-            this.ForEachObject(SetData, (Key, Value) => {
-                if (Array.isArray(Value) || typeof Value == 'object') {
-                    this.$DeepSetObject(Key, Value, FindStore[StorePath]);
-                    return;
-                }
-                if (FindStore[StorePath] == null)
-                    FindStore[StorePath] = {};
-                FindStore[StorePath][Key] = Value;
-            });
+        if (Array.isArray(SetData)) {
+            if (!Array.isArray(FindStore))
+                return;
+            FindStore.length = 0;
+            FindStore.push.apply(FindStore, SetData);
             return;
         }
-        if (!Array.isArray(FindStore[StorePath]))
-            FindStore[StorePath] = [];
 
-        FindStore[StorePath] = SetData.slice();
+        this.ForEachObject(SetData, (Key, Value) => {
+            let IsGoNext = false;
+            if (Array.isArray(Value)) {
+                if (FindStore[Key] == null || !Array.isArray(FindStore[Key]))
+                    FindStore[Key] = [];
+                IsGoNext = true;
+            }
+            else if (typeof Value == 'object') {
+                if (FindStore[Key] == null || typeof FindStore[Key] != 'object')
+                    FindStore[Key] = {};
+                IsGoNext = true;
+            }
+            if (IsGoNext)
+                this.$DeepSetObject(Value, FindStore[Key]);
+            else
+                FindStore[Key] = Value;
+        });
     }
     //#endregion
 
@@ -2150,6 +2188,7 @@ export class VueModel extends VueCommand {
 }
 
 const Model = new VueModel();
+
 (window as any).Model = Model;
 export {
     Model,

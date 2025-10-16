@@ -1,14 +1,21 @@
 //import { ApiStore } from '../VueModel/src/testVueModel';
-import { Queryer, Model } from 'vuemodel3';
+import { Model } from 'vuemodel3';
 Model.WithQueryDomName('pv-name');
-Model.UpdateStore('bbb', '123');
-Model.UpdateStore('ccc', '456');
-let Root = Queryer.Query('B')[0];
-Model.AddV_Tree(Root, {
-    ':C': (Paths, Nodes) => {
-        Model.AddV_Text(Nodes, 'ccc');
-    },
+//Model.UpdateStore('bbb', '123');
+//Model.UpdateStore('ccc', '456');
+//let Root = Queryer.Query('B')[0];
+let A = {
+    B: {
+        C: 1,
+    }
+};
+Model.UpdateStore('Test', A);
+Model.UpdateStore('Test', {
+    B: {
+        D: 2,
+    }
 });
+console.log(A);
 //Model
 //    .WithQueryAttribute('pv-name')
 //    //.AddV_FilePicker('BtnPicker', {

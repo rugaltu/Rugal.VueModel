@@ -808,6 +808,8 @@
             return this;
         }
         UpdateStoreFrom(SourceStore, StorePath, StoreData) {
+            if (StorePath == null) {
+            }
             StorePath = this.ToJoin(StorePath);
             this.$RCS_SetStore(StorePath, StoreData, SourceStore, {
                 IsDeepSet: true,
