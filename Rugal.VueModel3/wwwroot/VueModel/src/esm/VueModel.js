@@ -740,8 +740,8 @@ export class ApiStore extends FuncBase {
     UpdateStore(StorePath, StoreData) {
         return this.UpdateStoreFrom(this.Store, StorePath, StoreData);
     }
-    ClearStore(StorePath) {
-        return this.ClearStoreFrom(this.Store, StorePath);
+    ClearStore(StorePath, Option) {
+        return this.ClearStoreFrom(this.Store, StorePath, Option);
     }
     GetStoreFrom(SourceStore, StorePath, Option) {
         if (typeof Option == 'boolean')
@@ -781,7 +781,8 @@ export class ApiStore extends FuncBase {
         return this;
     }
     SetStoreFrom(SourceStore, StorePath, StoreData) {
-        StorePath = this.ToJoin(StorePath);
+        if (StorePath != null)
+            StorePath = this.ToJoin(StorePath);
         this.$RCS_SetStore(StorePath, StoreData, SourceStore, {
             IsDeepSet: false,
         });
@@ -792,9 +793,8 @@ export class ApiStore extends FuncBase {
         return this;
     }
     UpdateStoreFrom(SourceStore, StorePath, StoreData) {
-        if (StorePath == null) {
-        }
-        StorePath = this.ToJoin(StorePath);
+        if (StorePath != null)
+            StorePath = this.ToJoin(StorePath);
         this.$RCS_SetStore(StorePath, StoreData, SourceStore, {
             IsDeepSet: true,
         });
@@ -804,24 +804,14 @@ export class ApiStore extends FuncBase {
         });
         return this;
     }
-    ClearStoreFrom(SourceStore, StorePath) {
-        let TargetStore = this.GetStoreFrom(SourceStore, StorePath);
+    ClearStoreFrom(SourceStore, StorePath, Option) {
+        Option ??= {};
+        if (typeof Option === 'boolean')
+            Option = { DeepClear: Option };
+        let TargetStore = StorePath == null ? SourceStore : this.GetStoreFrom(SourceStore, StorePath);
         if (TargetStore == null)
             return this;
-        let AllProperty = Object.getOwnPropertyNames(TargetStore);
-        for (let Key of AllProperty) {
-            if (Key.match(/^\$/g))
-                continue;
-            let Value = TargetStore[Key];
-            if (typeof (Value) == 'function')
-                continue;
-            if (Array.isArray(Value)) {
-                Value.splice(0, Value.length);
-                ;
-                continue;
-            }
-            TargetStore[Key] = null;
-        }
+        this.$RCS_ClearStore(TargetStore, Option);
         return this;
     }
     $RCS_GetStore(StorePath, FindStore, Option) {
@@ -847,6 +837,10 @@ export class ApiStore extends FuncBase {
     $RCS_SetStore(StorePath, StoreData, FindStore, Option = {
         IsDeepSet: true,
     }) {
+        if (StorePath == null) {
+            this.$DeepSetObject(StoreData, FindStore);
+            return StoreData;
+        }
         StorePath = StorePath.replaceAll(/\[|\]/g, '.').replace(/\.+/g, '.').replace(/\.$/, '');
         if (StorePath.includes('.')) {
             let StorePaths = StorePath.split('.');
@@ -857,36 +851,64 @@ export class ApiStore extends FuncBase {
             let NextKey = StorePaths.join('.');
             return this.$RCS_SetStore(NextKey, StoreData, NextStore, Option);
         }
-        let IsAwaysSet = !Option.IsDeepSet ||
+        let IsAwaysSet = StoreData == null ||
+            !Option.IsDeepSet ||
             FindStore[StorePath] == null ||
-            StoreData == null || typeof StoreData != 'object';
+            typeof StoreData != 'object';
         if (IsAwaysSet) {
             FindStore[StorePath] = StoreData;
             return StoreData;
         }
-        this.$DeepSetObject(StorePath, StoreData, FindStore);
-        return StoreData;
+        return this.$RCS_SetStore(null, StoreData, FindStore[StorePath]);
     }
-    $DeepSetObject(StorePath, SetData, FindStore) {
+    $RCS_ClearStore(TargetStore, Option) {
+        if (typeof TargetStore != 'object')
+            return;
+        if (Array.isArray(TargetStore)) {
+            TargetStore.length = 0;
+            return;
+        }
+        let AllProperty = Object.getOwnPropertyNames(TargetStore);
+        for (let Key of AllProperty) {
+            if (Key.match(/^\$/g))
+                continue;
+            if (typeof TargetStore[Key] === 'function')
+                continue;
+            else if (Option.DeepClear && typeof TargetStore[Key] === 'object')
+                this.$RCS_ClearStore(TargetStore[Key], Option);
+            else
+                TargetStore[Key] = null;
+        }
+    }
+    $DeepSetObject(SetData, FindStore) {
         if (SetData == null) {
-            FindStore[StorePath] = SetData;
+            this.ClearStoreFrom(FindStore);
             return;
         }
-        if (!Array.isArray(SetData)) {
-            this.ForEachObject(SetData, (Key, Value) => {
-                if (Array.isArray(Value) || typeof Value == 'object') {
-                    this.$DeepSetObject(Key, Value, FindStore[StorePath]);
-                    return;
-                }
-                if (FindStore[StorePath] == null)
-                    FindStore[StorePath] = {};
-                FindStore[StorePath][Key] = Value;
-            });
+        if (Array.isArray(SetData)) {
+            if (!Array.isArray(FindStore))
+                return;
+            FindStore.length = 0;
+            FindStore.push.apply(FindStore, SetData);
             return;
         }
-        if (!Array.isArray(FindStore[StorePath]))
-            FindStore[StorePath] = [];
-        FindStore[StorePath] = SetData.slice();
+        this.ForEachObject(SetData, (Key, Value) => {
+            let IsGoNext = false;
+            if (Array.isArray(Value)) {
+                if (FindStore[Key] == null || !Array.isArray(FindStore[Key]))
+                    FindStore[Key] = [];
+                IsGoNext = true;
+            }
+            else if (typeof Value == 'object') {
+                if (FindStore[Key] == null || typeof FindStore[Key] != 'object')
+                    FindStore[Key] = {};
+                IsGoNext = true;
+            }
+            if (IsGoNext)
+                this.$DeepSetObject(Value, FindStore[Key]);
+            else
+                FindStore[Key] = Value;
+        });
     }
     AddFileStore(FileStoreKey, Option) {
         Option ??= {};

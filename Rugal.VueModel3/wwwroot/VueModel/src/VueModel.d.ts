@@ -152,6 +152,9 @@ type GetStoreOption<TStore = any> = {
     DefaultValue?: TStore;
     Clone?: boolean;
 };
+type ClearStoreOption = {
+    DeepClear?: boolean;
+};
 type EventArg_AddApi = ApiStoreValue;
 type EventArg_UpdateStore = {
     Path: string;
@@ -212,12 +215,12 @@ export declare class ApiStore extends FuncBase {
     AddStore<TStore = any>(StorePath: PathType, StoreData?: TStore): this;
     SetStore<TStore = any>(StorePath: PathType, StoreData: TStore): this;
     UpdateStore<TStore = any>(StorePath: PathType, StoreData: TStore): this;
-    ClearStore(StorePath: PathType): this;
+    ClearStore(StorePath: PathType, Option?: boolean | ClearStoreOption): this;
     GetStoreFrom<TStore = any>(SourceStore: any, StorePath: PathType, Option?: GetStoreOption<TStore> | boolean): TStore;
     AddStoreFrom<TStore = any>(SourceStore: any, StorePath: PathType, StoreData?: TStore): this;
     SetStoreFrom<TStore = any>(SourceStore: any, StorePath: PathType, StoreData: TStore): this;
     UpdateStoreFrom<TStore = any>(SourceStore: any, StorePath: PathType, StoreData: TStore): this;
-    ClearStoreFrom(SourceStore: any, StorePath: PathType): this;
+    ClearStoreFrom(SourceStore: any, StorePath?: PathType, Option?: boolean | ClearStoreOption): this;
     protected $RCS_GetStore(StorePath: string, FindStore: any, Option: {
         CreateIfNull: boolean;
         DefaultValue: object;
@@ -225,7 +228,8 @@ export declare class ApiStore extends FuncBase {
     protected $RCS_SetStore(StorePath: string, StoreData: any, FindStore: any, Option?: {
         IsDeepSet: boolean;
     }): any;
-    protected $DeepSetObject(StorePath: string, SetData: Record<string, any>, FindStore: any): void;
+    protected $RCS_ClearStore(TargetStore: any, Option: ClearStoreOption): void;
+    protected $DeepSetObject(SetData: Record<string, any>, FindStore: any): void;
     AddFileStore(FileStoreKey: string, Option?: AddFileStoreOption): this;
     Files(FileStoreKey: string, WhereFunc?: (FileArg: FileItem) => boolean): File[];
     File(FileStoreKey: string, WhereFunc?: (FileArg: FileItem) => boolean): File;
