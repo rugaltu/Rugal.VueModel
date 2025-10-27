@@ -651,6 +651,18 @@ type AddPropertyType = {
 type AddFileStoreOption = {
     Multi?: boolean;
 }
+
+type AddSubApiNotifyArg = {
+    ApiStore: ApiStoreValue,
+    PropertyName: string,
+    Value: any,
+};
+type AddSubApiNotify = ((Arg: AddSubApiNotifyArg) => void);
+type AddSubApiOption = {
+    PropertyName?: string,
+    NotifyEvent: AddSubApiNotify,
+};
+type AddSubApiStore = AddSubApiOption;
 //#endregion
 export class ApiStore extends FuncBase {
 
@@ -814,7 +826,7 @@ export class ApiStore extends FuncBase {
         let Url = this.ConvertTo_ApiUrl(Api.Url, ParamQuery);
         let FetchRequest = this.$GenerateFetchRequest(Api, ParamBody, ParamFile, IsFormRequest);
 
-        Api.IsCalling = true;
+        this.PubApi(ApiKey, 'IsCalling', true);
         Api.OnCalling?.call(this, FetchRequest);
         Option?.OnCalling?.call(this, FetchRequest);
         fetch(Url, FetchRequest)
@@ -835,25 +847,25 @@ export class ApiStore extends FuncBase {
                     let StoreKey = Api.ApiKey;
                     this.UpdateStore(StoreKey, ConvertResult);
                 }
-                Api.IsSuccess = true;
-                Api.IsError = false;
+
+                this.PubApi(ApiKey, 'IsSuccess', true);
+                this.PubApi(ApiKey, 'IsError', false);
                 Api.OnSuccess?.call(this, ConvertResult, ApiResponse);
                 Option?.OnSuccess?.call(this, ConvertResult, ApiResponse);
                 this.#OnSuccess?.call(this, ConvertResult, ApiResponse);
                 return { ConvertResult, ApiResponse };
             })
             .catch(ex => {
-                Api.IsError = true;
-                Api.IsSuccess = false;
-
+                this.PubApi(ApiKey, 'IsError', true);
+                this.PubApi(ApiKey, 'IsSuccess', false);
                 this.$Error(ex.message);
                 Api.OnError?.call(this, ex);
                 Option?.OnError?.call(this, ex);
                 this.#OnError?.call(this, ex);
             })
             .then(Result => {
-                Api.IsCalling = false;
-                Api.IsComplete = true;
+                this.PubApi(ApiKey, 'IsCalling', false);
+                this.PubApi(ApiKey, 'IsComplete', true);
                 if (Result instanceof Object) {
                     Api.OnComplete?.call(this, Result.ConvertResult, Result.ApiResponse);
                     Option?.OnComplete?.call(this, Result.ConvertResult, Result.ApiResponse);
@@ -895,6 +907,42 @@ export class ApiStore extends FuncBase {
         }
 
         return FetchRequest;
+    }
+    //#endregion
+
+    //#region Api Sub/Pub Method
+    public AddSubApi(ApiKey: string, Option: AddSubApiOption | AddSubApiNotify) {
+        if (typeof Option === 'function')
+            Option = {
+                NotifyEvent: Option,
+            };
+        let SubApiStore: AddSubApiStore = {
+            ...Option,
+        };
+        this.AddStoreFrom(this.ApiStore, ApiKey, {});
+        let GetApiStore = this.ApiStore[ApiKey];
+        GetApiStore.$sub ??= [];
+        GetApiStore.$sub.push(SubApiStore);
+        return this;
+    }
+    public PubApi(ApiKey: string, PropertyName: string, Value: any) {
+        let GetApiStore = this.ApiStore[ApiKey];
+        GetApiStore[PropertyName] = Value;
+        if (GetApiStore.$sub == null || !Array.isArray(GetApiStore.$sub))
+            return this;
+
+        for (let Sub of GetApiStore.$sub) {
+            let SubStore = Sub as AddSubApiStore;
+            if (SubStore.PropertyName != null && SubStore.PropertyName != PropertyName)
+                continue;
+
+            SubStore.NotifyEvent({
+                PropertyName: PropertyName,
+                ApiStore: GetApiStore,
+                Value: GetApiStore[PropertyName],
+            });
+        }
+        return this;
     }
     //#endregion
 

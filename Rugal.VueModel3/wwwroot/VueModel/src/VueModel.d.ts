@@ -170,6 +170,16 @@ type AddPropertyType = {
 type AddFileStoreOption = {
     Multi?: boolean;
 };
+type AddSubApiNotifyArg = {
+    ApiStore: ApiStoreValue;
+    PropertyName: string;
+    Value: any;
+};
+type AddSubApiNotify = ((Arg: AddSubApiNotifyArg) => void);
+type AddSubApiOption = {
+    PropertyName?: string;
+    NotifyEvent: AddSubApiNotify;
+};
 export declare class ApiStore extends FuncBase {
     #private;
     constructor();
@@ -204,6 +214,8 @@ export declare class ApiStore extends FuncBase {
     ApiCall_Form(ApiKey: string, Option?: ApiCallOption): this;
     protected $BaseApiCall(ApiKey: string, Option: ApiCallOption, IsFormRequest: boolean): void;
     protected $GenerateFetchRequest(Api: ApiStoreValue, ParamBody: ApiCallBody, ParamFile: ApiCallFile, IsFormRequest: boolean): RequestInit;
+    AddSubApi(ApiKey: string, Option: AddSubApiOption | AddSubApiNotify): this;
+    PubApi(ApiKey: string, PropertyName: string, Value: any): this;
     UseFormJsonBody(JsonBodyKey?: string): this;
     EventAdd_AddApi(EventFunc: (EventArg: EventArg_AddApi) => void): this;
     EventAdd_UpdateStore(EventFunc: (EventArg: EventArg_UpdateStore) => void): this;
