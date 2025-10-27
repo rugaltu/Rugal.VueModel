@@ -590,7 +590,8 @@ export class ApiStore extends FuncBase {
                 ApiKey,
                 ...ApiOption,
             };
-            this.ApiStore[ApiKey] = SetApi;
+            this.AddStoreFrom(this.ApiStore, ApiKey, {});
+            this.UpdateStoreFrom(this.ApiStore, ApiKey, SetApi);
             this.$EventTrigger(this.#EventName.AddApi, SetApi);
         }
         return this;
