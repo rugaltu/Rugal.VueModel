@@ -652,17 +652,17 @@ type AddFileStoreOption = {
     Multi?: boolean;
 }
 
-type AddSubApiNotifyArg = {
+export type AddSubApiNotifyArg = {
     ApiStore: ApiStoreValue,
     PropertyName: string,
     Value: any,
 };
-type AddSubApiNotify = ((Arg: AddSubApiNotifyArg) => void);
-type AddSubApiOption = {
+export type AddSubApiNotify = ((Arg: AddSubApiNotifyArg) => void);
+export type AddSubApiOption = {
     PropertyName?: string,
     NotifyEvent: AddSubApiNotify,
 };
-type AddSubApiStore = AddSubApiOption;
+export type AddSubApiStore = AddSubApiOption;
 //#endregion
 export class ApiStore extends FuncBase {
 
