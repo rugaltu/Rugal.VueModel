@@ -172,7 +172,6 @@ type AddFileStoreOption = {
 };
 export declare class ApiStore extends FuncBase {
     #private;
-    protected $ApiStore: Record<string, ApiStoreValue>;
     constructor();
     get ApiDomain(): string;
     set ApiDomain(ApiDomain: string);
@@ -186,6 +185,7 @@ export declare class ApiStore extends FuncBase {
     };
     get Store(): StoreType;
     protected set Store(Store: StoreType);
+    get ApiStore(): any;
     get FileStore(): FileStoreType;
     WithAccessToken(AccessToken: string): this;
     WithRefreshToken(RefreshToken: string): this;

@@ -501,10 +501,9 @@ export class ApiStore extends FuncBase {
         FileStore: {},
     };
     #Func_ConvertTo_FormData = [];
-    $ApiStore = {};
     constructor() {
         super();
-        this.SetStore('api', this.$ApiStore);
+        this.SetStore('api', {});
     }
     get ApiDomain() {
         if (this.#ApiDomain == null)
@@ -525,6 +524,9 @@ export class ApiStore extends FuncBase {
     }
     set Store(Store) {
         this.#Store = Store;
+    }
+    get ApiStore() {
+        return this.GetStore('api');
     }
     get FileStore() {
         return this.Store.FileStore;
@@ -588,7 +590,7 @@ export class ApiStore extends FuncBase {
                 ApiKey,
                 ...ApiOption,
             };
-            this.$ApiStore[ApiKey] = SetApi;
+            this.ApiStore[ApiKey] = SetApi;
             this.$EventTrigger(this.#EventName.AddApi, SetApi);
         }
         return this;
@@ -602,7 +604,7 @@ export class ApiStore extends FuncBase {
         return this;
     }
     $BaseApiCall(ApiKey, Option, IsFormRequest) {
-        let Api = this.$ApiStore[ApiKey];
+        let Api = this.ApiStore[ApiKey];
         if (Api == null)
             this.$Throw(`Api setting not found of "${ApiKey}"`);
         let ParamQuery = Option?.Query ?? Api.Query;

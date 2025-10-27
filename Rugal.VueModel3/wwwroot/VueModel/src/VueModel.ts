@@ -678,13 +678,9 @@ export class ApiStore extends FuncBase {
     };
     #Func_ConvertTo_FormData: ((ConvertData: object, Form: FormData) => FormData | Record<string, any>)[] = [];
     //#endregion
-
-    //#region Protected Property
-    protected $ApiStore: Record<string, ApiStoreValue> = {};
-    //#endregion
     constructor() {
         super();
-        this.SetStore('api', this.$ApiStore);
+        this.SetStore('api', {});
     }
 
     //#region Get/Set Property
@@ -708,6 +704,10 @@ export class ApiStore extends FuncBase {
     protected set Store(Store: StoreType) {
         this.#Store = Store;
     }
+    get ApiStore() {
+        return this.GetStore('api');
+    }
+
     get FileStore(): FileStoreType {
         return this.Store.FileStore;
     }
@@ -781,7 +781,7 @@ export class ApiStore extends FuncBase {
                 ApiKey,
                 ...ApiOption,
             };
-            this.$ApiStore[ApiKey] = SetApi;
+            this.ApiStore[ApiKey] = SetApi;
             this.$EventTrigger(this.#EventName.AddApi, SetApi);
         }
         return this;
@@ -796,7 +796,7 @@ export class ApiStore extends FuncBase {
     }
     protected $BaseApiCall(ApiKey: string, Option: ApiCallOption, IsFormRequest: boolean) {
 
-        let Api = this.$ApiStore[ApiKey];
+        let Api = this.ApiStore[ApiKey];
         if (Api == null)
             this.$Throw(`Api setting not found of "${ApiKey}"`);
 
