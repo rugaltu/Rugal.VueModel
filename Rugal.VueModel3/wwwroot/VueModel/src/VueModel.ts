@@ -1043,7 +1043,7 @@ export class ApiStore extends FuncBase {
     }
     public AddStoreFrom<TStore = any>(SourceStore: any, StorePath: PathType, StoreData: TStore = null) {
         StorePath = this.ToJoin(StorePath);
-        if (this.GetStore(StorePath) != null)
+        if (this.GetStoreFrom(SourceStore, StorePath) != null)
             return this;
 
         this.$RCS_SetStore(StorePath, StoreData, SourceStore, {

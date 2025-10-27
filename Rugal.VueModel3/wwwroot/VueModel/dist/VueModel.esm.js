@@ -802,7 +802,7 @@ export class ApiStore extends FuncBase {
     }
     AddStoreFrom(SourceStore, StorePath, StoreData = null) {
         StorePath = this.ToJoin(StorePath);
-        if (this.GetStore(StorePath) != null)
+        if (this.GetStoreFrom(SourceStore, StorePath) != null)
             return this;
         this.$RCS_SetStore(StorePath, StoreData, SourceStore, {
             IsDeepSet: true,
