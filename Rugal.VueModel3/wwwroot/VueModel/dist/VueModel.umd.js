@@ -949,7 +949,7 @@
                         FindStore[Key] = [];
                     IsGoNext = true;
                 }
-                else if (typeof Value == 'object') {
+                else if (Value != null && typeof Value == 'object') {
                     if (FindStore[Key] == null || typeof FindStore[Key] != 'object')
                         FindStore[Key] = {};
                     IsGoNext = true;
