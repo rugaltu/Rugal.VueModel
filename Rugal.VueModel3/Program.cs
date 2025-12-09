@@ -1,9 +1,12 @@
+using Rugal.ImportMapper.Extensions;
+
 var builder = WebApplication.CreateBuilder(args);
 
 
 builder.Services.AddRazorPages().AddRazorRuntimeCompilation();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddImportMapper(builder.Configuration.GetSection("ImportMap"));
 
 var app = builder.Build();
 

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -9,14 +9,7 @@
     <link rel="stylesheet" href="~/Rugal.VueModel3.styles.css" asp-append-version="true" />
 </head>
 <body>
-    <script type="importmap">
-        {
-            "imports":{
-                "vuemodel3": "/VueModel/src/VueModel.js",
-                "vue": "/npm/vue/dist/vue.esm-browser.js"
-            }
-        }
-    </script>
+    @ImportMapper.RenderMapJson()
     <div class="container">
         <main id="app" app role="main" class="pb-3">
             @RenderBody()
