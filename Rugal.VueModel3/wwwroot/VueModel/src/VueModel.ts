@@ -1826,11 +1826,11 @@ export class VueCommand extends VueStore {
                 }
                 else {
                     let NewStoreValue: CommandOption = {
-                        Target: Info.StoreValue.TargetFunc,
-                        FuncArgs: Info.StoreValue.Args,
+                        Target: Info.StoreValue?.TargetFunc,
+                        FuncArgs: Info.StoreValue?.Args,
                     };
                     TargetValue = NewStoreValue;
-                    if (Info.StoreValue.Args != null) {
+                    if (Info.StoreValue?.Args != null) {
                         let Args = Model.ToJoin(Info.StoreValue.Args);
                         if (Info.CommandKey == null || Info.CommandKey == '')
                             Info.CommandKey = Args;
