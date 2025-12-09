@@ -1169,7 +1169,12 @@ export class VueStore extends ApiStore {
 }
 export class VueCommand extends VueStore {
     $IsInited = false;
+    $CommandMap;
     $QueryDomName = null;
+    constructor() {
+        super();
+        this.$SetupCommandMap();
+    }
     WithQueryDomName(QueryDomName) {
         this.$QueryDomName = QueryDomName;
         Queryer.WithDomName(this.$QueryDomName);
@@ -1195,9 +1200,10 @@ export class VueCommand extends VueStore {
         this.$AddCommand(DomName, 'v-model', SetOption);
         return this;
     }
-    AddV_Slot(DomName, SlotKey, StorePath) {
-        let SetOption = this.$ConvertCommandOption(StorePath);
-        SetOption.CommandKey = SlotKey;
+    AddV_Slot(DomName, SlotKey, Option) {
+        let SetOption = this.$ConvertCommandOption(DomName, Option);
+        if (SlotKey != null)
+            SetOption.CommandKey = SlotKey;
         this.$AddCommand(DomName, `v-slot`, SetOption);
         return this;
     }
@@ -1336,77 +1342,8 @@ export class VueCommand extends VueStore {
             RootNode = TreeRoot;
         let RootPaths = UsingRootNode ? [] : this.Paths(TreeRoot);
         this.$ParseTreeSet(RootPaths, TreeSet, AllSetInfo);
-        let CommandMap = {
-            'v-text': (Info, Option) => {
-                Model.AddV_Text(Option.TargetDom, Option.TargetValue);
-            },
-            'v-model': (Info, Option) => {
-                if (typeof (Info.StoreValue) == 'function') {
-                    Model.$Error(`v-model command value must be a string or string[], path: ${this.ToJoin(Info.DomPaths)}`);
-                    return;
-                }
-                Model.AddV_Model(Option.TargetDom, Option.TargetPath, {
-                    ModelValue: Info.CommandKey,
-                });
-            },
-            'v-for': (Info, Option) => {
-                Model.AddV_For(Option.TargetDom, Option.TargetValue, Info.CommandKey);
-            },
-            'v-if': (Info, Option) => {
-                Model.AddV_If(Option.TargetDom, Option.TargetValue);
-            },
-            'v-else-if': (Info, Option) => {
-                Model.AddV_ElseIf(Option.TargetDom, Option.TargetValue);
-            },
-            'v-else': (Info, Option) => {
-                Model.AddV_Else(Option.TargetDom);
-            },
-            'v-show': (Info, Option) => {
-                Model.AddV_Show(Option.TargetDom, Option.TargetValue);
-            },
-            'v-bind': (Info, Option) => {
-                if (!Option.TargetValue)
-                    return;
-                Model.AddV_Bind(Option.TargetDom, Info.CommandKey, Option.TargetValue, Info.Params);
-            },
-            'v-on': (Info, Option) => {
-                Model.AddV_On(Option.TargetDom, Info.CommandKey, Option.TargetValue, Info.Params);
-            },
-            'v-slot': (Info, Option) => {
-                if (Array.isArray(Info.StoreValue) || typeof (Info.StoreValue) == 'function') {
-                    Model.$Error(`v-slot command value must be a string, path: ${this.ToJoin(Info.DomPaths)}`);
-                    return;
-                }
-                Model.AddV_Slot(Option.TargetDom, Info.CommandKey, Option.TargetPath);
-            },
-            'v-on-mounted': (Info, Option) => {
-                Model.AddV_OnMounted(Option.TargetDom, Option.TargetValue, Info.CommandKey);
-            },
-            'v-on-unmounted': (Info, Option) => {
-                Model.AddV_OnUnMounted(Option.TargetDom, Option.TargetValue, Info.CommandKey);
-            },
-            'watch': (Info, Option) => {
-                if (typeof (Info.StoreValue) != 'function') {
-                    Model.$Error(`watch command value must be a function, path: ${this.ToJoin(Info.DomPaths)}`);
-                    return;
-                }
-                Model.AddV_Watch(Info.DomPaths, Info.StoreValue);
-            },
-            'func': (Info, Option) => {
-                if (typeof (Info.StoreValue) != 'function') {
-                    Model.$Error(`func command value must be a function, path: ${this.ToJoin(Info.DomPaths)}`);
-                    return;
-                }
-                Model.AddV_Function(['event', ...Info.DomPaths, Info.CommandKey], Info.StoreValue);
-            },
-            'using': (Info, Option) => {
-                if (typeof (Info.StoreValue) === 'function') {
-                    Info.StoreValue(Info.DomPaths, Info.Nodes);
-                }
-            }
-        };
         for (let Info of AllSetInfo) {
-            let ActionSet = CommandMap[Info.Command];
+            let ActionSet = this.$CommandMap[Info.Command];
             if (ActionSet == null) {
                 Model.$Error(`${Info.Command} command is not allowed, path: ${this.ToJoin(Info.DomPaths)}`);
                 continue;
@@ -1430,15 +1367,38 @@ export class VueCommand extends VueStore {
             let TargetDom = NeedQuery ? Info.Nodes : Info.DomPaths;
             let TargetPath = [];
             let TargetValue;
-            if (typeof (Info.StoreValue) != 'function') {
-                if (Option?.UseTreePath)
-                    TargetPath = [...Info.TreePaths];
-                if (Option?.UseDomStore || Info.StoreValue == '.')
-                    TargetPath.push(Info.DomName);
-                else if (Info.StoreValue != null && Info.StoreValue != '')
-                    TargetPath = this.Paths(TargetPath, Info.StoreValue);
+            if (typeof Info.StoreValue === 'function') {
+                TargetValue = {
+                    Target: Info.StoreValue,
+                    FuncArgs: Info.Args,
+                };
             }
-            TargetValue = TargetPath.length > 0 ? TargetPath : Info.StoreValue;
+            else {
+                if (typeof Info.StoreValue === 'string' || Array.isArray(Info.StoreValue)) {
+                    Info.StoreValue = Model.ToJoin(Info.StoreValue);
+                    if (Option?.UseTreePath)
+                        TargetPath = [...Info.TreePaths];
+                    if (Option?.UseDomStore || Info.StoreValue == '.')
+                        TargetPath.push(Info.DomName);
+                    else if (Info.StoreValue != null && Info.StoreValue != '')
+                        TargetPath = this.Paths(TargetPath, Info.StoreValue);
+                    TargetValue = TargetPath.length > 0 ? TargetPath : Info.StoreValue;
+                }
+                else {
+                    let NewStoreValue = {
+                        Target: Info.StoreValue.TargetFunc,
+                        FuncArgs: Info.StoreValue.Args,
+                    };
+                    TargetValue = NewStoreValue;
+                    if (Info.StoreValue.Args != null) {
+                        let Args = Model.ToJoin(Info.StoreValue.Args);
+                        if (Info.CommandKey == null || Info.CommandKey == '')
+                            Info.CommandKey = Args;
+                        else
+                            Info.CommandKey = Model.ToJoin([Info.CommandKey, Args], ', ');
+                    }
+                }
+            }
             if (TargetValue == '')
                 continue;
             ActionSet(Info, {
@@ -1450,75 +1410,152 @@ export class VueCommand extends VueStore {
         return this;
     }
     $ParseTreeSet(Paths, TreeSet, Result) {
+        const TreeNodeReges = /^:(?<next>.+)$/;
         let AllKeys = Object.keys(TreeSet);
-        let ParamRegex = /^(.+?)\(([^)]*)\)$/;
         for (let i = 0; i < AllKeys.length; i++) {
             let Command = AllKeys[i];
             let SetPair = TreeSet[Command];
             let DomPaths = [...Paths];
             let TreePaths = [...Paths];
             let DomName = TreePaths.pop();
-            if (!Command.includes(':')) {
-                let HasParams = Command.match(ParamRegex);
-                let CommandKey = null;
-                if (HasParams && HasParams.length >= 3) {
-                    Command = HasParams[1];
-                    CommandKey = HasParams[2];
-                }
-                Result.push({
-                    Command: Command,
-                    StoreValue: SetPair,
-                    TreePaths: TreePaths,
-                    DomPaths: DomPaths,
-                    DomName: DomName,
-                    CommandKey: CommandKey,
-                });
-                continue;
-            }
-            let Commands = Command.split(':');
-            if (Command.length < 2) {
-                Model.$Error(`command ${Command} invalid`);
-                continue;
-            }
-            Command = Commands.shift();
-            let Params = null;
-            if (Commands.length > 0) {
-                let LastCommand = Commands.pop();
-                let HasParams = LastCommand.match(ParamRegex);
-                if (HasParams && HasParams.length >= 3) {
-                    Commands.push(HasParams[1]);
-                    Params = HasParams[2];
-                }
-                else
-                    Commands.push(LastCommand);
-            }
-            let NextDomName = Model.ToJoin(Commands, ':');
-            if (Command == '') {
-                if (typeof SetPair != 'function')
-                    this.$ParseTreeSet([...Paths, NextDomName], SetPair, Result);
-                else {
+            let TreeNodeResult = Command.match(TreeNodeReges);
+            if (TreeNodeResult) {
+                let NextDomName = TreeNodeResult.groups.next;
+                if (typeof SetPair === 'function') {
                     Result.push({
                         Command: 'using',
-                        CommandKey: null,
                         StoreValue: SetPair,
                         TreePaths: [...DomPaths],
                         DomPaths: [...DomPaths, NextDomName],
                         DomName: NextDomName,
-                        Params: Params,
                     });
+                }
+                else {
+                    this.$ParseTreeSet([...Paths, NextDomName], SetPair, Result);
                 }
                 continue;
             }
+            let GetCommandPart = (FindCommand, StartChar, EndChar) => {
+                if (!FindCommand.includes(StartChar) || !FindCommand.includes(EndChar))
+                    return null;
+                let StartIndex = FindCommand.indexOf(StartChar);
+                let EndIndex = FindCommand.lastIndexOf(EndChar);
+                let Result = FindCommand.slice(StartIndex + 1, EndIndex).trim();
+                return Result?.trim();
+            };
+            let GetCommandWithKey = (FindCommand) => {
+                let ArgsStart = null;
+                let ForKeyStart = null;
+                if (FindCommand.includes('('))
+                    ArgsStart = FindCommand.indexOf('(');
+                if (FindCommand.includes('<'))
+                    ForKeyStart = FindCommand.indexOf('<');
+                let CommandWithKey = null;
+                if (ArgsStart == null && ForKeyStart == null) {
+                    CommandWithKey = FindCommand;
+                }
+                else if (ArgsStart == null || ForKeyStart == null) {
+                    let MinIndex = ArgsStart ?? ForKeyStart;
+                    CommandWithKey = FindCommand.slice(0, MinIndex);
+                }
+                else {
+                    let MinIndex = Math.min(ArgsStart, ForKeyStart);
+                    CommandWithKey = FindCommand.slice(0, MinIndex);
+                }
+                let Command = CommandWithKey;
+                let CommandKey = null;
+                if (CommandWithKey.includes(':')) {
+                    let CommandKeyStart = Command.indexOf(':');
+                    Command = CommandWithKey.slice(0, CommandKeyStart);
+                    CommandKey = CommandWithKey.slice(CommandKeyStart + 1);
+                }
+                return {
+                    Command: Command?.trim(),
+                    CommandKey: CommandKey?.trim(),
+                };
+            };
+            let Args = GetCommandPart(Command, '(', ')');
+            let ForKey = GetCommandPart(Command, '<', '>');
+            let CommandWithKey = GetCommandWithKey(Command);
             Result.push({
-                Command: Command,
-                CommandKey: NextDomName,
+                Command: CommandWithKey?.Command,
+                CommandKey: CommandWithKey?.CommandKey,
+                ForKey: ForKey,
+                Args: Args,
                 StoreValue: SetPair,
                 TreePaths: TreePaths,
                 DomPaths: DomPaths,
                 DomName: DomName,
-                Params: Params,
             });
+            continue;
         }
+    }
+    $SetupCommandMap() {
+        this.$CommandMap = {
+            'v-text': (Info, Option) => {
+                Model.AddV_Text(Option.TargetDom, Option.TargetValue);
+            },
+            'v-model': (Info, Option) => {
+                if (typeof (Info.StoreValue) == 'function') {
+                    Model.$Error(`v-model command value must be a string or string[], path: ${this.ToJoin(Info.DomPaths)}`);
+                    return;
+                }
+                Model.AddV_Model(Option.TargetDom, Option.TargetPath, {
+                    ModelValue: Info.CommandKey,
+                });
+            },
+            'v-for': (Info, Option) => {
+                Model.AddV_For(Option.TargetDom, Option.TargetValue, Info.ForKey);
+            },
+            'v-if': (Info, Option) => {
+                Model.AddV_If(Option.TargetDom, Option.TargetValue);
+            },
+            'v-else-if': (Info, Option) => {
+                Model.AddV_ElseIf(Option.TargetDom, Option.TargetValue);
+            },
+            'v-else': (Info, Option) => {
+                Model.AddV_Else(Option.TargetDom);
+            },
+            'v-show': (Info, Option) => {
+                Model.AddV_Show(Option.TargetDom, Option.TargetValue);
+            },
+            'v-bind': (Info, Option) => {
+                if (!Option.TargetValue)
+                    return;
+                Model.AddV_Bind(Option.TargetDom, Info.CommandKey, Option.TargetValue, Info.Args);
+            },
+            'v-on': (Info, Option) => {
+                Model.AddV_On(Option.TargetDom, Info.CommandKey, Option.TargetValue, Info.Args);
+            },
+            'v-slot': (Info, Option) => {
+                Model.AddV_Slot(Option.TargetDom, Info.CommandKey, Option.TargetValue);
+            },
+            'v-on-mounted': (Info, Option) => {
+                Model.AddV_OnMounted(Option.TargetDom, Option.TargetValue, Info.Args);
+            },
+            'v-on-unmounted': (Info, Option) => {
+                Model.AddV_OnUnMounted(Option.TargetDom, Option.TargetValue, Info.Args);
+            },
+            'watch': (Info, Option) => {
+                if (typeof (Info.StoreValue) != 'function') {
+                    Model.$Error(`watch command value must be a function, path: ${this.ToJoin(Info.DomPaths)}`);
+                    return;
+                }
+                Model.AddV_Watch(Info.DomPaths, Info.StoreValue);
+            },
+            'func': (Info, Option) => {
+                if (typeof (Info.StoreValue) != 'function') {
+                    Model.$Error(`func command value must be a function, path: ${this.ToJoin(Info.DomPaths)}`);
+                    return;
+                }
+                Model.AddV_Function(['event', ...Info.DomPaths, Info.CommandKey], Info.StoreValue);
+            },
+            'using': (Info, Option) => {
+                if (typeof (Info.StoreValue) === 'function') {
+                    Info.StoreValue(Info.DomPaths, Info.Nodes);
+                }
+            }
+        };
     }
     AddV_Property(PropertyPath, Option) {
         return this.AddV_PropertyFrom(this.Store, PropertyPath, Option);
@@ -1627,11 +1664,7 @@ export class VueCommand extends VueStore {
             Target = this.$GenerateEventFunction(FuncDomName, Target, Command);
             if (Option.FuncArgs) {
                 let Args = this.ToJoin(Option.FuncArgs, ',');
-                if (!/^\(/.test(Args))
-                    Args = `(${Args}`;
-                if (!/\)$/.test(Args))
-                    Args += ')';
-                Target += Args;
+                Target += `(${Args})`;
             }
             else if (Option.FuncAction) {
                 Target += `()`;

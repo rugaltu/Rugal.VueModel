@@ -1200,9 +1200,10 @@ export class VueCommand extends VueStore {
         this.$AddCommand(DomName, 'v-model', SetOption);
         return this;
     }
-    AddV_Slot(DomName, SlotKey, StorePath) {
-        let SetOption = this.$ConvertCommandOption(StorePath);
-        SetOption.CommandKey = SlotKey;
+    AddV_Slot(DomName, SlotKey, Option) {
+        let SetOption = this.$ConvertCommandOption(DomName, Option);
+        if (SlotKey != null)
+            SetOption.CommandKey = SlotKey;
         this.$AddCommand(DomName, `v-slot`, SetOption);
         return this;
     }
@@ -1527,17 +1528,13 @@ export class VueCommand extends VueStore {
                 Model.AddV_On(Option.TargetDom, Info.CommandKey, Option.TargetValue, Info.Args);
             },
             'v-slot': (Info, Option) => {
-                if (Array.isArray(Info.StoreValue) || typeof (Info.StoreValue) == 'function') {
-                    Model.$Error(`v-slot command value must be a string, path: ${this.ToJoin(Info.DomPaths)}`);
-                    return;
-                }
-                Model.AddV_Slot(Option.TargetDom, Info.CommandKey, Option.TargetPath);
+                Model.AddV_Slot(Option.TargetDom, Info.CommandKey, Option.TargetValue);
             },
             'v-on-mounted': (Info, Option) => {
                 Model.AddV_OnMounted(Option.TargetDom, Option.TargetValue, Info.Args);
             },
             'v-on-unmounted': (Info, Option) => {
-                Model.AddV_OnUnMounted(Option.TargetDom, Option.TargetValue, Info.CommandKey);
+                Model.AddV_OnUnMounted(Option.TargetDom, Option.TargetValue, Info.Args);
             },
             'watch': (Info, Option) => {
                 if (typeof (Info.StoreValue) != 'function') {
