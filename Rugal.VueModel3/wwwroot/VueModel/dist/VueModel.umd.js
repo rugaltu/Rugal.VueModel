@@ -1410,10 +1410,10 @@
                         TargetValue = NewStoreValue;
                         if (Info.StoreValue?.Args != null) {
                             let Args = Model.ToJoin(Info.StoreValue.Args);
-                            if (Info.CommandKey == null || Info.CommandKey == '')
-                                Info.CommandKey = Args;
+                            if (Info.Args == null || Info.CommandKey == '')
+                                Info.Args = Args;
                             else
-                                Info.CommandKey = Model.ToJoin([Info.CommandKey, Args], ', ');
+                                Info.Args = Model.ToJoin([Info.CommandKey, Args], ', ');
                         }
                     }
                 }
