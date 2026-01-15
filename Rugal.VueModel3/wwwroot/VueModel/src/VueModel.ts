@@ -1803,7 +1803,10 @@ export class VueCommand extends VueStore {
                 QueryOption.Mode = 'DeepMulti';
             }
             if (NeedQuery) {
-                let QueryNodes = Queryer.Query(Info.DomPaths, QueryOption);
+                let QueryNodes = [RootNode];
+                if (Info.DomPaths.length > 0)
+                    QueryNodes = Queryer.Query(Info.DomPaths, QueryOption);
+
                 Info.Nodes = QueryNodes;
             }
 
