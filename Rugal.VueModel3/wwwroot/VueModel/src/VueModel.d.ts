@@ -294,7 +294,7 @@ type TreeSetType = {
     'watch'?: '' | WatchCallback;
     'using'?: '' | UsingFunctionType;
     'func'?: Function;
-    [FuncCmd: `func:${string}`]: '' | Function;
+    [FuncCmd: `func:${string}`]: Function;
     [DomName: `:${string}`]: '' | UsingFunctionType | TreeSetType;
     'v-model'?: '' | PathType;
     [VModelCmd: `v-model:${string}`]: '' | PathType;
