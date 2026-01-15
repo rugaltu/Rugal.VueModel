@@ -33,6 +33,7 @@ type QueryOption = {
     TargetNode?: QueryNode;
 };
 export declare class QueryNode extends FuncBase {
+    NodeId: string;
     Dom: HTMLElement;
     DomName: string;
     Parent: QueryNode;
@@ -292,6 +293,7 @@ type CommandOption = {
 type TreeSetType = {
     'watch'?: '' | WatchCallback;
     'using'?: '' | UsingFunctionType;
+    'func'?: Function;
     [FuncCmd: `func:${string}`]: '' | Function;
     [DomName: `:${string}`]: '' | UsingFunctionType | TreeSetType;
     'v-model'?: '' | PathType;
@@ -321,10 +323,12 @@ type TreeSetType = {
     'v-on:click'?: '' | PathType | Function | TreeSetFuncOption;
     [VOnCmd: `v-on:${string}`]: '' | PathType | Function | TreeSetFuncOption;
     [VOnArgsCmd: `v-on:${string}(${string})`]: Function | TreeSetFuncOption;
-    'v-on-mounted'?: '' | PathType | Function | TreeSetFuncOption;
+    'v-on-mounted'?: PathType | Function | TreeSetFuncOption;
     [VOnMountedArgsCmd: `v-on-mounted(${string})`]: Function | TreeSetFuncOption;
-    'v-on-unmounted'?: '' | PathType | Function | TreeSetFuncOption;
+    'v-on-unmounted'?: PathType | Function | TreeSetFuncOption;
     [VOnUnMountedArgsCmd: `v-on-unmounted(${string})`]: Function | TreeSetFuncOption;
+    'v-on-ready'?: PathType | Function | TreeSetFuncOption;
+    [VOnReadyArgsCmd: `v-on-ready(${string})`]: Function | TreeSetFuncOption;
 };
 type TreeSetFuncOption = {
     TargetFunc: PathType | Function;
@@ -410,6 +414,7 @@ export declare class VueModel extends VueCommand {
     UsingVueApp(UsingFunc: ((VueApp: App) => void)): this;
     AddV_OnMounted(DomName: PathType | QueryNode[], Option: AddCommandOption, Args?: string): this;
     AddV_OnUnMounted(DomName: PathType | QueryNode[], Option: AddCommandOption, Args?: string): this;
+    AddV_OnReady(DomName: PathType | QueryNode[], Option: AddCommandOption, Args?: string): this;
 }
 declare const Model: VueModel;
 export { Model, };

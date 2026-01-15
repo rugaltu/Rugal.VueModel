@@ -252,6 +252,7 @@ type QueryOption = {
     TargetNode?: QueryNode,
 };
 export class QueryNode extends FuncBase {
+    NodeId: string;
     Dom: HTMLElement;
     DomName: string = null;
     Parent: QueryNode = null;
@@ -261,6 +262,7 @@ export class QueryNode extends FuncBase {
     constructor(Dom: HTMLElement) {
         super();
         this.Dom = Dom;
+        this.NodeId = this.GenerateIdReplace('');
     }
 
     public Query(DomName: PathType, Option?: QueryOption): QueryNode[] {
@@ -1384,7 +1386,7 @@ export class ApiStore extends FuncBase {
     }
     //#endregion
 }
-import { App, Plugin, createApp, reactive, Directive, } from 'vue';
+import { App, Plugin, createApp, reactive, Directive, provide, nextTick } from 'vue';
 import { watch, WatchCallback, WatchOptions, WatchHandle } from 'vue';
 export class VueStore extends ApiStore {
     protected $VueProxy: any = null;
@@ -1493,6 +1495,7 @@ type CommandOption = {
 type TreeSetType = {
     'watch'?: '' | WatchCallback,
     'using'?: '' | UsingFunctionType,
+    'func'?: Function,
     [FuncCmd: `func:${string}`]: '' | Function,
     [DomName: `:${string}`]: '' | UsingFunctionType | TreeSetType,
 
@@ -1531,11 +1534,14 @@ type TreeSetType = {
     [VOnCmd: `v-on:${string}`]: '' | PathType | Function | TreeSetFuncOption,
     [VOnArgsCmd: `v-on:${string}(${string})`]: Function | TreeSetFuncOption,
 
-    'v-on-mounted'?: '' | PathType | Function | TreeSetFuncOption,
+    'v-on-mounted'?: PathType | Function | TreeSetFuncOption,
     [VOnMountedArgsCmd: `v-on-mounted(${string})`]: Function | TreeSetFuncOption,
 
-    'v-on-unmounted'?: '' | PathType | Function | TreeSetFuncOption,
+    'v-on-unmounted'?: PathType | Function | TreeSetFuncOption,
     [VOnUnMountedArgsCmd: `v-on-unmounted(${string})`]: Function | TreeSetFuncOption,
+
+    'v-on-ready'?: PathType | Function | TreeSetFuncOption,
+    [VOnReadyArgsCmd: `v-on-ready(${string})`]: Function | TreeSetFuncOption,
 };
 type TreeSetFuncOption = {
     TargetFunc: PathType | Function,
@@ -1984,6 +1990,9 @@ export class VueCommand extends VueStore {
             'v-on-unmounted': (Info, Option) => {
                 Model.AddV_OnUnMounted(Option.TargetDom, Option.TargetValue, Info.Args);
             },
+            'v-on-ready': (Info, Option) => {
+                Model.AddV_OnReady(Option.TargetDom, Option.TargetValue, Info.Args);
+            },
             'watch': (Info, Option) => {
                 if (typeof (Info.StoreValue) != 'function') {
                     Model.$Error(`watch command value must be a function, path: ${this.ToJoin(Info.DomPaths)}`);
@@ -1996,7 +2005,7 @@ export class VueCommand extends VueStore {
                     Model.$Error(`func command value must be a function, path: ${this.ToJoin(Info.DomPaths)}`);
                     return;
                 }
-                Model.AddV_Function(['event', ...Info.DomPaths, Info.CommandKey], Info.StoreValue);
+                Model.AddV_Function(Model.Paths(...Info.DomPaths, Info.CommandKey ?? 'func'), Info.StoreValue);
             },
             'using': (Info, Option) => {
                 if (typeof (Info.StoreValue) === 'function') {
@@ -2126,7 +2135,11 @@ export class VueCommand extends VueStore {
 
         let Target = Option.Target;
         if (typeof (Target) == 'function') {
-            let FuncDomName = DomName as PathType;
+            let FuncDomName: PathType = [];
+            if (IsFromQueryNode)
+                FuncDomName = (DomName as QueryNode[]).at(-1).DomName;
+            else
+                FuncDomName = DomName as PathType;
             Target = this.$GenerateEventFunction(FuncDomName, Target, Command);
 
             if (Option.FuncArgs) {
@@ -2218,13 +2231,19 @@ export class VueModel extends VueCommand {
         this.WithDirective('on-mounted', {
             mounted(el, binding, vnode) {
                 if (typeof binding.value === 'function')
-                    binding.value(vnode.props, vnode.el, vnode);
+                    binding.value(el, vnode);
             }
         });
         this.WithDirective('on-unmounted', {
             unmounted(el, binding, vnode) {
                 if (typeof binding.value === 'function')
-                    binding.value(vnode.props, vnode.el, vnode);
+                    binding.value(el, vnode);
+            }
+        });
+        this.WithDirective('on-ready', {
+            mounted(el, binding, vnode) {
+                if (typeof binding.value === 'function')
+                    nextTick(() => binding.value(el, vnode));
             }
         });
     }
@@ -2275,7 +2294,7 @@ export class VueModel extends VueCommand {
         let SetOption = this.$ConvertCommandOption(DomName, Option);
         if (Args) {
             SetOption.FuncArgs = Args;
-            SetOption.TargetHead = '($props, $el, $vnode) => ';
+            SetOption.TargetHead = '($el, $vnode) => ';
         }
         SetOption.FuncAction = false;
         this.$AddCommand(DomName, `v-on-mounted`, SetOption);
@@ -2285,10 +2304,20 @@ export class VueModel extends VueCommand {
         let SetOption = this.$ConvertCommandOption(DomName, Option);
         if (Args) {
             SetOption.FuncArgs = Args;
-            SetOption.TargetHead = '($props, $el, $vnode) => ';
+            SetOption.TargetHead = '($el, $vnode) => ';
         }
         SetOption.FuncAction = false;
         this.$AddCommand(DomName, `v-on-unmounted`, SetOption);
+        return this;
+    }
+    public AddV_OnReady(DomName: PathType | QueryNode[], Option: AddCommandOption, Args?: string) {
+        let SetOption = this.$ConvertCommandOption(DomName, Option);
+        if (Args) {
+            SetOption.FuncArgs = Args;
+            SetOption.TargetHead = '($el, $vnode) => ';
+        }
+        SetOption.FuncAction = false;
+        this.$AddCommand(DomName, `v-on-ready`, SetOption);
         return this;
     }
     //#endregion

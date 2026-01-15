@@ -32,9 +32,16 @@ Model.ApiCall('Search');
 Model.UpdateStore('test', { test: 123 });
 Model.UpdateStore('sources', [{ test: 123 }, { test: 456 }]);
 Model.AddV_Tree('Root', {
-//':For': {
-//}
-//'v-text(item)': (item: any) => item.test,
+    ':For': {
+        'func': () => {
+            debugger;
+        },
+    },
+    'func:test': () => {
+    },
+    'func': () => {
+        debugger;
+    }
 });
 //Model
 //    .WithQueryAttribute('pv-name')

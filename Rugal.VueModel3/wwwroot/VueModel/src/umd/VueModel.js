@@ -220,6 +220,7 @@
     }
     exports.FuncBase = FuncBase;
     class QueryNode extends FuncBase {
+        NodeId;
         Dom;
         DomName = null;
         Parent = null;
@@ -229,6 +230,7 @@
         constructor(Dom) {
             super();
             this.Dom = Dom;
+            this.NodeId = this.GenerateIdReplace('');
         }
         Query(DomName, Option) {
             return this.$RCS_QueryChildrens(this, DomName, Option);
@@ -1554,6 +1556,9 @@
                 'v-on-unmounted': (Info, Option) => {
                     Model.AddV_OnUnMounted(Option.TargetDom, Option.TargetValue, Info.Args);
                 },
+                'v-on-ready': (Info, Option) => {
+                    Model.AddV_OnReady(Option.TargetDom, Option.TargetValue, Info.Args);
+                },
                 'watch': (Info, Option) => {
                     if (typeof (Info.StoreValue) != 'function') {
                         Model.$Error(`watch command value must be a function, path: ${this.ToJoin(Info.DomPaths)}`);
@@ -1566,7 +1571,7 @@
                         Model.$Error(`func command value must be a function, path: ${this.ToJoin(Info.DomPaths)}`);
                         return;
                     }
-                    Model.AddV_Function(['event', ...Info.DomPaths, Info.CommandKey], Info.StoreValue);
+                    Model.AddV_Function(Model.Paths(...Info.DomPaths, Info.CommandKey ?? 'func'), Info.StoreValue);
                 },
                 'using': (Info, Option) => {
                     if (typeof (Info.StoreValue) === 'function') {
@@ -1678,7 +1683,11 @@
                 QueryNodes = exports.Queryer.Query(DomName);
             let Target = Option.Target;
             if (typeof (Target) == 'function') {
-                let FuncDomName = DomName;
+                let FuncDomName = [];
+                if (IsFromQueryNode)
+                    FuncDomName = DomName.at(-1).DomName;
+                else
+                    FuncDomName = DomName;
                 Target = this.$GenerateEventFunction(FuncDomName, Target, Command);
                 if (Option.FuncArgs) {
                     let Args = this.ToJoin(Option.FuncArgs, ',');
@@ -1756,13 +1765,19 @@
             this.WithDirective('on-mounted', {
                 mounted(el, binding, vnode) {
                     if (typeof binding.value === 'function')
-                        binding.value(vnode.props, vnode.el, vnode);
+                        binding.value(el, vnode);
                 }
             });
             this.WithDirective('on-unmounted', {
                 unmounted(el, binding, vnode) {
                     if (typeof binding.value === 'function')
-                        binding.value(vnode.props, vnode.el, vnode);
+                        binding.value(el, vnode);
+                }
+            });
+            this.WithDirective('on-ready', {
+                mounted(el, binding, vnode) {
+                    if (typeof binding.value === 'function')
+                        (0, vue_1.nextTick)(() => binding.value(el, vnode));
                 }
             });
         }
@@ -1803,7 +1818,7 @@
             let SetOption = this.$ConvertCommandOption(DomName, Option);
             if (Args) {
                 SetOption.FuncArgs = Args;
-                SetOption.TargetHead = '($props, $el, $vnode) => ';
+                SetOption.TargetHead = '($el, $vnode) => ';
             }
             SetOption.FuncAction = false;
             this.$AddCommand(DomName, `v-on-mounted`, SetOption);
@@ -1813,10 +1828,20 @@
             let SetOption = this.$ConvertCommandOption(DomName, Option);
             if (Args) {
                 SetOption.FuncArgs = Args;
-                SetOption.TargetHead = '($props, $el, $vnode) => ';
+                SetOption.TargetHead = '($el, $vnode) => ';
             }
             SetOption.FuncAction = false;
             this.$AddCommand(DomName, `v-on-unmounted`, SetOption);
+            return this;
+        }
+        AddV_OnReady(DomName, Option, Args) {
+            let SetOption = this.$ConvertCommandOption(DomName, Option);
+            if (Args) {
+                SetOption.FuncArgs = Args;
+                SetOption.TargetHead = '($el, $vnode) => ';
+            }
+            SetOption.FuncAction = false;
+            this.$AddCommand(DomName, `v-on-ready`, SetOption);
             return this;
         }
     }

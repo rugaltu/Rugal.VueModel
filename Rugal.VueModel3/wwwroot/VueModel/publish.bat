@@ -11,8 +11,8 @@ copy src\umd\VueModel.js dist\VueModel.umd.js
 del "src\VueModel.js"
 del "src\VueModel.js.map"
 
-echo "publish start"
-npm publish
-echo "publish finish"
+echo publish start
+call npm publish
+echo publish finish
 
 pause
