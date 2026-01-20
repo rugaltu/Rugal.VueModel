@@ -1491,47 +1491,54 @@ type CommandOption = {
     FuncAction?: boolean;
     FuncArgs?: PathType,
 };
-
+type TreeWatchOption = {
+    CallBack: WatchCallback,
+    Option?: WatchOptions,
+}
 type TreeSetType = {
-    'watch'?: '' | WatchCallback,
-    'using'?: '' | UsingFunctionType,
+    'using'?: UsingFunctionType,
+    'store'?: any,
+    [DomName: `:${string}`]: UsingFunctionType | TreeSetType,
+
+    'watch'?: WatchCallback | TreeWatchOption,
+    [WatchTargetCmd: `watch:${string}`]: WatchCallback | TreeWatchOption,
+
     'func'?: Function,
-    [FuncCmd: `func:${string}`]: Function,
-    [DomName: `:${string}`]: '' | UsingFunctionType | TreeSetType,
+    [FuncNameCmd: `func:${string}`]: Function,
 
-    'v-model'?: '' | PathType,
-    [VModelCmd: `v-model:${string}`]: '' | PathType,
-
-    'v-slot'?: '' | PathType | Function | TreeSetFuncOption,
-    [VSlotArgsCmd: `v-slot(${string})`]: Function | TreeSetFuncOption,
-    [VSlotKeyCmd: `v-slot:${string}`]: '' | PathType | Function | TreeSetFuncOption,
-    [VSlotKeyArgsCmd: `v-slot:${string}(${string})`]: Function | TreeSetFuncOption,
-
-    'v-text'?: '' | PathType | Function | TreeSetFuncOption,
+    'v-text'?: '.' | PathType | Function | TreeSetFuncOption,
     [VForTextCmd: `v-text(${string})`]: Function | TreeSetFuncOption,
 
-    'v-for'?: '' | PathType | Function | TreeSetFuncOption,
+    'v-model'?: '.' | PathType,
+    [VModelArgsCmd: `v-model:${string}`]: '.' | PathType,
+
+    'v-for'?: '.' | PathType | Function | TreeSetFuncOption,
     [VForKeyCmd: `v-for<${string}>`]: PathType | Function | TreeSetFuncOption,
     [VForKeyArgsCmd: `v-for<${string}>(${string})`]: Function | TreeSetFuncOption,
     [VForArgsCmd: `v-for(${string})`]: Function | TreeSetFuncOption,
     [VForArgsKeyCmd: `v-for(${string})<${string}>`]: Function | TreeSetFuncOption,
 
-    'v-show'?: '' | PathType | Function | TreeSetFuncOption,
+    'v-show'?: '.' | PathType | Function | TreeSetFuncOption,
     [VShowArgsCmd: `v-show(${string})`]: Function | TreeSetFuncOption,
 
-    'v-if'?: '' | PathType | Function | TreeSetFuncOption,
-    'v-else-if'?: '' | PathType | Function | TreeSetFuncOption,
-    'v-else'?: '' | null,
+    'v-if'?: '.' | PathType | Function | TreeSetFuncOption,
+    'v-else-if'?: '.' | PathType | Function | TreeSetFuncOption,
+    'v-else'?: null,
     [VIfArgsCmd: `v-if(${string})`]: Function | TreeSetFuncOption,
     [VElseIfArgsCmd: `v-else-if(${string})`]: Function | TreeSetFuncOption,
 
-    'v-bind'?: '' | PathType | Function | TreeSetFuncOption,
-    [VBindCmd: `v-bind:${string}`]: '' | PathType | Function | TreeSetFuncOption,
+    'v-slot'?: PathType | Function | TreeSetFuncOption,
+    [VSlotArgsCmd: `v-slot(${string})`]: Function | TreeSetFuncOption,
+    [VSlotKeyCmd: `v-slot:${string}`]: PathType | Function | TreeSetFuncOption,
+    [VSlotKeyArgsCmd: `v-slot:${string}(${string})`]: Function | TreeSetFuncOption,
+
+    'v-bind'?: PathType | Function | TreeSetFuncOption,
+    [VBindCmd: `v-bind:${string}`]: PathType | Function | TreeSetFuncOption,
     [VBindArgsCmd: `v-bind:${string}(${string})`]: Function | TreeSetFuncOption,
 
-    'v-on:change'?: '' | PathType | Function | TreeSetFuncOption,
-    'v-on:click'?: '' | PathType | Function | TreeSetFuncOption,
-    [VOnCmd: `v-on:${string}`]: '' | PathType | Function | TreeSetFuncOption,
+    'v-on:change'?: PathType | Function | TreeSetFuncOption,
+    'v-on:click'?: PathType | Function | TreeSetFuncOption,
+    [VOnCmd: `v-on:${string}`]: PathType | Function | TreeSetFuncOption,
     [VOnArgsCmd: `v-on:${string}(${string})`]: Function | TreeSetFuncOption,
 
     'v-on-mounted'?: PathType | Function | TreeSetFuncOption,
@@ -1563,7 +1570,6 @@ type TreeSetInfo = {
 type TreeSetInfoOption = {
     TargetDom: PathType | QueryNode[],
     TargetValue: PathType | Function | CommandOption,
-    TargetPath: PathType,
 };
 type AddV_ModelOption = {
     ModelValue?: string,
@@ -1577,14 +1583,16 @@ type AddV_FilePickerOption = string | {
 };
 type AddV_TreeOption = {
     UseDeepQuery?: boolean,
-    UseTreePath?: boolean,
-    UseDomStore?: boolean,
 };
 //#endregion
 
 export class VueCommand extends VueStore {
     protected $IsInited: boolean = false;
-    protected $CommandMap: Record<string, (Info: TreeSetInfo, Option: TreeSetInfoOption) => void>;
+    protected $CommandMap: Record<string, {
+        Execute: (Info: TreeSetInfo, Option: TreeSetInfoOption) => void,
+        AcceptNull?: boolean,
+        AcceptSelf?: boolean,
+    }>;
     $QueryDomName: string = null;
 
     constructor() {
@@ -1609,7 +1617,7 @@ export class VueCommand extends VueStore {
                 Model.AddStore(SetOption.Target);
             }
         }
-
+        SetOption.FuncAction = true;
         this.$AddCommand(DomName, 'v-text', SetOption);
         return this;
     }
@@ -1617,7 +1625,6 @@ export class VueCommand extends VueStore {
         let SetOption = this.$ConvertCommandOption(StorePath);
         Option ??= {};
         Option.DefaultValue ??= null;
-
         SetOption.CommandKey = Option.ModelValue;
         this.AddStore(StorePath, Option.DefaultValue);
         this.$AddCommand(DomName, 'v-model', SetOption);
@@ -1647,16 +1654,20 @@ export class VueCommand extends VueStore {
         let Target = Model.ToJoin(SetOption.Target);
         if (!/\b(in|of)\b/.test(Target))
             SetOption.TargetHead ??= '(item, index) in ';
+
+        SetOption.FuncAction = true;
         this.$AddCommand(DomName, 'v-for', SetOption);
         return this;
     }
     public AddV_If(DomName: PathType | QueryNode[], Option: AddCommandOption) {
         let SetOption = this.$ConvertCommandOption(DomName, Option);
+        SetOption.FuncAction = true;
         this.$AddCommand(DomName, 'v-if', SetOption);
         return this;
     }
     public AddV_ElseIf(DomName: PathType | QueryNode[], Option: AddCommandOption) {
         let SetOption = this.$ConvertCommandOption(DomName, Option);
+        SetOption.FuncAction = true;
         this.$AddCommand(DomName, 'v-else-if', SetOption);
         return this;
     }
@@ -1669,22 +1680,18 @@ export class VueCommand extends VueStore {
 
     public AddV_Show(DomName: PathType | QueryNode[], Option: AddCommandOption) {
         let SetOption = this.$ConvertCommandOption(DomName, Option);
+        SetOption.FuncAction = true;
         this.$AddCommand(DomName, 'v-show', SetOption);
         return this;
     }
     public AddV_Bind(DomName: PathType | QueryNode[], BindKey: string, Option: AddCommandOption, Args?: string) {
-        let SetOption = this.$ConvertCommandOption(DomName, Option);
-        if (Args)
-            SetOption.FuncArgs = Args;
+        let SetOption = this.$ConvertCommandOption(DomName, Option, Args);
         SetOption.CommandKey = BindKey;
         this.$AddCommand(DomName, 'v-bind', SetOption);
         return this;
     }
     public AddV_On(DomName: PathType | QueryNode[], EventName: string, Option: AddCommandOption, Args?: string) {
-        let SetOption = this.$ConvertCommandOption(DomName, Option);
-        if (Args)
-            SetOption.FuncArgs = Args;
-        SetOption.FuncAction = false;
+        let SetOption = this.$ConvertCommandOption(DomName, Option, Args);
         SetOption.CommandKey = EventName;
         this.$AddCommand(DomName, `v-on`, SetOption);
         return this;
@@ -1721,15 +1728,11 @@ export class VueCommand extends VueStore {
         return this;
     }
     public AddV_Click(DomName: PathType | QueryNode[], Option: AddCommandOption, Args?: string) {
-        let SetOption = this.$ConvertCommandOption(DomName, Option);
-        if (Args)
-            SetOption.FuncArgs = Args;
-
+        let SetOption = this.$ConvertCommandOption(DomName, Option, Args);
         this.AddV_On(DomName, 'click', SetOption);
         return this;
     }
     public AddV_FilePicker(DomName: PathType | QueryNode[], Option: AddV_FilePickerOption) {
-
         let FileStorePath: string = null;
         let Accept: string = null;
         let ConvertType: FileConvertType | FileConvertType[] = 'none';
@@ -1775,7 +1778,6 @@ export class VueCommand extends VueStore {
     }
 
     public AddV_Tree(TreeRoot: PathType | QueryNode, TreeSet: TreeSetType, Option?: AddV_TreeOption): this {
-
         let AllSetInfo: TreeSetInfo[] = [];
         let RootNode: QueryNode;
         let UsingRootNode = TreeRoot instanceof QueryNode;
@@ -1789,6 +1791,12 @@ export class VueCommand extends VueStore {
                 Model.$Error(`${Info.Command} command is not allowed, path: ${this.ToJoin(Info.DomPaths)}`);
                 continue;
             }
+
+            if (Info.StoreValue == '' || Info.StoreValue == null && ActionSet.AcceptNull != true)
+                continue;
+
+            if (Info.StoreValue == '.' && ActionSet.AcceptSelf != true)
+                continue;
 
             let NeedQuery = false;
             let QueryOption: QueryOption = {
@@ -1811,7 +1819,6 @@ export class VueCommand extends VueStore {
             }
 
             let TargetDom: PathType | QueryNode[] = NeedQuery ? Info.Nodes : Info.DomPaths;
-            let TargetPath: PathType = [];
             let TargetValue: PathType | Function | CommandOption;
 
             if (typeof Info.StoreValue === 'function') {
@@ -1822,39 +1829,29 @@ export class VueCommand extends VueStore {
             }
             else {
                 if (typeof Info.StoreValue === 'string' || Array.isArray(Info.StoreValue)) {
-                    Info.StoreValue = Model.ToJoin(Info.StoreValue);
-                    if (Option?.UseTreePath)
-                        TargetPath = [...Info.TreePaths];
-                    if (Option?.UseDomStore || Info.StoreValue == '.')
-                        TargetPath.push(Info.DomName);
+                    if (Info.StoreValue == '.')
+                        TargetValue = this.Paths(Info.TreePaths, Info.DomName);
                     else if (Info.StoreValue != null && Info.StoreValue != '')
-                        TargetPath = this.Paths(TargetPath, Info.StoreValue);
-
-                    TargetValue = TargetPath.length > 0 ? TargetPath : Info.StoreValue;
+                        TargetValue = Info.StoreValue;
                 }
                 else {
-                    let NewStoreValue: CommandOption = {
+                    TargetValue = {
                         Target: Info.StoreValue?.TargetFunc,
                         FuncArgs: Info.StoreValue?.Args,
-                    };
-                    TargetValue = NewStoreValue;
+                    } as CommandOption;
                     if (Info.StoreValue?.Args != null) {
-                        let Args = Model.ToJoin(Info.StoreValue.Args);
-                        if (Info.Args == null || Info.CommandKey == '')
-                            Info.Args = Args;
+                        let TargetArgs = Info.StoreValue.Args;
+                        if (Info.Args == null)
+                            Info.Args = Model.ToJoin(TargetArgs, ', ');
                         else
-                            Info.Args = Model.ToJoin([Info.CommandKey, Args], ', ');
+                            Info.Args = Model.ToJoin([Info.Args, TargetArgs], ', ');
                     }
                 }
             }
 
-            if (TargetValue == '')
-                continue;
-
-            ActionSet(Info, {
-                TargetDom: TargetDom,
-                TargetPath: TargetPath,
-                TargetValue: TargetValue,
+            ActionSet.Execute(Info, {
+                TargetDom,
+                TargetValue,
             });
         }
         return this;
@@ -1949,71 +1946,118 @@ export class VueCommand extends VueStore {
     }
     private $SetupCommandMap() {
         this.$CommandMap = {
-            'v-text': (Info, Option) => {
-                Model.AddV_Text(Option.TargetDom, Option.TargetValue);
+            'v-text': {
+                Execute: (Info, Option) => {
+                    Model.AddV_Text(Option.TargetDom, Option.TargetValue);
+                },
+                AcceptSelf: true,
             },
-            'v-model': (Info, Option) => {
-                if (typeof (Info.StoreValue) == 'function') {
-                    Model.$Error(`v-model command value must be a string or string[], path: ${this.ToJoin(Info.DomPaths)}`);
-                    return;
-                }
-                Model.AddV_Model(Option.TargetDom, Option.TargetPath, {
-                    ModelValue: Info.CommandKey,
-                });
+            'v-model': {
+                Execute: (Info, Option) => {
+                    if (typeof (Option.TargetValue) == 'function') {
+                        Model.$Error(`v-model command value must be a string or string[], path: ${this.ToJoin(Info.DomPaths)}`);
+                        return;
+                    }
+                    Model.AddV_Model(Option.TargetDom, Option.TargetValue as PathType, {
+                        ModelValue: Info.CommandKey,
+                    });
+                },
+                AcceptSelf: true,
             },
-            'v-for': (Info, Option) => {
-                Model.AddV_For(Option.TargetDom, Option.TargetValue, Info.ForKey);
+            'v-for': {
+                Execute: (Info, Option) => {
+                    Model.AddV_For(Option.TargetDom, Option.TargetValue, Info.ForKey);
+                },
+                AcceptSelf: true,
             },
-            'v-if': (Info, Option) => {
-                Model.AddV_If(Option.TargetDom, Option.TargetValue);
+            'v-show': {
+                Execute: (Info, Option) => {
+                    Model.AddV_Show(Option.TargetDom, Option.TargetValue);
+                },
+                AcceptSelf: true,
             },
-            'v-else-if': (Info, Option) => {
-                Model.AddV_ElseIf(Option.TargetDom, Option.TargetValue);
+            'v-if': {
+                Execute: (Info, Option) => {
+                    Model.AddV_If(Option.TargetDom, Option.TargetValue);
+                },
+                AcceptSelf: true,
             },
-            'v-else': (Info, Option) => {
-                Model.AddV_Else(Option.TargetDom);
+            'v-else-if': {
+                Execute: (Info, Option) => {
+                    Model.AddV_ElseIf(Option.TargetDom, Option.TargetValue);
+                },
+                AcceptSelf: true,
             },
-            'v-show': (Info, Option) => {
-                Model.AddV_Show(Option.TargetDom, Option.TargetValue);
+            'v-else': {
+                Execute: (Info, Option) => {
+                    Model.AddV_Else(Option.TargetDom);
+                },
+                AcceptNull: true,
             },
-            'v-bind': (Info, Option) => {
-                if (!Option.TargetValue)
-                    return;
-                Model.AddV_Bind(Option.TargetDom, Info.CommandKey, Option.TargetValue, Info.Args);
+            'v-bind': {
+                Execute: (Info, Option) => {
+                    Model.AddV_Bind(Option.TargetDom, Info.CommandKey, Option.TargetValue, Info.Args);
+                },
             },
-            'v-on': (Info, Option) => {
-                Model.AddV_On(Option.TargetDom, Info.CommandKey, Option.TargetValue, Info.Args);
+            'v-on': {
+                Execute: (Info, Option) => {
+                    Model.AddV_On(Option.TargetDom, Info.CommandKey, Option.TargetValue, Info.Args);
+                },
             },
-            'v-slot': (Info, Option) => {
-                Model.AddV_Slot(Option.TargetDom, Info.CommandKey, Option.TargetValue);
+            'v-slot': {
+                Execute: (Info, Option) => {
+                    Model.AddV_Slot(Option.TargetDom, Info.CommandKey, Option.TargetValue);
+                },
             },
-            'v-on-mounted': (Info, Option) => {
-                Model.AddV_OnMounted(Option.TargetDom, Option.TargetValue, Info.Args);
+            'v-on-mounted': {
+                Execute: (Info, Option) => {
+                    Model.AddV_OnMounted(Option.TargetDom, Option.TargetValue, Info.Args);
+                },
             },
-            'v-on-unmounted': (Info, Option) => {
-                Model.AddV_OnUnMounted(Option.TargetDom, Option.TargetValue, Info.Args);
+            'v-on-unmounted': {
+                Execute: (Info, Option) => {
+                    Model.AddV_OnUnMounted(Option.TargetDom, Option.TargetValue, Info.Args);
+                },
             },
-            'v-on-ready': (Info, Option) => {
-                Model.AddV_OnReady(Option.TargetDom, Option.TargetValue, Info.Args);
+            'v-on-ready': {
+                Execute: (Info, Option) => {
+                    Model.AddV_OnReady(Option.TargetDom, Option.TargetValue, Info.Args);
+                },
             },
-            'watch': (Info, Option) => {
-                if (typeof (Info.StoreValue) != 'function') {
-                    Model.$Error(`watch command value must be a function, path: ${this.ToJoin(Info.DomPaths)}`);
-                    return;
-                }
-                Model.AddV_Watch(Info.DomPaths, Info.StoreValue as any);
+            'watch': {
+                Execute: (Info, Option) => {
+                    let WatchPaths = [Info.DomPaths];
+                    if (Info.CommandKey) 
+                        WatchPaths.push(Info.CommandKey.split(':'));
+                    WatchPaths = Model.Paths(WatchPaths);
+                    if (typeof (Info.StoreValue) === 'function')
+                        Model.AddV_Watch(WatchPaths, Info.StoreValue as WatchCallback);
+                    else {
+                        let Target = Info.StoreValue as any;
+                        Model.AddV_Watch(WatchPaths, Target?.CallBack, Target?.Option);
+                    }
+                },
             },
-            'func': (Info, Option) => {
-                if (typeof (Info.StoreValue) != 'function') {
-                    Model.$Error(`func command value must be a function, path: ${this.ToJoin(Info.DomPaths)}`);
-                    return;
-                }
-                Model.AddV_Function(Model.Paths(...Info.DomPaths, Info.CommandKey ?? 'func'), Info.StoreValue);
+            'func': {
+                Execute: (Info, Option) => {
+                    if (typeof (Info.StoreValue) != 'function') {
+                        Model.$Error(`func command value must be a function, path: ${this.ToJoin(Info.DomPaths)}`);
+                        return;
+                    }
+                    Model.AddV_Function(Model.Paths(...Info.DomPaths, Info.CommandKey ?? 'func'), Info.StoreValue);
+                },
             },
-            'using': (Info, Option) => {
-                if (typeof (Info.StoreValue) === 'function') {
-                    Info.StoreValue(Info.DomPaths, Info.Nodes);
-                }
+            'using': {
+                Execute: (Info, Option) => {
+                    if (typeof (Info.StoreValue) === 'function') {
+                        Info.StoreValue(Info.DomPaths, Info.Nodes);
+                    }
+                },
+            },
+            'store': {
+                Execute: (Info, Option) => {
+                    Model.UpdateStore(Info.DomPaths, Info.StoreValue);
+                },
             }
         }
     }
@@ -2105,22 +2149,36 @@ export class VueCommand extends VueStore {
     //#endregion
 
     //#region Protected Process
-    protected $ConvertCommandOption(DomName: PathType | QueryNode[], Option?: AddCommandOption): CommandOption {
-        if (Option == null) {
+    protected $ConvertCommandOption(DomName: PathType | QueryNode[], Option?: AddCommandOption, Args?: string): CommandOption {
+        let Result: CommandOption;
+        if (Option == null || Option == '.') {
             if (this.IsPathType(DomName))
-                return { Target: DomName as PathType, FuncAction: false };
+                Result = {
+                    Target: DomName as PathType
+                };
             else {
                 let Nodes = DomName as QueryNode[];
                 let NodeNames = Nodes.map(Item => Item.DomName);
-                return { Target: NodeNames, FuncAction: false };
+                Result = {
+                    Target: NodeNames
+                };
             }
         }
+        else if (typeof Option == 'string' || typeof Option == 'function' || Array.isArray(Option))
+            Result = {
+                Target: Option
+            };
+        else
+            Result = Option;
 
-        if (typeof Option == 'string' || typeof Option == 'function' || Array.isArray(Option))
-            return { Target: Option, FuncAction: true };
+        if (Args)
+            Result.FuncArgs = Args;
 
-        Option.FuncAction ??= true;
-        return Option;
+        Result.FuncAction ??= false;
+        if (Result.FuncArgs)
+            Result.FuncAction = true;
+
+        return Result;
     }
     protected $AddCommand(DomName: PathType | QueryNode[], Command: string, Option: CommandOption) {
         if (DomName == null)

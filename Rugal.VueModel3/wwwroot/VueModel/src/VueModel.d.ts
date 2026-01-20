@@ -290,38 +290,44 @@ type CommandOption = {
     FuncAction?: boolean;
     FuncArgs?: PathType;
 };
+type TreeWatchOption = {
+    CallBack: WatchCallback;
+    Option?: WatchOptions;
+};
 type TreeSetType = {
-    'watch'?: '' | WatchCallback;
-    'using'?: '' | UsingFunctionType;
+    'using'?: UsingFunctionType;
+    'store'?: any;
+    [DomName: `:${string}`]: UsingFunctionType | TreeSetType;
+    'watch'?: WatchCallback | TreeWatchOption;
+    [WatchTargetCmd: `watch:${string}`]: WatchCallback | TreeWatchOption;
     'func'?: Function;
-    [FuncCmd: `func:${string}`]: Function;
-    [DomName: `:${string}`]: '' | UsingFunctionType | TreeSetType;
-    'v-model'?: '' | PathType;
-    [VModelCmd: `v-model:${string}`]: '' | PathType;
-    'v-slot'?: '' | PathType | Function | TreeSetFuncOption;
-    [VSlotArgsCmd: `v-slot(${string})`]: Function | TreeSetFuncOption;
-    [VSlotKeyCmd: `v-slot:${string}`]: '' | PathType | Function | TreeSetFuncOption;
-    [VSlotKeyArgsCmd: `v-slot:${string}(${string})`]: Function | TreeSetFuncOption;
-    'v-text'?: '' | PathType | Function | TreeSetFuncOption;
+    [FuncNameCmd: `func:${string}`]: Function;
+    'v-text'?: '.' | PathType | Function | TreeSetFuncOption;
     [VForTextCmd: `v-text(${string})`]: Function | TreeSetFuncOption;
-    'v-for'?: '' | PathType | Function | TreeSetFuncOption;
+    'v-model'?: '.' | PathType;
+    [VModelArgsCmd: `v-model:${string}`]: '.' | PathType;
+    'v-for'?: '.' | PathType | Function | TreeSetFuncOption;
     [VForKeyCmd: `v-for<${string}>`]: PathType | Function | TreeSetFuncOption;
     [VForKeyArgsCmd: `v-for<${string}>(${string})`]: Function | TreeSetFuncOption;
     [VForArgsCmd: `v-for(${string})`]: Function | TreeSetFuncOption;
     [VForArgsKeyCmd: `v-for(${string})<${string}>`]: Function | TreeSetFuncOption;
-    'v-show'?: '' | PathType | Function | TreeSetFuncOption;
+    'v-show'?: '.' | PathType | Function | TreeSetFuncOption;
     [VShowArgsCmd: `v-show(${string})`]: Function | TreeSetFuncOption;
-    'v-if'?: '' | PathType | Function | TreeSetFuncOption;
-    'v-else-if'?: '' | PathType | Function | TreeSetFuncOption;
-    'v-else'?: '' | null;
+    'v-if'?: '.' | PathType | Function | TreeSetFuncOption;
+    'v-else-if'?: '.' | PathType | Function | TreeSetFuncOption;
+    'v-else'?: null;
     [VIfArgsCmd: `v-if(${string})`]: Function | TreeSetFuncOption;
     [VElseIfArgsCmd: `v-else-if(${string})`]: Function | TreeSetFuncOption;
-    'v-bind'?: '' | PathType | Function | TreeSetFuncOption;
-    [VBindCmd: `v-bind:${string}`]: '' | PathType | Function | TreeSetFuncOption;
+    'v-slot'?: PathType | Function | TreeSetFuncOption;
+    [VSlotArgsCmd: `v-slot(${string})`]: Function | TreeSetFuncOption;
+    [VSlotKeyCmd: `v-slot:${string}`]: PathType | Function | TreeSetFuncOption;
+    [VSlotKeyArgsCmd: `v-slot:${string}(${string})`]: Function | TreeSetFuncOption;
+    'v-bind'?: PathType | Function | TreeSetFuncOption;
+    [VBindCmd: `v-bind:${string}`]: PathType | Function | TreeSetFuncOption;
     [VBindArgsCmd: `v-bind:${string}(${string})`]: Function | TreeSetFuncOption;
-    'v-on:change'?: '' | PathType | Function | TreeSetFuncOption;
-    'v-on:click'?: '' | PathType | Function | TreeSetFuncOption;
-    [VOnCmd: `v-on:${string}`]: '' | PathType | Function | TreeSetFuncOption;
+    'v-on:change'?: PathType | Function | TreeSetFuncOption;
+    'v-on:click'?: PathType | Function | TreeSetFuncOption;
+    [VOnCmd: `v-on:${string}`]: PathType | Function | TreeSetFuncOption;
     [VOnArgsCmd: `v-on:${string}(${string})`]: Function | TreeSetFuncOption;
     'v-on-mounted'?: PathType | Function | TreeSetFuncOption;
     [VOnMountedArgsCmd: `v-on-mounted(${string})`]: Function | TreeSetFuncOption;
@@ -349,7 +355,6 @@ type TreeSetInfo = {
 type TreeSetInfoOption = {
     TargetDom: PathType | QueryNode[];
     TargetValue: PathType | Function | CommandOption;
-    TargetPath: PathType;
 };
 type AddV_ModelOption = {
     ModelValue?: string;
@@ -363,12 +368,14 @@ type AddV_FilePickerOption = string | {
 };
 type AddV_TreeOption = {
     UseDeepQuery?: boolean;
-    UseTreePath?: boolean;
-    UseDomStore?: boolean;
 };
 export declare class VueCommand extends VueStore {
     protected $IsInited: boolean;
-    protected $CommandMap: Record<string, (Info: TreeSetInfo, Option: TreeSetInfoOption) => void>;
+    protected $CommandMap: Record<string, {
+        Execute: (Info: TreeSetInfo, Option: TreeSetInfoOption) => void;
+        AcceptNull?: boolean;
+        AcceptSelf?: boolean;
+    }>;
     $QueryDomName: string;
     constructor();
     WithQueryDomName(QueryDomName: string): this;
@@ -394,7 +401,7 @@ export declare class VueCommand extends VueStore {
     AddV_Property(PropertyPath: PathType, Option: AddPropertyType): this;
     AddV_PropertyFrom(SourceStore: any, PropertyPath: PathType, Option: AddPropertyType): this;
     protected $BaseAddProperty(PropertyStore: StoreType, PropertyKey: string, Option: AddPropertyType): StoreType;
-    protected $ConvertCommandOption(DomName: PathType | QueryNode[], Option?: AddCommandOption): CommandOption;
+    protected $ConvertCommandOption(DomName: PathType | QueryNode[], Option?: AddCommandOption, Args?: string): CommandOption;
     protected $AddCommand(DomName: PathType | QueryNode[], Command: string, Option: CommandOption): void;
     protected $SetAttribute(Dom: HTMLElement, AttrName: string, AttrValue: string): void;
     protected $RandomFuncName(BaseFuncName: string): string;

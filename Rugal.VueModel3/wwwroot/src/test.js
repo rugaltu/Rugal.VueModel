@@ -29,19 +29,33 @@ Model.AddSubApi('Search', {
     },
 });
 Model.ApiCall('Search');
-Model.UpdateStore('test', { test: 123 });
-Model.UpdateStore('sources', [{ test: 123 }, { test: 456 }]);
+Model.UpdateStore('Root', { aa: 'text' });
 Model.AddV_Tree('Root', {
-    ':For': {
-        'func': () => {
-            debugger;
+    ':SelfA': {
+        'v-if': '.',
+        'v-text': '.',
+        'store': 'test self v-if v-text',
+    },
+    ':SelfB': {
+        'v-model': '.',
+        'v-show': '.',
+        'store': 'test self v-model',
+    },
+    ':SelfC': {
+        'v-for': '.',
+        'store': [1, 2, 3],
+        'watch': {
+            CallBack: (newValue, oldValue) => {
+                console.log('watch trigger SelfC changed');
+            },
+            Option: {
+                deep: true,
+            },
+        },
+        ':items': {
+            'v-text': 'item',
         },
     },
-    'func:test': () => {
-    },
-    'func': () => {
-        debugger;
-    }
 });
 //Model
 //    .WithQueryAttribute('pv-name')
