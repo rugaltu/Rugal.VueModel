@@ -1798,7 +1798,7 @@ export class VueCommand extends VueStore {
             if (Info.StoreValue == '.' && ActionSet.AcceptSelf != true)
                 continue;
 
-            let NeedQuery = false;
+            let NeedQuery = Info.Command == 'using';
             let QueryOption: QueryOption = {
                 Mode: 'Multi',
             };
@@ -2050,7 +2050,9 @@ export class VueCommand extends VueStore {
             'using': {
                 Execute: (Info, Option) => {
                     if (typeof (Info.StoreValue) === 'function') {
-                        Info.StoreValue(Info.DomPaths, Info.Nodes[0], Info.Nodes);
+                        const nodes = Info.Nodes;
+                        const node = nodes != null ? nodes[0] : null;
+                        Info.StoreValue(Info.DomPaths, node, nodes);
                     }
                 },
             },
