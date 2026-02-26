@@ -1190,7 +1190,7 @@ export class ApiStore extends FuncBase {
             if (!Array.isArray(FindStore))
                 return;
             FindStore.length = 0;
-            FindStore.push.apply(FindStore, SetData);
+            SetData.forEach(item => FindStore.push(item));
             return;
         }
 
@@ -1482,7 +1482,7 @@ export class VueStore extends ApiStore {
 }
 
 //#region VueCommand Data Type
-type UsingFunctionType = ((Paths: PathType, Node?: QueryNode[]) => void);
+type UsingFunctionType = ((path: PathType, node: QueryNode, nodes?: QueryNode[]) => void);
 type CommandOption = {
     CommandKey?: string,
     Target: PathType | Function,
@@ -1495,7 +1495,7 @@ type TreeWatchOption = {
     CallBack: WatchCallback,
     Option?: WatchOptions,
 }
-type TreeSetType = {
+export type TreeSetType = {
     'using'?: UsingFunctionType,
     'store'?: any,
     [DomName: `:${string}`]: UsingFunctionType | TreeSetType,
@@ -1858,19 +1858,19 @@ export class VueCommand extends VueStore {
     }
     private $ParseTreeSet(Paths: string[], TreeSet: TreeSetType, Result: TreeSetInfo[]) {
         const TreeNodeReges = /^:(?<next>.+)$/;
-        let AllKeys = Object.keys(TreeSet);
+        const AllKeys = Object.keys(TreeSet);
 
         for (let i = 0; i < AllKeys.length; i++) {
-            let Command = AllKeys[i];
-            let SetPair = TreeSet[Command as any];
+            const Command = AllKeys[i];
+            const SetPair = TreeSet[Command as any];
 
-            let DomPaths = [...Paths];
-            let TreePaths = [...Paths];
-            let DomName = TreePaths.pop();
+            const DomPaths = [...Paths];
+            const TreePaths = [...Paths];
+            const DomName = TreePaths.pop();
 
-            let TreeNodeResult = Command.match(TreeNodeReges);
+            const TreeNodeResult = Command.match(TreeNodeReges);
             if (TreeNodeResult) {
-                let NextDomName = TreeNodeResult.groups.next;
+                const NextDomName = TreeNodeResult.groups.next;
                 if (typeof SetPair === 'function') {
                     Result.push({
                         Command: 'using',
@@ -1886,16 +1886,16 @@ export class VueCommand extends VueStore {
                 continue;
             }
 
-            let GetCommandPart = (FindCommand: string, StartChar: string, EndChar: string) => {
+            const GetCommandPart = (FindCommand: string, StartChar: string, EndChar: string) => {
                 if (!FindCommand.includes(StartChar) || !FindCommand.includes(EndChar))
                     return null;
 
-                let StartIndex = FindCommand.indexOf(StartChar);
-                let EndIndex = FindCommand.lastIndexOf(EndChar);
-                let Result = FindCommand.slice(StartIndex + 1, EndIndex).trim();
+                const StartIndex = FindCommand.indexOf(StartChar);
+                const EndIndex = FindCommand.lastIndexOf(EndChar);
+                const Result = FindCommand.slice(StartIndex + 1, EndIndex).trim();
                 return Result?.trim();
             };
-            let GetCommandWithKey = (FindCommand: string) => {
+            const GetCommandWithKey = (FindCommand: string) => {
                 let ArgsStart = null;
                 let ForKeyStart = null;
                 if (FindCommand.includes('('))
@@ -1928,9 +1928,9 @@ export class VueCommand extends VueStore {
                     CommandKey: CommandKey?.trim(),
                 }
             };
-            let Args = GetCommandPart(Command, '(', ')');
-            let ForKey = GetCommandPart(Command, '<', '>');
-            let CommandWithKey = GetCommandWithKey(Command);
+            const Args = GetCommandPart(Command, '(', ')');
+            const ForKey = GetCommandPart(Command, '<', '>');
+            const CommandWithKey = GetCommandWithKey(Command);
             Result.push({
                 Command: CommandWithKey?.Command,
                 CommandKey: CommandWithKey?.CommandKey,
@@ -2027,7 +2027,7 @@ export class VueCommand extends VueStore {
             'watch': {
                 Execute: (Info, Option) => {
                     let WatchPaths = [Info.DomPaths];
-                    if (Info.CommandKey) 
+                    if (Info.CommandKey)
                         WatchPaths.push(Info.CommandKey.split(':'));
                     WatchPaths = Model.Paths(WatchPaths);
                     if (typeof (Info.StoreValue) === 'function')
@@ -2050,7 +2050,7 @@ export class VueCommand extends VueStore {
             'using': {
                 Execute: (Info, Option) => {
                     if (typeof (Info.StoreValue) === 'function') {
-                        Info.StoreValue(Info.DomPaths, Info.Nodes);
+                        Info.StoreValue(Info.DomPaths, Info.Nodes[0], Info.Nodes);
                     }
                 },
             },

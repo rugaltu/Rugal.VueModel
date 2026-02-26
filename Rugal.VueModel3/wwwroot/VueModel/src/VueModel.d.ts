@@ -281,7 +281,7 @@ export declare class VueStore extends ApiStore {
     ForceUpdate(): this;
     Refs(RefName: PathType): any;
 }
-type UsingFunctionType = ((Paths: PathType, Node?: QueryNode[]) => void);
+type UsingFunctionType = ((path: PathType, node: QueryNode, nodes?: QueryNode[]) => void);
 type CommandOption = {
     CommandKey?: string;
     Target: PathType | Function;
@@ -294,7 +294,7 @@ type TreeWatchOption = {
     CallBack: WatchCallback;
     Option?: WatchOptions;
 };
-type TreeSetType = {
+export type TreeSetType = {
     'using'?: UsingFunctionType;
     'store'?: any;
     [DomName: `:${string}`]: UsingFunctionType | TreeSetType;

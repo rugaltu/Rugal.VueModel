@@ -925,7 +925,7 @@ export class ApiStore extends FuncBase {
             if (!Array.isArray(FindStore))
                 return;
             FindStore.length = 0;
-            FindStore.push.apply(FindStore, SetData);
+            SetData.forEach(item => FindStore.push(item));
             return;
         }
         this.ForEachObject(SetData, (Key, Value) => {
@@ -1408,16 +1408,16 @@ export class VueCommand extends VueStore {
     }
     $ParseTreeSet(Paths, TreeSet, Result) {
         const TreeNodeReges = /^:(?<next>.+)$/;
-        let AllKeys = Object.keys(TreeSet);
+        const AllKeys = Object.keys(TreeSet);
         for (let i = 0; i < AllKeys.length; i++) {
-            let Command = AllKeys[i];
-            let SetPair = TreeSet[Command];
-            let DomPaths = [...Paths];
-            let TreePaths = [...Paths];
-            let DomName = TreePaths.pop();
-            let TreeNodeResult = Command.match(TreeNodeReges);
+            const Command = AllKeys[i];
+            const SetPair = TreeSet[Command];
+            const DomPaths = [...Paths];
+            const TreePaths = [...Paths];
+            const DomName = TreePaths.pop();
+            const TreeNodeResult = Command.match(TreeNodeReges);
             if (TreeNodeResult) {
-                let NextDomName = TreeNodeResult.groups.next;
+                const NextDomName = TreeNodeResult.groups.next;
                 if (typeof SetPair === 'function') {
                     Result.push({
                         Command: 'using',
@@ -1432,15 +1432,15 @@ export class VueCommand extends VueStore {
                 }
                 continue;
             }
-            let GetCommandPart = (FindCommand, StartChar, EndChar) => {
+            const GetCommandPart = (FindCommand, StartChar, EndChar) => {
                 if (!FindCommand.includes(StartChar) || !FindCommand.includes(EndChar))
                     return null;
-                let StartIndex = FindCommand.indexOf(StartChar);
-                let EndIndex = FindCommand.lastIndexOf(EndChar);
-                let Result = FindCommand.slice(StartIndex + 1, EndIndex).trim();
+                const StartIndex = FindCommand.indexOf(StartChar);
+                const EndIndex = FindCommand.lastIndexOf(EndChar);
+                const Result = FindCommand.slice(StartIndex + 1, EndIndex).trim();
                 return Result?.trim();
             };
-            let GetCommandWithKey = (FindCommand) => {
+            const GetCommandWithKey = (FindCommand) => {
                 let ArgsStart = null;
                 let ForKeyStart = null;
                 if (FindCommand.includes('('))
@@ -1471,9 +1471,9 @@ export class VueCommand extends VueStore {
                     CommandKey: CommandKey?.trim(),
                 };
             };
-            let Args = GetCommandPart(Command, '(', ')');
-            let ForKey = GetCommandPart(Command, '<', '>');
-            let CommandWithKey = GetCommandWithKey(Command);
+            const Args = GetCommandPart(Command, '(', ')');
+            const ForKey = GetCommandPart(Command, '<', '>');
+            const CommandWithKey = GetCommandWithKey(Command);
             Result.push({
                 Command: CommandWithKey?.Command,
                 CommandKey: CommandWithKey?.CommandKey,
@@ -1593,7 +1593,7 @@ export class VueCommand extends VueStore {
             'using': {
                 Execute: (Info, Option) => {
                     if (typeof (Info.StoreValue) === 'function') {
-                        Info.StoreValue(Info.DomPaths, Info.Nodes);
+                        Info.StoreValue(Info.DomPaths, Info.Nodes[0], Info.Nodes);
                     }
                 },
             },
