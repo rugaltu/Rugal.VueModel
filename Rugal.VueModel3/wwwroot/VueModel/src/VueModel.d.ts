@@ -96,6 +96,8 @@ type FileItemStore = {
 export declare class FileItem {
     OnChangeBase64: Function;
     OnChangeBuffer: Function;
+    IsLoaded: boolean;
+    IsLoading: boolean;
     protected $Store: FileItemStore;
     constructor(File?: File, ConvertType?: FileConvertType | FileConvertType[]);
     get FileId(): string;
@@ -111,6 +113,7 @@ export declare class FileItem {
     get InnerStore(): FileItemStore;
     Clear(): void;
     From(Item: FileItem): void;
+    CheckLoadAsync(): Promise<unknown>;
     protected $ConvertFile(): void;
     protected $ConvertBase64(IsForce?: boolean): this;
     protected $ConvertBuffer(): void;
@@ -365,6 +368,7 @@ type AddV_FilePickerOption = string | {
     Accept?: string | string[];
     Multiple?: boolean;
     ConvertType?: FileConvertType | FileConvertType[];
+    OnSuccess?: Function;
 };
 type AddV_TreeOption = {
     UseDeepQuery?: boolean;

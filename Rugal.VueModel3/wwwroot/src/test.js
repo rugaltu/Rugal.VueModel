@@ -1,6 +1,12 @@
 //import { ApiStore } from '../VueModel/src/testVueModel';
 import { Model } from 'vuemodel3';
 Model.WithQueryDomName('pv-name');
+Model.AddV_FilePicker('Root', {
+    Store: 'test',
+    ConvertType: 'buffer',
+    OnSuccess: (files) => {
+    },
+});
 //Model.UpdateStore('bbb', '123');
 //Model.UpdateStore('ccc', '456');
 //let Root = Queryer.Query('B')[0];

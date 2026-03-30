@@ -3,6 +3,12 @@
 import { Queryer, Model, PathType, QueryNode } from 'vuemodel3';
 
 Model.WithQueryDomName('pv-name');
+Model.AddV_FilePicker('Root', {
+    Store: 'test',
+    ConvertType: 'buffer',
+    OnSuccess: (files) => {
+    },
+})
 
 //Model.UpdateStore('bbb', '123');
 //Model.UpdateStore('ccc', '456');

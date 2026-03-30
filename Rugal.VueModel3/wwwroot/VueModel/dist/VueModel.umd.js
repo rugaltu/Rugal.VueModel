@@ -399,6 +399,8 @@
     class FileItem {
         OnChangeBase64;
         OnChangeBuffer;
+        IsLoaded = false;
+        IsLoading = false;
         $Store;
         constructor(File, ConvertType = 'none') {
             if (File == null)
@@ -457,6 +459,29 @@
         From(Item) {
             this.$Store = Item.InnerStore;
         }
+        CheckLoadAsync() {
+            return new Promise((resolve, reject) => {
+                try {
+                    if (this.IsLoaded || !this.IsLoading)
+                        return resolve(this.IsLoaded);
+                    const timeout = setTimeout(() => {
+                        if (timer)
+                            clearInterval(timer);
+                        reject(new Error("WaitLoadAsync: 等待逾時"));
+                    }, 60000);
+                    const timer = setInterval(() => {
+                        if (this.IsLoaded || !this.IsLoading) {
+                            clearInterval(timer);
+                            clearTimeout(timeout);
+                            resolve(this.IsLoaded);
+                        }
+                    }, 100);
+                }
+                catch (e) {
+                    reject(e);
+                }
+            });
+        }
         $ConvertFile() {
             if (this.ConvertType == null)
                 return;
@@ -475,6 +500,7 @@
                         this.$ConvertBuffer();
                         break;
                     default:
+                        this.IsLoaded = true;
                         break;
                 }
             }
@@ -486,13 +512,19 @@
                 return this;
             let Reader = new FileReader();
             Reader.readAsDataURL(this.File);
-            Reader.onload = () => this.Base64 = Reader.result;
+            Reader.onload = () => {
+                this.Base64 = Reader.result;
+                this.IsLoaded = true;
+            };
             return this;
         }
         $ConvertBuffer() {
             let Reader = new FileReader();
             Reader.readAsArrayBuffer(this.File);
-            Reader.onload = () => this.Buffer = Reader.result;
+            Reader.onload = () => {
+                this.Buffer = Reader.result;
+                this.IsLoaded = true;
+            };
         }
     }
     exports.FileItem = FileItem;
@@ -1318,12 +1350,14 @@
             let Accept = null;
             let ConvertType = 'none';
             let Multi = false;
+            let OnSuccess = null;
             if (typeof (Option) == 'string')
                 FileStorePath = Option;
             else {
                 FileStorePath = Option.Store;
                 ConvertType = Option.ConvertType;
                 Multi = Option.Multiple;
+                OnSuccess = Option.OnSuccess;
                 if (Array.isArray(Option.Accept))
                     Accept = Option.Accept.join(' ');
                 else
@@ -1347,6 +1381,8 @@
                         let PickFile = Files[i];
                         this.AddFile(FileStorePath, PickFile, ConvertType);
                     }
+                    if (OnSuccess)
+                        OnSuccess();
                 };
                 TempInput.click();
             });
