@@ -384,8 +384,6 @@ export var Queryer = new DomQueryer();
 export class FileItem {
     OnChangeBase64;
     OnChangeBuffer;
-    IsLoaded = false;
-    IsLoading = false;
     $Store;
     constructor(File, ConvertType = 'none') {
         if (File == null)
@@ -397,6 +395,9 @@ export class FileItem {
                 ConvertType: ConvertType,
                 Base64: null,
                 Buffer: null,
+                IsLoaded: false,
+                IsLoading: true,
+                Error: null,
             });
             this.$ConvertFile();
         }
@@ -436,6 +437,15 @@ export class FileItem {
     get InnerStore() {
         return this.$Store;
     }
+    get IsLoaded() {
+        return this.$Store.IsLoaded;
+    }
+    get IsLoading() {
+        return this.$Store.IsLoading;
+    }
+    get Error() {
+        return this.$Store.Error;
+    }
     Clear() {
         this.$Store.Base64 = null;
         this.$Store.Buffer = null;
@@ -447,23 +457,27 @@ export class FileItem {
     CheckLoadAsync() {
         return new Promise((resolve, reject) => {
             try {
-                if (this.IsLoaded || !this.IsLoading)
-                    return resolve(this.IsLoaded);
+                if (this.$Store.IsLoaded || !this.$Store.IsLoading)
+                    return resolve(this.$Store.IsLoaded);
                 const timeout = setTimeout(() => {
                     if (timer)
                         clearInterval(timer);
-                    reject(new Error("WaitLoadAsync: 等待逾時"));
+                    this.$Store.Error = 'timeout';
+                    console.error("WaitLoadAsync: timeout");
+                    reject(false);
                 }, 60000);
                 const timer = setInterval(() => {
-                    if (this.IsLoaded || !this.IsLoading) {
+                    if (this.$Store.IsLoaded || !this.$Store.IsLoading) {
                         clearInterval(timer);
                         clearTimeout(timeout);
-                        resolve(this.IsLoaded);
+                        resolve(this.$Store.IsLoaded);
                     }
                 }, 100);
             }
             catch (e) {
-                reject(e);
+                this.$Store.Error = e;
+                console.error(e);
+                reject(false);
             }
         });
     }
@@ -479,13 +493,15 @@ export class FileItem {
             let TypeItem = GetConvertType[i];
             switch (TypeItem) {
                 case 'base64':
+                    this.$Store.IsLoading = true;
                     this.$ConvertBase64();
                     break;
                 case 'buffer':
+                    this.$Store.IsLoading = true;
                     this.$ConvertBuffer();
                     break;
                 default:
-                    this.IsLoaded = true;
+                    this.$Store.IsLoaded = true;
                     break;
             }
         }
@@ -499,7 +515,8 @@ export class FileItem {
         Reader.readAsDataURL(this.File);
         Reader.onload = () => {
             this.Base64 = Reader.result;
-            this.IsLoaded = true;
+            this.$Store.IsLoaded = true;
+            this.$Store.IsLoading = false;
         };
         return this;
     }
@@ -508,7 +525,8 @@ export class FileItem {
         Reader.readAsArrayBuffer(this.File);
         Reader.onload = () => {
             this.Buffer = Reader.result;
-            this.IsLoaded = true;
+            this.$Store.IsLoaded = true;
+            this.$Store.IsLoading = false;
         };
     }
 }
@@ -1332,7 +1350,8 @@ export class VueCommand extends VueStore {
         let Accept = null;
         let ConvertType = 'none';
         let Multi = false;
-        let OnSuccess = null;
+        let OnSuccess;
+        let OnError;
         if (typeof (Option) == 'string')
             FileStorePath = Option;
         else {
@@ -1355,16 +1374,35 @@ export class VueCommand extends VueStore {
                 TempInput.accept = Accept;
             if (Multi != null)
                 TempInput.multiple = Multi;
-            TempInput.onchange = (Event) => {
+            TempInput.onchange = async (Event) => {
                 if (TempInput.files == null || TempInput.files.length == 0)
                     return;
-                let Files = TempInput.files;
+                const Files = TempInput.files;
+                const FileItems = [];
                 for (let i = 0; i < Files.length; i++) {
                     let PickFile = Files[i];
                     this.AddFile(FileStorePath, PickFile, ConvertType);
+                    let fileData = Model.FileStore[FileStorePath];
+                    if (!Array.isArray(fileData)) {
+                        fileData = [fileData];
+                    }
+                    FileItems.push(...fileData);
                 }
-                if (OnSuccess)
-                    OnSuccess();
+                if (OnSuccess) {
+                    let isChecked = true;
+                    for (const item of FileItems) {
+                        if (item instanceof FileItem) {
+                            if (!await item.CheckLoadAsync()) {
+                                if (OnError)
+                                    OnError(item);
+                                isChecked = false;
+                                break;
+                            }
+                        }
+                    }
+                    if (isChecked)
+                        OnSuccess(FileItems);
+                }
             };
             TempInput.click();
         });
