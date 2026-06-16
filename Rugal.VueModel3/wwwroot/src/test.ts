@@ -3,12 +3,23 @@
 import { Queryer, Model, PathType, QueryNode } from 'vuemodel3';
 
 Model.WithQueryDomName('pv-name');
-Model.AddV_FilePicker('Root', {
-    Store: 'test',
-    ConvertType: 'buffer',
-    OnSuccess: (files) => {
-    },
-})
+//Model.AddV_FilePicker('Root', {
+//    Store: 'test',
+//    ConvertType: 'buffer',
+//    OnSuccess: (files) => {
+//    },
+//});
+
+const a = Queryer.Query(['Root'])[0].QueryCss('input');
+console.log(a);
+
+//Model.AddV_Tree('Root', {
+//    '@input': (path, node) => {
+//        debugger;
+//    },
+//});
+
+
 
 //Model.UpdateStore('bbb', '123');
 //Model.UpdateStore('ccc', '456');
@@ -26,49 +37,49 @@ Model.AddV_FilePicker('Root', {
 //});
 //console.log(A);
 
-Model.AddApi({
-    Search: {
-        Method: 'GET',
-        Url: 'api/Test/GetTest',
-    }
-})
-Model.AddSubApi('Search', {
-    PropertyName: 'IsCalling',
-    NotifyEvent: (Args) => {
-        console.log(Args.PropertyName, Args.Value);
-    },
-});
+//Model.AddApi({
+//    Search: {
+//        Method: 'GET',
+//        Url: 'api/Test/GetTest',
+//    }
+//})
+//Model.AddSubApi('Search', {
+//    PropertyName: 'IsCalling',
+//    NotifyEvent: (Args) => {
+//        console.log(Args.PropertyName, Args.Value);
+//    },
+//});
 
-Model.ApiCall('Search');
+//Model.ApiCall('Search');
 
-Model.UpdateStore('Root', { aa: 'text' });
-Model.AddV_Tree('Root', {
-    ':SelfA': {
-        'v-if': '.',
-        'v-text': '.',
-        'store': 'test self v-if v-text',
-    },
-    ':SelfB': {
-        'v-model': '.',
-        'v-show': '.',
-        'store': 'test self v-model',
-    },
-    ':SelfC': {
-        'v-for': '.',
-        'store': [1, 2, 3],
-        'watch': {
-            CallBack: (newValue, oldValue) => {
-                console.log('watch trigger SelfC changed');
-            },
-            Option: {
-                deep: true,
-            },
-        },
-        ':items': {
-            'v-text': 'item',
-        },
-    },
-});
+//Model.UpdateStore('Root', { aa: 'text' });
+//Model.AddV_Tree('Root', {
+//    ':SelfA': {
+//        'v-if': '.',
+//        'v-text': '.',
+//        'store': 'test self v-if v-text',
+//    },
+//    ':SelfB': {
+//        'v-model': '.',
+//        'v-show': '.',
+//        'store': 'test self v-model',
+//    },
+//    ':SelfC': {
+//        'v-for': '.',
+//        'store': [1, 2, 3],
+//        'watch': {
+//            CallBack: (newValue, oldValue) => {
+//                console.log('watch trigger SelfC changed');
+//            },
+//            Option: {
+//                deep: true,
+//            },
+//        },
+//        ':items': {
+//            'v-text': 'item',
+//        },
+//    },
+//});
 
 
 

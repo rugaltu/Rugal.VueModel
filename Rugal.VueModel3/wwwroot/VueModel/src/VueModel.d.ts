@@ -297,14 +297,13 @@ type CommandOption = {
     FuncAction?: boolean;
     FuncArgs?: PathType;
 };
-type TreeWatchOption = {
-    CallBack: WatchCallback;
-    Option?: WatchOptions;
-};
+type AddCommandOption = PathType | Function | CommandOption;
 export type TreeSetType = {
     'using'?: UsingFunctionType;
     'store'?: any;
     [DomName: `:${string}`]: UsingFunctionType | TreeSetType;
+    [TagName: `@${string}`]: UsingFunctionType | TreeSetType;
+    [TagName: `tag:${string}`]: UsingFunctionType | TreeSetType;
     'watch'?: WatchCallback | TreeWatchOption;
     [WatchTargetCmd: `watch:${string}`]: WatchCallback | TreeWatchOption;
     'func'?: Function;
@@ -347,7 +346,6 @@ type TreeSetFuncOption = {
     TargetFunc: PathType | Function;
     Args?: PathType;
 };
-type AddCommandOption = PathType | Function | CommandOption;
 type TreeSetInfo = {
     Nodes?: QueryNode[];
     TreePaths: string[];
@@ -362,6 +360,10 @@ type TreeSetInfo = {
 type TreeSetInfoOption = {
     TargetDom: PathType | QueryNode[];
     TargetValue: PathType | Function | CommandOption;
+};
+type TreeWatchOption = {
+    CallBack: WatchCallback;
+    Option?: WatchOptions;
 };
 type AddV_ModelOption = {
     ModelValue?: string;
