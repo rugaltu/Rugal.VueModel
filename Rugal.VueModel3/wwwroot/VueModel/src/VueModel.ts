@@ -291,6 +291,9 @@ export class QueryNode extends FuncBase {
         let Results = [];
         for (let NodeItem of TargetNode.Children) {
             if (Array.isArray(DomName)) {
+                if (DomName.length == 0)
+                    continue;
+
                 let Names: PathType = [...DomName];
                 let FirstName = Names.shift() as string;
 
@@ -1918,6 +1921,9 @@ export class VueCommand extends VueStore {
                 if (Info.DomPaths.length > 0)
                     QueryNodes = Queryer.Query(Info.DomPaths, QueryOption);
 
+                if (QueryNodes.length == 0)
+                    continue;
+
                 Info.Nodes = QueryNodes;
             }
 
@@ -2291,6 +2297,9 @@ export class VueCommand extends VueStore {
 
         if (!Array.isArray(DomName))
             DomName = [DomName];
+
+        if (DomName.length == 0)
+            return;
 
         let IsFromQueryNode = DomName[0] instanceof QueryNode;
         let QueryNodes: QueryNode[];
