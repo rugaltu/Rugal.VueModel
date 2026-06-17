@@ -1,6 +1,4 @@
 
-del /Q "dist"
-
 dotnet build ../../
 
 copy src\VueModel.js dist\VueModel.esm.js
