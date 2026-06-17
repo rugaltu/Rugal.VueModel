@@ -1,6 +1,7 @@
 {
   "compileOnSave": true,
   "compilerOptions": {
+    "strictNullChecks": false,
     "noImplicitAny": true,
     "noEmitOnError": true,
     "removeComments": true,
@@ -8,11 +9,11 @@
     "sourceMap": true,
     "target": "ESNext",
     "module": "ESNext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "outDir": "./wwwroot/VueModel/src/esm"
   },
   "exclude": [
-    "node_modules"
+    "./node_modules"
   ],
   "include": [ "./wwwroot/VueModel/src/VueModel.ts" ]
 }

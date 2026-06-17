@@ -1,19 +1,8 @@
 [
   {
-    "outputFileName": "wwwroot/VueModel/dist/VueModel.umd.js",
-    "inputFiles": [
-      "wwwroot/VueModel/src/umd/**/*.js"
-    ],
-    "minify": {
-      "enabled": true,
-      "commentMode": "all"
-    },
-    "sourceMap": true
-  },
-  {
     "outputFileName": "wwwroot/VueModel/dist/VueModel.esm.js",
     "inputFiles": [
-      "wwwroot/VueModel/src/esm/**/*.js"
+      "wwwroot/VueModel/src/VueModel.js"
     ],
     "minify": {
       "enabled": true,
@@ -21,5 +10,4 @@
     },
     "sourceMap": true
   }
-
 ]

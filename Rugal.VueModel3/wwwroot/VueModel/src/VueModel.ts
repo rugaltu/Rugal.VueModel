@@ -2210,14 +2210,14 @@ export class VueCommand extends VueStore {
                 if (Option.get)
                     return Option.get();
 
-                return this.$get(PropertyKey);
+                return (this as any).$get(PropertyKey);
             },
             set(Value) {
                 if (Option.set) {
                     Option.set(Value);
                     return;
                 }
-                this.$set(PropertyKey, Value);
+                (this as any).$set(PropertyKey, Value);
             }
         };
 

@@ -1,7 +1,9 @@
 {
   "compileOnSave": true,
   "compilerOptions": {
+    "strictNullChecks": false,
     "noImplicitAny": true,
+    "noEmitOnError": true,
     "removeComments": false,
     "sourceMap": true,
     "declaration": false,
@@ -9,13 +11,13 @@
     "skipLibCheck": true,
     "target": "ESNext",
     "module": "ESNext",
-    "moduleResolution": "node",
-    "baseUrl": ".",
+    "moduleResolution": "bundler",
     "paths": {
-      "vuemodel3": [ "wwwroot/VueModel/src/VueModel.ts" ]
+      "vuemodel3": [ "./wwwroot/VueModel/src/VueModel.ts" ]
     }
   },
   "exclude": [
-    "node_modules"
-  ]
+    "./node_modules"
+  ],
+  "charset": "utf8"
 }

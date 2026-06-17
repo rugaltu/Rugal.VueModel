@@ -416,7 +416,7 @@ export declare class VueCommand extends VueStore {
     protected $AddCommand(DomName: PathType | QueryNode[], Command: string, Option: CommandOption): void;
     protected $SetAttribute(Dom: HTMLElement, AttrName: string, AttrValue: string): void;
     protected $RandomFuncName(BaseFuncName: string): string;
-    protected $GenerateEventFunction(DomName: PathType, EventFunc: Function, Command: string): string;
+    protected $GenerateEventFunction(domName: PathType, eventFunc: Function, command: string): string;
 }
 export declare class VueModel extends VueCommand {
     $NativeWarn: (...Message: any[]) => void;

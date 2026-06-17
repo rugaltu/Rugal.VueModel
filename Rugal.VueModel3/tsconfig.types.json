@@ -1,7 +1,9 @@
 {
   "compileOnSave": true,
   "compilerOptions": {
+    "strictNullChecks": false,
     "noImplicitAny": true,
+    "noEmitOnError": true,
     "removeComments": false,
     "sourceMap": true,
     "declaration": true,
@@ -10,12 +12,12 @@
     "skipLibCheck": true,
     "target": "ESNext",
     "module": "ESNext",
-    "moduleResolution": "node"
+    "moduleResolution": "bundler"
   },
   "exclude": [
-    "node_modules"
+    "./node_modules"
   ],
   "include": [
-    "wwwroot/VueModel/src/VueModel.ts"
+    "./wwwroot/VueModel/src/VueModel.ts"
   ]
 }

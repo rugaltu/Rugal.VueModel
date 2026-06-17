@@ -6,15 +6,16 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UserSecretsId>4df07c2d-ce33-4dd4-a518-8d8807401ac4</UserSecretsId>
 		<DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+		<TypeScriptCompileBlocked>true</TypeScriptCompileBlocked>
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <Compile Remove="wwwroot\dist\**" />
-	  <Content Remove="wwwroot\dist\**" />
-	  <EmbeddedResource Remove="wwwroot\dist\**" />
-	  <None Remove="wwwroot\dist\**" />
-	  <TypeScriptCompile Remove="node_modules\**" />
-	  <TypeScriptCompile Remove="wwwroot\dist\**" />
+		<Compile Remove="wwwroot\dist\**" />
+		<Content Remove="wwwroot\dist\**" />
+		<EmbeddedResource Remove="wwwroot\dist\**" />
+		<None Remove="wwwroot\dist\**" />
+		<TypeScriptCompile Remove="node_modules\**" />
+		<TypeScriptCompile Remove="wwwroot\dist\**" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -23,9 +24,9 @@
 
 	<ItemGroup>
 		<PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="8.0.15" />
-		<PackageReference Include="Microsoft.TypeScript.MSBuild" Version="5.8.3">
-		  <PrivateAssets>all</PrivateAssets>
-		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		<PackageReference Include="Microsoft.TypeScript.MSBuild" Version="6.0.3">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
 		<PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.19.4" />
 		<PackageReference Include="Rugal.ImportMapper" Version="1.0.0" />
@@ -38,8 +39,8 @@
 	<ItemGroup>
 		<None Include="bundleconfig.json" />
 	</ItemGroup>
-	
-	
+
+
 	<ItemGroup>
 		<None Update="tsconfig.umd.json">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -51,8 +52,6 @@
 
 	<Target Name="TypeScriptCompileSystem" BeforeTargets="Build">
 		<Exec Command="tsc --project tsconfig.types.json" />
-		<Exec Command="tsc --project tsconfig.esm.json" />
-		<Exec Command="tsc --project tsconfig.umd.json" />
 	</Target>
 
 </Project>
