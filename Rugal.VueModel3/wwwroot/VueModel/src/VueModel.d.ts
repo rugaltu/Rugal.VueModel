@@ -241,7 +241,7 @@ export declare class ApiStore extends FuncBase {
     AddStoreFrom<TStore = any>(SourceStore: any, StorePath: PathType, StoreData?: TStore): this;
     SetStoreFrom<TStore = any>(SourceStore: any, StorePath: PathType, StoreData: TStore): this;
     UpdateStoreFrom<TStore = any>(SourceStore: any, StorePath: PathType, StoreData: TStore): this;
-    ClearStoreFrom(SourceStore: any, StorePath?: PathType, Option?: boolean | ClearStoreOption): this;
+    ClearStoreFrom(sourceStore: any, storePath?: PathType, option?: boolean | ClearStoreOption): this;
     protected $RCS_GetStore(StorePath: string, FindStore: any, Option: {
         CreateIfNull: boolean;
         DefaultValue: object;
@@ -249,7 +249,7 @@ export declare class ApiStore extends FuncBase {
     protected $RCS_SetStore(StorePath: string, StoreData: any, FindStore: any, Option?: {
         IsDeepSet: boolean;
     }): any;
-    protected $RCS_ClearStore(TargetStore: any, Option: ClearStoreOption): void;
+    protected $RCS_ClearStore(targetStore: any, option: ClearStoreOption): void;
     protected $DeepSetObject(SetData: Record<string, any>, FindStore: any): void;
     AddFileStore(FileStoreKey: string, Option?: AddFileStoreOption): this;
     Files(FileStoreKey: string, WhereFunc?: (FileArg: FileItem) => boolean): File[];

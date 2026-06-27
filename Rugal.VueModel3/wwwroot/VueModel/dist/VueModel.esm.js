@@ -941,14 +941,15 @@ export class ApiStore extends FuncBase {
         });
         return this;
     }
-    ClearStoreFrom(SourceStore, StorePath, Option) {
-        Option ??= {};
-        if (typeof Option === 'boolean')
-            Option = { DeepClear: Option };
-        let TargetStore = StorePath == null ? SourceStore : this.GetStoreFrom(SourceStore, StorePath);
-        if (TargetStore == null)
+    ClearStoreFrom(sourceStore, storePath, option) {
+        option ??= {};
+        if (typeof option === 'boolean')
+            option = { DeepClear: option };
+        option.DeepClear ??= true;
+        const targetStore = storePath == null ? sourceStore : this.GetStoreFrom(sourceStore, storePath);
+        if (targetStore == null)
             return this;
-        this.$RCS_ClearStore(TargetStore, Option);
+        this.$RCS_ClearStore(targetStore, option);
         return this;
     }
     //#endregion
@@ -1000,23 +1001,24 @@ export class ApiStore extends FuncBase {
         }
         return this.$RCS_SetStore(null, StoreData, FindStore[StorePath]);
     }
-    $RCS_ClearStore(TargetStore, Option) {
-        if (typeof TargetStore != 'object')
+    $RCS_ClearStore(targetStore, option) {
+        if (typeof targetStore != 'object')
             return;
-        if (Array.isArray(TargetStore)) {
-            TargetStore.length = 0;
+        if (Array.isArray(targetStore)) {
+            targetStore.length = 0;
             return;
         }
-        let AllProperty = Object.getOwnPropertyNames(TargetStore);
-        for (let Key of AllProperty) {
+        const allProperty = Object.getOwnPropertyNames(targetStore);
+        for (let Key of allProperty) {
             if (Key.match(/^\$/g))
                 continue;
-            if (typeof TargetStore[Key] === 'function')
+            const value = targetStore[Key];
+            if (value == null || typeof value === 'function')
                 continue;
-            else if (Option.DeepClear && typeof TargetStore[Key] === 'object')
-                this.$RCS_ClearStore(TargetStore[Key], Option);
+            if (option.DeepClear && typeof value === 'object')
+                this.$RCS_ClearStore(targetStore[Key], option);
             else
-                TargetStore[Key] = null;
+                targetStore[Key] = null;
         }
     }
     $DeepSetObject(SetData, FindStore) {
