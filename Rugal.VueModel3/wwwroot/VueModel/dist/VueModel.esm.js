@@ -1021,34 +1021,36 @@ export class ApiStore extends FuncBase {
                 targetStore[Key] = null;
         }
     }
-    $DeepSetObject(SetData, FindStore) {
-        if (SetData == null) {
-            this.ClearStoreFrom(FindStore);
+    $DeepSetObject(setData, targetStore) {
+        if (setData == null) {
+            this.ClearStoreFrom(targetStore);
             return;
         }
-        if (Array.isArray(SetData)) {
-            if (!Array.isArray(FindStore))
+        if (Array.isArray(setData)) {
+            if (!Array.isArray(targetStore))
                 return;
-            FindStore.length = 0;
-            SetData.forEach(item => FindStore.push(item));
+            targetStore.length = 0;
+            setData.forEach(item => targetStore.push(item));
             return;
         }
-        this.ForEachObject(SetData, (Key, Value) => {
-            let IsGoNext = false;
-            if (Array.isArray(Value)) {
-                if (FindStore[Key] == null || !Array.isArray(FindStore[Key]))
-                    FindStore[Key] = [];
-                IsGoNext = true;
+        if (targetStore === setData)
+            return;
+        this.ForEachObject(setData, (key, value) => {
+            let isGoNext = false;
+            if (Array.isArray(value)) {
+                if (targetStore[key] == null || !Array.isArray(targetStore[key]))
+                    targetStore[key] = [];
+                isGoNext = true;
             }
-            else if (Value != null && typeof Value == 'object') {
-                if (FindStore[Key] == null || typeof FindStore[Key] != 'object')
-                    FindStore[Key] = {};
-                IsGoNext = true;
+            else if (value != null && typeof value == 'object') {
+                if (targetStore[key] == null || typeof targetStore[key] != 'object')
+                    targetStore[key] = {};
+                isGoNext = true;
             }
-            if (IsGoNext)
-                this.$DeepSetObject(Value, FindStore[Key]);
+            if (isGoNext)
+                this.$DeepSetObject(value, targetStore[key]);
             else
-                FindStore[Key] = Value;
+                targetStore[key] = value;
         });
     }
     //#endregion
@@ -1203,7 +1205,7 @@ export class ApiStore extends FuncBase {
         return Form;
     }
 }
-import { createApp, reactive, nextTick } from 'vue';
+import { createApp, reactive, nextTick, ref } from 'vue';
 import { watch } from 'vue';
 export class VueStore extends ApiStore {
     $VueProxy = null;
@@ -1226,15 +1228,6 @@ export class VueStore extends ApiStore {
         this
             .EventAdd_AddApi(Arg => {
             this.AddStore(Arg.ApiKey);
-        })
-            .EventAdd_UpdateStore(() => {
-            this.ForceUpdate();
-        })
-            .EventAdd_AddStore(() => {
-            this.ForceUpdate();
-        })
-            .EventAdd_SetStore(() => {
-            this.ForceUpdate();
         })
             .AddStore(this.$CoreStore, {})
             .WithMounted(() => {
@@ -1280,14 +1273,13 @@ export class VueStore extends ApiStore {
     }
     //#endregion
     //#region Public Method
-    ForceUpdate() {
-        this.$VueProxy?.$forceUpdate();
-        return this;
+    Ref(value) {
+        return ref(value);
     }
-    Refs(RefName) {
+    RefsView(refName) {
         if (!this.$VueProxy)
             return null;
-        return this.$VueProxy.$refs[Model.ToJoin(RefName)];
+        return this.$VueProxy.$refs[Model.ToJoin(refName)];
     }
 }
 //#endregion
@@ -1755,8 +1747,15 @@ export class VueCommand extends VueStore {
                 },
             },
             'store': {
-                Execute: (Info, Option) => {
-                    Model.UpdateStore(Info.DomPaths, Info.StoreValue);
+                Execute: (info, option) => {
+                    let targetPath = [info.DomPaths];
+                    if (info.CommandKey != null && info.CommandKey != '') {
+                        if (info.CommandKey.startsWith('/'))
+                            targetPath = [info.CommandKey.replace('/', '')];
+                        else
+                            targetPath.push(info.CommandKey);
+                    }
+                    Model.UpdateStore(targetPath, info.StoreValue);
                 },
             }
         };
@@ -1989,12 +1988,12 @@ export class VueModel extends VueCommand {
         if (this.$IsInited)
             return this;
         this.Store = reactive(this.Store);
-        let GetStore = this.Store;
+        let getStore = this.Store;
         let MountedFunc = this.$MountedFuncs;
         this.$VueApp = createApp({
             ...this.$VueOption,
-            data() {
-                return GetStore;
+            setup() {
+                return getStore;
             },
             mounted: () => {
                 for (let Func of MountedFunc)

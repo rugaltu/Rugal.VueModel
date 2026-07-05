@@ -1,6 +1,7 @@
 
 //import { ApiStore } from '../VueModel/src/testVueModel';
 import { Queryer, Model, PathType, QueryNode } from 'vuemodel3';
+import { ref } from 'vue';
 
 Model.WithQueryDomName('pv-name');
 //Model.AddV_FilePicker('Root', {
@@ -13,17 +14,9 @@ Model.WithQueryDomName('pv-name');
 // const a = Queryer.Query(['Root'])[0].QueryCss('input');
 // console.log(a);
 
-Model.AddV_Tree('Root', {
-    ':BB': {
-        'v-on:click': () => {
-            debugger;
-        },
-    },
-    // '@input': (path, node) => {
-    //     debugger;
-    // },
+Model.AddV_Tree('test', {
+    'store:root.config': 'root-value',
 });
-
 
 
 //Model.UpdateStore('bbb', '123');

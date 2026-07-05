@@ -250,7 +250,7 @@ export declare class ApiStore extends FuncBase {
         IsDeepSet: boolean;
     }): any;
     protected $RCS_ClearStore(targetStore: any, option: ClearStoreOption): void;
-    protected $DeepSetObject(SetData: Record<string, any>, FindStore: any): void;
+    protected $DeepSetObject(setData: any, targetStore: any): void;
     AddFileStore(FileStoreKey: string, Option?: AddFileStoreOption): this;
     Files(FileStoreKey: string, WhereFunc?: (FileArg: FileItem) => boolean): File[];
     File(FileStoreKey: string, WhereFunc?: (FileArg: FileItem) => boolean): File;
@@ -285,8 +285,8 @@ export declare class VueStore extends ApiStore {
     WithComponent(Component?: {}): this;
     WithVueUse(...UsePlugin: Plugin[]): this;
     WithDirective(Name: string, Directive: Directive): this;
-    ForceUpdate(): this;
-    Refs(RefName: PathType): any;
+    Ref<T = any>(value: T): [T] extends [import("vue").Ref<any, any>] ? import("@vue/shared").IfAny<T, import("vue").Ref<T, T>, T> : import("vue").Ref<import("vue").UnwrapRef<T>, T | import("vue").UnwrapRef<T>>;
+    RefsView(refName: PathType): any;
 }
 type UsingFunctionType = ((path: PathType, node: QueryNode, nodes?: QueryNode[]) => void);
 type CommandOption = {
@@ -301,6 +301,7 @@ type AddCommandOption = PathType | Function | CommandOption;
 export type TreeSetType = {
     'using'?: UsingFunctionType;
     'store'?: any;
+    [StoreWithName: `store:${string}`]: any;
     [DomName: `:${string}`]: UsingFunctionType | TreeSetType;
     [TagName: `@${string}`]: UsingFunctionType | TreeSetType;
     [TagName: `tag:${string}`]: UsingFunctionType | TreeSetType;

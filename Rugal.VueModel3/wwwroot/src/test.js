@@ -9,15 +9,8 @@ Model.WithQueryDomName('pv-name');
 //});
 // const a = Queryer.Query(['Root'])[0].QueryCss('input');
 // console.log(a);
-Model.AddV_Tree('Root', {
-    ':BB': {
-        'v-on:click': () => {
-            debugger;
-        },
-    },
-    // '@input': (path, node) => {
-    //     debugger;
-    // },
+Model.AddV_Tree('test', {
+    'store:root.config': 'root-value',
 });
 //Model.UpdateStore('bbb', '123');
 //Model.UpdateStore('ccc', '456');
