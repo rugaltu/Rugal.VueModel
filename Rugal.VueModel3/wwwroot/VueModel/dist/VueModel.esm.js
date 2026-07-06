@@ -1218,6 +1218,7 @@ export class VueStore extends ApiStore {
     $VueUse = [];
     $CoreStore = 'app';
     $MountedFuncs = [];
+    $SetupFuncs = [];
     $Directive = [];
     constructor() {
         super();
@@ -1250,8 +1251,12 @@ export class VueStore extends ApiStore {
         this.$VueOption = this.DeepObjectExtend(this.$VueOption, VueOption);
         return this;
     }
-    WithMounted(MountedFunc = () => { }) {
-        this.$MountedFuncs.push(MountedFunc);
+    WithMounted(mountedFunc = () => { }) {
+        this.$MountedFuncs.push(mountedFunc);
+        return this;
+    }
+    WithSetup(setupFunc) {
+        this.$SetupFuncs.push(setupFunc);
         return this;
     }
     WithComponent(Component = {}) {
@@ -1988,17 +1993,23 @@ export class VueModel extends VueCommand {
         if (this.$IsInited)
             return this;
         this.Store = reactive(this.Store);
-        let getStore = this.Store;
-        let MountedFunc = this.$MountedFuncs;
+        const getStore = this.Store;
+        const mountedFuncs = this.$MountedFuncs;
+        const setupFuncs = this.$SetupFuncs;
         this.$VueApp = createApp({
             ...this.$VueOption,
             setup() {
+                for (const func of setupFuncs) {
+                    const funcStore = func();
+                    if (funcStore != null)
+                        Model.UpdateStoreFrom(getStore, null, funcStore);
+                }
                 return getStore;
             },
             mounted: () => {
-                for (let Func of MountedFunc)
-                    Func();
-            }
+                for (const func of mountedFuncs)
+                    func();
+            },
         });
         for (let Item of this.$VueUse)
             this.$VueApp.use(Item);

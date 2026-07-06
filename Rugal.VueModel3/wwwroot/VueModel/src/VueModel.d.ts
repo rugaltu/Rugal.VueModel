@@ -273,6 +273,7 @@ export declare class VueStore extends ApiStore {
     protected $VueUse: Plugin[];
     protected $CoreStore: string;
     protected $MountedFuncs: Function[];
+    protected $SetupFuncs: (() => any)[];
     protected $Directive: {
         Name: string;
         Directive: Directive;
@@ -281,7 +282,8 @@ export declare class VueStore extends ApiStore {
     get Store(): StoreType;
     protected set Store(Store: StoreType);
     WithVueOption(VueOption?: {}): this;
-    WithMounted(MountedFunc?: () => void): this;
+    WithMounted(mountedFunc?: () => void): this;
+    WithSetup(setupFunc: () => any): this;
     WithComponent(Component?: {}): this;
     WithVueUse(...UsePlugin: Plugin[]): this;
     WithDirective(Name: string, Directive: Directive): this;
