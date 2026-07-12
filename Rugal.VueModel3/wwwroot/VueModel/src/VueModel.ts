@@ -487,8 +487,7 @@ type DateTextOption = {
     DateJoinChar?: string,
     Format?: string,
 };
-type DateTimeTextOption = DateTextOption & {
-};
+type DateTimeTextOption = DateTextOption & {};
 //#endregion
 
 //#region Store Data Type
@@ -1596,11 +1595,11 @@ export type TreeSetType = {
     [VForArgsCmd: `v-for(${string})`]: Function | TreeSetFuncOption,
     [VForArgsKeyCmd: `v-for(${string})<${string}>`]: Function | TreeSetFuncOption,
 
-    'v-show'?: '.' | PathType | Function | TreeSetFuncOption,
+    'v-show'?: '.' | PathType | Function | TreeSetFuncOption | boolean,
     [VShowArgsCmd: `v-show(${string})`]: Function | TreeSetFuncOption,
 
-    'v-if'?: '.' | PathType | Function | TreeSetFuncOption,
-    'v-else-if'?: '.' | PathType | Function | TreeSetFuncOption,
+    'v-if'?: '.' | PathType | Function | TreeSetFuncOption | boolean,
+    'v-else-if'?: '.' | PathType | Function | TreeSetFuncOption | boolean,
     'v-else'?: null,
     [VIfArgsCmd: `v-if(${string})`]: Function | TreeSetFuncOption,
     [VElseIfArgsCmd: `v-else-if(${string})`]: Function | TreeSetFuncOption,
@@ -1610,7 +1609,7 @@ export type TreeSetType = {
     [VSlotKeyCmd: `v-slot:${string}`]: PathType | Function | TreeSetFuncOption,
     [VSlotKeyArgsCmd: `v-slot:${string}(${string})`]: Function | TreeSetFuncOption,
 
-    'v-bind'?: PathType | Function | TreeSetFuncOption,
+    'v-bind'?: PathType | Function | TreeSetFuncOption | boolean,
     [VBindCmd: `v-bind:${string}`]: PathType | Function | TreeSetFuncOption,
     [VBindArgsCmd: `v-bind:${string}(${string})`]: Function | TreeSetFuncOption,
 
@@ -1722,60 +1721,66 @@ export class VueCommand extends VueStore {
     //#endregion
 
     //#region Path/Function Command
-    public AddV_For(DomName: PathType | QueryNode[], Option?: AddCommandOption, ForKey?: PathType) {
-        let SetOption = this.$ConvertCommandOption(DomName, Option);
-        if (ForKey) {
-            ForKey = this.ToJoin(ForKey);
-            if (!/^\(/.test(ForKey))
-                ForKey = `(${ForKey}`;
-            if (!/\)$/.test(ForKey))
-                ForKey += ')';
+    public AddV_For(domName: PathType | QueryNode[], option?: AddCommandOption, forKey?: PathType) {
+        const setOption = this.$ConvertCommandOption(domName, option);
+        if (forKey) {
+            forKey = this.ToJoin(forKey);
+            if (!/^\(/.test(forKey))
+                forKey = `(${forKey}`;
+            if (!/\)$/.test(forKey))
+                forKey += ')';
 
-            SetOption.TargetHead = `${ForKey} in `;
+            setOption.TargetHead = `${forKey} in `;
         }
-        let Target = Model.ToJoin(SetOption.Target);
-        if (!/\b(in|of)\b/.test(Target))
-            SetOption.TargetHead ??= '(item, index) in ';
+        let target = Model.ToJoin(setOption.Target);
+        if (!/\b(in|of)\b/.test(target))
+            setOption.TargetHead ??= '(item, index) in ';
 
-        SetOption.FuncAction = true;
-        this.$AddCommand(DomName, 'v-for', SetOption);
+        setOption.FuncAction = true;
+        this.$AddCommand(domName, 'v-for', setOption);
         return this;
     }
-    public AddV_If(DomName: PathType | QueryNode[], Option: AddCommandOption) {
-        let SetOption = this.$ConvertCommandOption(DomName, Option);
-        SetOption.FuncAction = true;
-        this.$AddCommand(DomName, 'v-if', SetOption);
+    public AddV_If(domName: PathType | QueryNode[], option: AddCommandOption | boolean) {
+        if (typeof option === 'boolean')
+            option = `${option}`;
+        const setOption = this.$ConvertCommandOption(domName, option);
+        setOption.FuncAction = true;
+        this.$AddCommand(domName, 'v-if', setOption);
         return this;
     }
-    public AddV_ElseIf(DomName: PathType | QueryNode[], Option: AddCommandOption) {
-        let SetOption = this.$ConvertCommandOption(DomName, Option);
-        SetOption.FuncAction = true;
-        this.$AddCommand(DomName, 'v-else-if', SetOption);
+    public AddV_ElseIf(domName: PathType | QueryNode[], option: AddCommandOption | boolean) {
+        if (typeof option === 'boolean')
+            option = `${option}`;
+        const setOption = this.$ConvertCommandOption(domName, option);
+        setOption.FuncAction = true;
+        this.$AddCommand(domName, 'v-else-if', setOption);
         return this;
     }
-    public AddV_Else(DomName: PathType | QueryNode[]) {
-        let SetOption = this.$ConvertCommandOption(DomName);
-        SetOption.Target = '';
-        this.$AddCommand(DomName, 'v-else', SetOption);
+    public AddV_Else(domName: PathType | QueryNode[]) {
+        const setOption = this.$ConvertCommandOption(domName);
+        setOption.Target = '';
+        this.$AddCommand(domName, 'v-else', setOption);
         return this;
     }
 
-    public AddV_Show(DomName: PathType | QueryNode[], Option: AddCommandOption) {
-        let SetOption = this.$ConvertCommandOption(DomName, Option);
-        SetOption.FuncAction = true;
-        this.$AddCommand(DomName, 'v-show', SetOption);
+    public AddV_Show(domName: PathType | QueryNode[], option: AddCommandOption) {
+        const setOption = this.$ConvertCommandOption(domName, option);
+        setOption.FuncAction = true;
+        this.$AddCommand(domName, 'v-show', setOption);
         return this;
     }
-    public AddV_Bind(DomName: PathType | QueryNode[], BindKey: string, Option: AddCommandOption, Args?: string) {
-        let SetOption = this.$ConvertCommandOption(DomName, Option, Args);
-        SetOption.CommandKey = BindKey;
-        this.$AddCommand(DomName, 'v-bind', SetOption);
+    public AddV_Bind(domName: PathType | QueryNode[], bindKey: string, option: AddCommandOption | boolean, args?: string) {
+        if (typeof option === 'boolean')
+            option = `${option}`;
+        const setOption = this.$ConvertCommandOption(domName, option, args);
+        setOption.CommandKey = bindKey;
+        this.$AddCommand(domName, 'v-bind', setOption);
         return this;
     }
-    public AddV_On(DomName: PathType | QueryNode[], EventName: string, Option: AddCommandOption, Args?: string) {
-        let SetOption = this.$ConvertCommandOption(DomName, Option, Args);
-        SetOption.CommandKey = EventName;
-        this.$AddCommand(DomName, `v-on`, SetOption);
+    public AddV_On(domName: PathType | QueryNode[], eventName: string, option: AddCommandOption, args?: string) {
+        const setOption = this.$ConvertCommandOption(domName, option, args);
+        setOption.CommandKey = eventName;
+        this.$AddCommand(domName, `v-on`, setOption);
         return this;
     }
     //#endregion
@@ -1886,84 +1891,89 @@ export class VueCommand extends VueStore {
         return this;
     }
 
-    public AddV_Tree(TreeRoot: PathType | QueryNode, TreeSet: TreeSetType, Option?: AddV_TreeOption): this {
-        let AllSetInfo: TreeSetInfo[] = [];
-        let RootNode: QueryNode;
-        let UsingRootNode = TreeRoot instanceof QueryNode;
-        if (UsingRootNode)
-            RootNode = TreeRoot as QueryNode;
-        let RootPaths = UsingRootNode ? [] : this.Paths(TreeRoot)
-        this.$ParseTreeSet(RootPaths, TreeSet, AllSetInfo);
-        for (let Info of AllSetInfo) {
-            let ActionSet = this.$CommandMap[Info.Command];
-            if (ActionSet == null) {
-                Model.$Error(`${Info.Command} command is not allowed, path: ${this.ToJoin(Info.DomPaths)}`);
+    public AddV_Tree(treeRoot: PathType | QueryNode, treeSet: TreeSetType, option?: AddV_TreeOption): this {
+        const allSetInfo: TreeSetInfo[] = [];
+        const usingRootNode = treeRoot instanceof QueryNode;
+
+        let rootNode: QueryNode;
+        if (usingRootNode)
+            rootNode = treeRoot as QueryNode;
+        
+        const rootPaths = usingRootNode ? [] : this.Paths(treeRoot)
+        this.$ParseTreeSet(rootPaths, treeSet, allSetInfo);
+        for (let info of allSetInfo) {
+            const actionSet = this.$CommandMap[info.Command];
+            if (actionSet == null) {
+                Model.$Error(`${info.Command} command is not allowed, path: ${this.ToJoin(info.DomPaths)}`);
                 continue;
             }
 
-            if (Info.StoreValue == '' || Info.StoreValue == null && ActionSet.AcceptNull != true)
+            if (info.StoreValue === '' || (info.StoreValue == null && actionSet.AcceptNull != true))
                 continue;
 
-            if (Info.StoreValue == '.' && ActionSet.AcceptSelf != true)
+            if (info.StoreValue == '.' && actionSet.AcceptSelf != true)
                 continue;
 
-            let NeedQuery = Info.Command == 'using';
-            let QueryOption: QueryOption = {
+            const queryOption: QueryOption = {
                 Mode: 'Multi',
             };
-            if (UsingRootNode) {
-                NeedQuery = true;
-                QueryOption.TargetNode = RootNode;
+            let needQuery = info.Command == 'using';
+            if (usingRootNode) {
+                needQuery = true;
+                queryOption.TargetNode = rootNode;
             }
-            if (Option?.UseDeepQuery) {
-                NeedQuery = true;
-                QueryOption.Mode = 'DeepMulti';
+            if (option?.UseDeepQuery) {
+                needQuery = true;
+                queryOption.Mode = 'DeepMulti';
             }
-            if (NeedQuery) {
-                let QueryNodes = [RootNode];
-                if (Info.DomPaths.length > 0)
-                    QueryNodes = Queryer.Query(Info.DomPaths, QueryOption);
+            if (needQuery) {
+                let queryNodes = [rootNode];
+                if (info.DomPaths.length > 0)
+                    queryNodes = Queryer.Query(info.DomPaths, queryOption);
 
-                if (QueryNodes.length == 0)
+                if (queryNodes.length == 0)
                     continue;
 
-                Info.Nodes = QueryNodes;
+                info.Nodes = queryNodes;
             }
 
-            let TargetDom: PathType | QueryNode[] = NeedQuery ? Info.Nodes : Info.DomPaths;
-            let TargetValue: PathType | Function | CommandOption;
+            const targetDom: PathType | QueryNode[] = needQuery ? info.Nodes : info.DomPaths;
+            let targetValue: PathType | Function | CommandOption;
 
-            if (typeof Info.StoreValue === 'function') {
-                TargetValue = {
-                    Target: Info.StoreValue,
-                    FuncArgs: Info.Args,
+            if (typeof info.StoreValue === 'function') {
+                targetValue = {
+                    Target: info.StoreValue,
+                    FuncArgs: info.Args,
                 };
             }
             else {
-                if (typeof Info.StoreValue === 'string' || Array.isArray(Info.StoreValue)) {
-                    if (Info.StoreValue == '.')
-                        TargetValue = this.Paths(Info.TreePaths, Info.DomName);
-                    else if (Info.StoreValue != null && Info.StoreValue != '')
-                        TargetValue = Info.StoreValue;
+                if (typeof info.StoreValue === 'string' || Array.isArray(info.StoreValue)) {
+                    if (info.StoreValue == '.')
+                        targetValue = this.Paths(info.TreePaths, info.DomName);
+                    else if (info.StoreValue != null && info.StoreValue != '')
+                        targetValue = info.StoreValue;
+                }
+                else if (typeof info.StoreValue === 'object') {
+                    targetValue = {
+                        Target: info.StoreValue?.TargetFunc,
+                        FuncArgs: info.StoreValue?.Args,
+                    } as CommandOption;
+                    if (info.StoreValue?.Args != null) {
+                        const targetArgs = info.StoreValue.Args;
+                        if (info.Args == null)
+                            info.Args = Model.ToJoin(targetArgs, ', ');
+                        else
+                            info.Args = Model.ToJoin([info.Args, targetArgs], ', ');
+                    }
                 }
                 else {
-                    TargetValue = {
-                        Target: Info.StoreValue?.TargetFunc,
-                        FuncArgs: Info.StoreValue?.Args,
-                    } as CommandOption;
-                    if (Info.StoreValue?.Args != null) {
-                        let TargetArgs = Info.StoreValue.Args;
-                        if (Info.Args == null)
-                            Info.Args = Model.ToJoin(TargetArgs, ', ');
-                        else
-                            Info.Args = Model.ToJoin([Info.Args, TargetArgs], ', ');
-                    }
+                    targetValue = `${info.StoreValue}`;
                 }
             }
 
-            ActionSet.Execute(Info, {
-                TargetDom,
-                TargetValue,
+            actionSet.Execute(info, {
+                TargetDom: targetDom,
+                TargetValue: targetValue,
             });
         }
         return this;

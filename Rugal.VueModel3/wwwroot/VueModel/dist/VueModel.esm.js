@@ -1334,57 +1334,63 @@ export class VueCommand extends VueStore {
     }
     //#endregion
     //#region Path/Function Command
-    AddV_For(DomName, Option, ForKey) {
-        let SetOption = this.$ConvertCommandOption(DomName, Option);
-        if (ForKey) {
-            ForKey = this.ToJoin(ForKey);
-            if (!/^\(/.test(ForKey))
-                ForKey = `(${ForKey}`;
-            if (!/\)$/.test(ForKey))
-                ForKey += ')';
-            SetOption.TargetHead = `${ForKey} in `;
+    AddV_For(domName, option, forKey) {
+        const setOption = this.$ConvertCommandOption(domName, option);
+        if (forKey) {
+            forKey = this.ToJoin(forKey);
+            if (!/^\(/.test(forKey))
+                forKey = `(${forKey}`;
+            if (!/\)$/.test(forKey))
+                forKey += ')';
+            setOption.TargetHead = `${forKey} in `;
         }
-        let Target = Model.ToJoin(SetOption.Target);
-        if (!/\b(in|of)\b/.test(Target))
-            SetOption.TargetHead ??= '(item, index) in ';
-        SetOption.FuncAction = true;
-        this.$AddCommand(DomName, 'v-for', SetOption);
+        let target = Model.ToJoin(setOption.Target);
+        if (!/\b(in|of)\b/.test(target))
+            setOption.TargetHead ??= '(item, index) in ';
+        setOption.FuncAction = true;
+        this.$AddCommand(domName, 'v-for', setOption);
         return this;
     }
-    AddV_If(DomName, Option) {
-        let SetOption = this.$ConvertCommandOption(DomName, Option);
-        SetOption.FuncAction = true;
-        this.$AddCommand(DomName, 'v-if', SetOption);
+    AddV_If(domName, option) {
+        if (typeof option === 'boolean')
+            option = `${option}`;
+        const setOption = this.$ConvertCommandOption(domName, option);
+        setOption.FuncAction = true;
+        this.$AddCommand(domName, 'v-if', setOption);
         return this;
     }
-    AddV_ElseIf(DomName, Option) {
-        let SetOption = this.$ConvertCommandOption(DomName, Option);
-        SetOption.FuncAction = true;
-        this.$AddCommand(DomName, 'v-else-if', SetOption);
+    AddV_ElseIf(domName, option) {
+        if (typeof option === 'boolean')
+            option = `${option}`;
+        const setOption = this.$ConvertCommandOption(domName, option);
+        setOption.FuncAction = true;
+        this.$AddCommand(domName, 'v-else-if', setOption);
         return this;
     }
-    AddV_Else(DomName) {
-        let SetOption = this.$ConvertCommandOption(DomName);
-        SetOption.Target = '';
-        this.$AddCommand(DomName, 'v-else', SetOption);
+    AddV_Else(domName) {
+        const setOption = this.$ConvertCommandOption(domName);
+        setOption.Target = '';
+        this.$AddCommand(domName, 'v-else', setOption);
         return this;
     }
-    AddV_Show(DomName, Option) {
-        let SetOption = this.$ConvertCommandOption(DomName, Option);
-        SetOption.FuncAction = true;
-        this.$AddCommand(DomName, 'v-show', SetOption);
+    AddV_Show(domName, option) {
+        const setOption = this.$ConvertCommandOption(domName, option);
+        setOption.FuncAction = true;
+        this.$AddCommand(domName, 'v-show', setOption);
         return this;
     }
-    AddV_Bind(DomName, BindKey, Option, Args) {
-        let SetOption = this.$ConvertCommandOption(DomName, Option, Args);
-        SetOption.CommandKey = BindKey;
-        this.$AddCommand(DomName, 'v-bind', SetOption);
+    AddV_Bind(domName, bindKey, option, args) {
+        if (typeof option === 'boolean')
+            option = `${option}`;
+        const setOption = this.$ConvertCommandOption(domName, option, args);
+        setOption.CommandKey = bindKey;
+        this.$AddCommand(domName, 'v-bind', setOption);
         return this;
     }
-    AddV_On(DomName, EventName, Option, Args) {
-        let SetOption = this.$ConvertCommandOption(DomName, Option, Args);
-        SetOption.CommandKey = EventName;
-        this.$AddCommand(DomName, `v-on`, SetOption);
+    AddV_On(domName, eventName, option, args) {
+        const setOption = this.$ConvertCommandOption(domName, option, args);
+        setOption.CommandKey = eventName;
+        this.$AddCommand(domName, `v-on`, setOption);
         return this;
     }
     //#endregion
@@ -1484,76 +1490,79 @@ export class VueCommand extends VueStore {
         });
         return this;
     }
-    AddV_Tree(TreeRoot, TreeSet, Option) {
-        let AllSetInfo = [];
-        let RootNode;
-        let UsingRootNode = TreeRoot instanceof QueryNode;
-        if (UsingRootNode)
-            RootNode = TreeRoot;
-        let RootPaths = UsingRootNode ? [] : this.Paths(TreeRoot);
-        this.$ParseTreeSet(RootPaths, TreeSet, AllSetInfo);
-        for (let Info of AllSetInfo) {
-            let ActionSet = this.$CommandMap[Info.Command];
-            if (ActionSet == null) {
-                Model.$Error(`${Info.Command} command is not allowed, path: ${this.ToJoin(Info.DomPaths)}`);
+    AddV_Tree(treeRoot, treeSet, option) {
+        const allSetInfo = [];
+        const usingRootNode = treeRoot instanceof QueryNode;
+        let rootNode;
+        if (usingRootNode)
+            rootNode = treeRoot;
+        const rootPaths = usingRootNode ? [] : this.Paths(treeRoot);
+        this.$ParseTreeSet(rootPaths, treeSet, allSetInfo);
+        for (let info of allSetInfo) {
+            const actionSet = this.$CommandMap[info.Command];
+            if (actionSet == null) {
+                Model.$Error(`${info.Command} command is not allowed, path: ${this.ToJoin(info.DomPaths)}`);
                 continue;
             }
-            if (Info.StoreValue == '' || Info.StoreValue == null && ActionSet.AcceptNull != true)
+            if (info.StoreValue === '' || (info.StoreValue == null && actionSet.AcceptNull != true))
                 continue;
-            if (Info.StoreValue == '.' && ActionSet.AcceptSelf != true)
+            if (info.StoreValue == '.' && actionSet.AcceptSelf != true)
                 continue;
-            let NeedQuery = Info.Command == 'using';
-            let QueryOption = {
+            const queryOption = {
                 Mode: 'Multi',
             };
-            if (UsingRootNode) {
-                NeedQuery = true;
-                QueryOption.TargetNode = RootNode;
+            let needQuery = info.Command == 'using';
+            if (usingRootNode) {
+                needQuery = true;
+                queryOption.TargetNode = rootNode;
             }
-            if (Option?.UseDeepQuery) {
-                NeedQuery = true;
-                QueryOption.Mode = 'DeepMulti';
+            if (option?.UseDeepQuery) {
+                needQuery = true;
+                queryOption.Mode = 'DeepMulti';
             }
-            if (NeedQuery) {
-                let QueryNodes = [RootNode];
-                if (Info.DomPaths.length > 0)
-                    QueryNodes = Queryer.Query(Info.DomPaths, QueryOption);
-                if (QueryNodes.length == 0)
+            if (needQuery) {
+                let queryNodes = [rootNode];
+                if (info.DomPaths.length > 0)
+                    queryNodes = Queryer.Query(info.DomPaths, queryOption);
+                if (queryNodes.length == 0)
                     continue;
-                Info.Nodes = QueryNodes;
+                info.Nodes = queryNodes;
             }
-            let TargetDom = NeedQuery ? Info.Nodes : Info.DomPaths;
-            let TargetValue;
-            if (typeof Info.StoreValue === 'function') {
-                TargetValue = {
-                    Target: Info.StoreValue,
-                    FuncArgs: Info.Args,
+            const targetDom = needQuery ? info.Nodes : info.DomPaths;
+            let targetValue;
+            if (typeof info.StoreValue === 'function') {
+                targetValue = {
+                    Target: info.StoreValue,
+                    FuncArgs: info.Args,
                 };
             }
             else {
-                if (typeof Info.StoreValue === 'string' || Array.isArray(Info.StoreValue)) {
-                    if (Info.StoreValue == '.')
-                        TargetValue = this.Paths(Info.TreePaths, Info.DomName);
-                    else if (Info.StoreValue != null && Info.StoreValue != '')
-                        TargetValue = Info.StoreValue;
+                if (typeof info.StoreValue === 'string' || Array.isArray(info.StoreValue)) {
+                    if (info.StoreValue == '.')
+                        targetValue = this.Paths(info.TreePaths, info.DomName);
+                    else if (info.StoreValue != null && info.StoreValue != '')
+                        targetValue = info.StoreValue;
                 }
-                else {
-                    TargetValue = {
-                        Target: Info.StoreValue?.TargetFunc,
-                        FuncArgs: Info.StoreValue?.Args,
+                else if (typeof info.StoreValue === 'object') {
+                    targetValue = {
+                        Target: info.StoreValue?.TargetFunc,
+                        FuncArgs: info.StoreValue?.Args,
                     };
-                    if (Info.StoreValue?.Args != null) {
-                        let TargetArgs = Info.StoreValue.Args;
-                        if (Info.Args == null)
-                            Info.Args = Model.ToJoin(TargetArgs, ', ');
+                    if (info.StoreValue?.Args != null) {
+                        const targetArgs = info.StoreValue.Args;
+                        if (info.Args == null)
+                            info.Args = Model.ToJoin(targetArgs, ', ');
                         else
-                            Info.Args = Model.ToJoin([Info.Args, TargetArgs], ', ');
+                            info.Args = Model.ToJoin([info.Args, targetArgs], ', ');
                     }
                 }
+                else {
+                    targetValue = `${info.StoreValue}`;
+                }
             }
-            ActionSet.Execute(Info, {
-                TargetDom,
-                TargetValue,
+            actionSet.Execute(info, {
+                TargetDom: targetDom,
+                TargetValue: targetValue,
             });
         }
         return this;

@@ -14,6 +14,11 @@ Model.WithQueryDomName('pv-name');
 // const a = Queryer.Query(['Root'])[0].QueryCss('input');
 // console.log(a);
 
+Model.AddV_Tree('testFor', {
+    'v-if': true,
+});
+
+
 Model.AddV_Tree('test', {
     'store:root.config': 'root-value',
 });
