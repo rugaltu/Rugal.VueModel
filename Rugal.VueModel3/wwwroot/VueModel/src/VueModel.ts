@@ -685,6 +685,7 @@ type AddApiContent = {
     File?: ApiCallFile | (() => ApiCallFile),
     Export?: boolean | ((ApiResult: any, ApiResponse: Response) => any),
     IsUpdateStore?: boolean,
+    DefaultStore?: any,
 } & ApiCallback;
 type ApiStoreValue = {
     ApiKey: string,
@@ -751,12 +752,10 @@ export class ApiStore extends FuncBase {
     #HeaderFuncs: ((Header: Headers) => void)[] = [];
     #OnEventFunc: Record<string, Function[]> = {};
     #OnEventName = {
-        ApiStore: {
-            AddApi: 'AddApi',
-            UpdateStore: 'UpdateStore',
-            AddStore: 'AddStore',
-            SetStore: 'SetStore',
-        }
+        AddApi: 'AddApi',
+        UpdateStore: 'UpdateStore',
+        AddStore: 'AddStore',
+        SetStore: 'SetStore',
     };
     #OnSuccess: (Result: any, Reponse: Response) => void;
     #OnError: (Except: any) => void;
@@ -780,12 +779,6 @@ export class ApiStore extends FuncBase {
     }
     set ApiDomain(ApiDomain) {
         this.#ApiDomain = this.ClearUrl(ApiDomain);
-    }
-    get OnEventName() {
-        return this.#OnEventName;
-    }
-    get #EventName() {
-        return this.OnEventName.ApiStore;
     }
     get Store() {
         return this.#Store;
@@ -863,16 +856,16 @@ export class ApiStore extends FuncBase {
     //#endregion
 
     //#region Api Method
-    public AddApi(AddApi: Record<string, AddApiContent>) {
-        for (let ApiKey in AddApi) {
-            let ApiOption = AddApi[ApiKey];
-            let SetApi: ApiStoreValue = {
-                ApiKey,
-                ...ApiOption,
+    public AddApi(apis: Record<string, AddApiContent>) {
+        for (let apiKey in apis) {
+            let option = apis[apiKey];
+            let setApi: ApiStoreValue = {
+                ApiKey: apiKey,
+                ...option,
             };
-            this.AddStoreFrom(this.ApiStore, ApiKey, {});
-            this.UpdateStoreFrom(this.ApiStore, ApiKey, SetApi);
-            this.$EventTrigger(this.#EventName.AddApi, SetApi);
+            this.AddStore(apiKey, option.DefaultStore ?? {});
+            this.UpdateStoreFrom(this.ApiStore, apiKey, setApi);
+            this.$EventTrigger(this.#OnEventName.AddApi, setApi);
         }
         return this;
     }
@@ -1037,19 +1030,19 @@ export class ApiStore extends FuncBase {
 
     //#region Public Event Add
     public EventAdd_AddApi(EventFunc: (EventArg: EventArg_AddApi) => void) {
-        this.$EventAdd(this.#EventName.AddApi, EventFunc);
+        this.$EventAdd(this.#OnEventName.AddApi, EventFunc);
         return this;
     }
     public EventAdd_UpdateStore(EventFunc: (EventArg: EventArg_UpdateStore) => void) {
-        this.$EventAdd(this.#EventName.UpdateStore, EventFunc);
+        this.$EventAdd(this.#OnEventName.UpdateStore, EventFunc);
         return this;
     }
     public EventAdd_AddStore(EventFunc: (EventArg: EventArg_AddStore) => void) {
-        this.$EventAdd(this.#EventName.AddStore, EventFunc);
+        this.$EventAdd(this.#OnEventName.AddStore, EventFunc);
         return this;
     }
     public EventAdd_SetStore(EventFunc: (EventArg: EventArg_SetStore) => void) {
-        this.$EventAdd(this.#EventName.SetStore, EventFunc);
+        this.$EventAdd(this.#OnEventName.SetStore, EventFunc);
         return this;
     }
     //#endregion
@@ -1090,34 +1083,64 @@ export class ApiStore extends FuncBase {
         return this.ClearStoreFrom(this.Store, StorePath, Option);
     }
 
-    public GetStoreFrom<TStore = any>(SourceStore: any, StorePath: PathType, Option?: GetStoreOption<TStore> | boolean): TStore {
-        if (typeof Option == 'boolean')
-            Option = { Clone: Option };
+    public GetStoreFrom<TStore = any>(sourceStore: any, storePath: PathType, option?: GetStoreOption<TStore> | boolean): TStore {
+        if (sourceStore == null)
+            return null;
 
-        Option ??= {};
-        Option.Clone ??= false;
-        Option.CreateIfNull ??= false;
-        if (Option.DefaultValue == null)
-            Option.DefaultValue = {} as any;
+        if (typeof option == 'boolean')
+            option = { Clone: option };
 
-        StorePath = this.ToJoin(StorePath);
-        let FindStore = this.$RCS_GetStore(StorePath, SourceStore, {
-            CreateIfNull: Option.CreateIfNull,
-            DefaultValue: Option.DefaultValue as any,
-        });
+        option ??= {};
+        option.Clone ??= false;
+        option.CreateIfNull ??= false;
+        if (option.DefaultValue == null)
+            option.DefaultValue = {} as any;
 
-        if (Option.Clone) {
-            let CloneResult: any = {};
-            let AllKeys = Object.getOwnPropertyNames(FindStore);
-            for (let Key of AllKeys) {
-                if (!Key.match(/^\$/g))
-                    CloneResult[Key] = FindStore[Key];
-            }
-
-            return CloneResult;
+        let findStore = sourceStore;
+        if (storePath != null) {
+            storePath = this.ToJoin(storePath);
+            findStore = this.$RCS_GetStore(storePath as string, sourceStore, {
+                CreateIfNull: option.CreateIfNull,
+                DefaultValue: option.DefaultValue as any,
+            });
         }
 
-        return FindStore as TStore;
+        if (option.Clone) {
+            if (findStore == null)
+                return null;
+
+            if (typeof findStore != 'object')
+                return findStore;
+
+            if (Array.isArray(findStore)) {
+                const cloneItems: any[] = [];
+                for (let i = 0; i < findStore.length; i++) {
+                    const item = findStore[i];
+                    const cloneItem = this.GetStoreFrom(item, null, {
+                        Clone: option.Clone,
+                        CreateIfNull: option.CreateIfNull,
+                        DefaultValue: option.DefaultValue,
+                    });
+                    cloneItems.push(cloneItem);
+                }
+                return cloneItems as any;
+            }
+            else {
+                const cloneResult: any = {};
+                const allKeys = Object.getOwnPropertyNames(findStore);
+                for (let key of allKeys) {
+                    if (key.match(/^\$/g))
+                        continue;
+
+                    let targetStore = findStore[key];
+                    if (targetStore != null && typeof targetStore === 'object')
+                        targetStore = this.GetStoreFrom(targetStore, null, option);
+                    cloneResult[key] = targetStore;
+                }
+                return cloneResult;
+            }
+        }
+        return findStore as TStore;
     }
     public AddStoreFrom<TStore = any>(SourceStore: any, StorePath: PathType, StoreData: TStore = null) {
         StorePath = this.ToJoin(StorePath);
@@ -1127,7 +1150,7 @@ export class ApiStore extends FuncBase {
         this.$RCS_SetStore(StorePath, StoreData, SourceStore, {
             IsDeepSet: true,
         });
-        this.$EventTrigger<EventArg_AddStore>(this.#EventName.AddStore, {
+        this.$EventTrigger<EventArg_AddStore>(this.#OnEventName.AddStore, {
             Path: StorePath,
             Data: StoreData,
         });
@@ -1140,7 +1163,7 @@ export class ApiStore extends FuncBase {
         this.$RCS_SetStore(StorePath as string, StoreData, SourceStore, {
             IsDeepSet: false,
         });
-        this.$EventTrigger<EventArg_SetStore>(this.#EventName.SetStore, {
+        this.$EventTrigger<EventArg_SetStore>(this.#OnEventName.SetStore, {
             Path: StorePath as string,
             Data: StoreData,
         });
@@ -1153,7 +1176,7 @@ export class ApiStore extends FuncBase {
         this.$RCS_SetStore(StorePath as string, StoreData, SourceStore, {
             IsDeepSet: true,
         });
-        this.$EventTrigger<EventArg_UpdateStore>(this.#EventName.UpdateStore, {
+        this.$EventTrigger<EventArg_UpdateStore>(this.#OnEventName.UpdateStore, {
             Path: StorePath as string,
             Data: StoreData,
         });
@@ -1479,6 +1502,8 @@ export class VueStore extends ApiStore {
     protected $VueApp: App = null;
     protected $VueUse: Plugin[] = [];
     protected $CoreStore: string = 'app';
+    protected $FuncsStore: string = 'funcs';
+    protected $EventStore: string = 'event';
     protected $MountedFuncs: Function[] = [];
     protected $SetupFuncs: (() => any)[] = [];
     protected $Directive: { Name: string, Directive: Directive }[] = [];
@@ -1489,13 +1514,11 @@ export class VueStore extends ApiStore {
 
     //#region Private Setup
     #Setup() {
-        this
-            .EventAdd_AddApi(Arg => {
-                this.AddStore(Arg.ApiKey);
-            })
-            .AddStore(this.$CoreStore, {})
+        this.AddStore(this.$CoreStore, {})
             .WithMounted(() => {
-                this.UpdateStore([this.$CoreStore, 'IsMounted'], true);
+                this.UpdateStore(this.$CoreStore, {
+                    IsMounted: true
+                });
             });
     }
     //#endregion
@@ -1802,12 +1825,28 @@ export class VueCommand extends VueStore {
         });
         return this;
     }
-    public AddV_Function(FuncName: PathType, Func: Function) {
-        if (this.$IsInited && !Array.isArray(FuncName))
-            this.$VueOption.methods[FuncName] = Func;
-        else
-            Model.UpdateStore(FuncName, Func);
+    public AddFunc(funcPath: PathType, func: Function) {
+        funcPath = [this.$FuncsStore, funcPath];
+        Model.UpdateStore(funcPath, func);
         return this;
+    }
+    public GetFunc<T = Function>(funcPath: PathType): T {
+        funcPath = Model.ToJoin([this.$FuncsStore, funcPath]);
+        const func = Model.GetStore<T>(funcPath);
+        return func as T;
+    }
+    public Func<T = any>(funcPath: PathType, ...args: any[]) {
+        const getFunc = this.GetFunc(funcPath);
+        if (typeof getFunc === null) {
+            console.error(`[Func]: path [${funcPath}] is null`);
+            return null;
+        }
+
+        if (typeof getFunc === 'function')
+            return getFunc(...args) as T;
+
+        console.error(`[Func]: path [${funcPath}] is not function`);
+        return null;
     }
 
     public AddV_OnChange(DomName: PathType | QueryNode[], ChangeFunc: AddCommandOption, Args?: string) {
@@ -1898,7 +1937,7 @@ export class VueCommand extends VueStore {
         let rootNode: QueryNode;
         if (usingRootNode)
             rootNode = treeRoot as QueryNode;
-        
+
         const rootPaths = usingRootNode ? [] : this.Paths(treeRoot)
         this.$ParseTreeSet(rootPaths, treeSet, allSetInfo);
         for (let info of allSetInfo) {
@@ -2122,8 +2161,8 @@ export class VueCommand extends VueStore {
                 },
             },
             'v-on': {
-                Execute: (Info, Option) => {
-                    Model.AddV_On(Option.TargetDom, Info.CommandKey, Option.TargetValue, Info.Args);
+                Execute: (info, option) => {
+                    Model.AddV_On(option.TargetDom, info.CommandKey, option.TargetValue, info.Args);
                 },
             },
             'v-slot': {
@@ -2161,12 +2200,16 @@ export class VueCommand extends VueStore {
                 },
             },
             'func': {
-                Execute: (Info, Option) => {
-                    if (typeof (Info.StoreValue) != 'function') {
-                        Model.$Error(`func command value must be a function, path: ${this.ToJoin(Info.DomPaths)}`);
+                Execute: (info, option) => {
+                    if (typeof (info.StoreValue) != 'function') {
+                        Model.$Error(`func command value must be a function, path: ${this.ToJoin(info.DomPaths)}`);
                         return;
                     }
-                    Model.AddV_Function(Model.Paths(...Info.DomPaths, Info.CommandKey ?? 'func'), Info.StoreValue);
+                    let funcPath = info.CommandKey != null && info.CommandKey.startsWith('/') ?
+                        [info.CommandKey.replace('/', '')] :
+                        [...info.DomPaths, info.CommandKey ?? 'func'];
+
+                    Model.AddFunc(funcPath, info.StoreValue);
                 },
             },
             'using': {
@@ -2379,11 +2422,11 @@ export class VueCommand extends VueStore {
     protected $GenerateEventFunction(domName: PathType, eventFunc: Function, command: string) {
         const funcName = this.$RandomFuncName(`${command}_`);
         domName = this.Paths(domName);
-        const fullFuncPath = ['event', ...domName, funcName]
+        const funcPaths = [this.$EventStore, ...domName, funcName]
             .filter(item => item != null && item != '');
-
-        this.AddV_Function(fullFuncPath, eventFunc);
-        return this.ToJoin(fullFuncPath);
+        const fullFuncPath = this.ToJoin(funcPaths);
+        Model.UpdateStore(fullFuncPath, eventFunc);
+        return fullFuncPath;
     }
     //#endregion
 

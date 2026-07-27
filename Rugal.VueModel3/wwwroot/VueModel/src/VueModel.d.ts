@@ -137,6 +137,7 @@ type AddApiContent = {
     File?: ApiCallFile | (() => ApiCallFile);
     Export?: boolean | ((ApiResult: any, ApiResponse: Response) => any);
     IsUpdateStore?: boolean;
+    DefaultStore?: any;
 } & ApiCallback;
 type ApiStoreValue = {
     ApiKey: string;
@@ -194,14 +195,6 @@ export declare class ApiStore extends FuncBase {
     constructor();
     get ApiDomain(): string;
     set ApiDomain(ApiDomain: string);
-    get OnEventName(): {
-        ApiStore: {
-            AddApi: string;
-            UpdateStore: string;
-            AddStore: string;
-            SetStore: string;
-        };
-    };
     get Store(): StoreType;
     protected set Store(Store: StoreType);
     get ApiStore(): any;
@@ -218,7 +211,7 @@ export declare class ApiStore extends FuncBase {
     WithConvertTo_FormParam(ConvertToFunc: (ConvertData: object, Form: FormData) => object): this;
     ClearConvertTo_FormParam(): this;
     ConvertTo_ApiUrl(Url: string, Param?: string | object): string;
-    AddApi(AddApi: Record<string, AddApiContent>): this;
+    AddApi(apis: Record<string, AddApiContent>): this;
     ApiCall(ApiKey: string, Option?: ApiCallOption): this;
     ApiCall_Form(ApiKey: string, Option?: ApiCallOption): this;
     protected $BaseApiCall(ApiKey: string, Option: ApiCallOption, IsFormRequest: boolean): void;
@@ -237,7 +230,7 @@ export declare class ApiStore extends FuncBase {
     SetStore<TStore = any>(StorePath: PathType, StoreData: TStore): this;
     UpdateStore<TStore = any>(StorePath: PathType, StoreData: TStore): this;
     ClearStore(StorePath: PathType, Option?: boolean | ClearStoreOption): this;
-    GetStoreFrom<TStore = any>(SourceStore: any, StorePath: PathType, Option?: GetStoreOption<TStore> | boolean): TStore;
+    GetStoreFrom<TStore = any>(sourceStore: any, storePath: PathType, option?: GetStoreOption<TStore> | boolean): TStore;
     AddStoreFrom<TStore = any>(SourceStore: any, StorePath: PathType, StoreData?: TStore): this;
     SetStoreFrom<TStore = any>(SourceStore: any, StorePath: PathType, StoreData: TStore): this;
     UpdateStoreFrom<TStore = any>(SourceStore: any, StorePath: PathType, StoreData: TStore): this;
@@ -272,6 +265,8 @@ export declare class VueStore extends ApiStore {
     protected $VueApp: App;
     protected $VueUse: Plugin[];
     protected $CoreStore: string;
+    protected $FuncsStore: string;
+    protected $EventStore: string;
     protected $MountedFuncs: Function[];
     protected $SetupFuncs: (() => any)[];
     protected $Directive: {
@@ -405,7 +400,9 @@ export declare class VueCommand extends VueStore {
     AddV_On(domName: PathType | QueryNode[], eventName: string, option: AddCommandOption, args?: string): this;
     Watch(WatchPath: PathType | (() => any), Callback: WatchCallback, Option?: WatchOptions): WatchHandle;
     AddV_Watch(WatchPath: PathType | (() => any), Callback: WatchCallback, Option?: WatchOptions): this;
-    AddV_Function(FuncName: PathType, Func: Function): this;
+    AddFunc(funcPath: PathType, func: Function): this;
+    GetFunc<T = Function>(funcPath: PathType): T;
+    Func<T = any>(funcPath: PathType, ...args: any[]): T;
     AddV_OnChange(DomName: PathType | QueryNode[], ChangeFunc: AddCommandOption, Args?: string): this;
     AddV_Click(DomName: PathType | QueryNode[], Option: AddCommandOption, Args?: string): this;
     AddV_FilePicker(DomName: PathType | QueryNode[], Option: AddV_FilePickerOption): this;

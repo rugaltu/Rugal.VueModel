@@ -1,6 +1,6 @@
 {
   "name": "@rugal.tu/vuemodel3",
-  "version": "1.6.3",
+  "version": "1.6.13",
   "publishConfig": {
     "access": "public"
   },
