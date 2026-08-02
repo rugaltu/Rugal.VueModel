@@ -1730,7 +1730,6 @@ export class VueCommand extends VueStore {
         Option ??= {};
         Option.DefaultValue ??= null;
         SetOption.CommandKey = Option.ModelValue;
-        this.AddStore(StorePath, Option.DefaultValue);
         this.$AddCommand(DomName, 'v-model', SetOption);
         return this;
     }
