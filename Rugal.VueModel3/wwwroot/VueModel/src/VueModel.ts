@@ -238,8 +238,8 @@ export class FuncBase {
     protected $Throw(Message: string) {
         throw new Error(Message);
     }
-    protected $Error(Data: any) {
-        console.error(Data);
+    protected $Error(error: any) {
+        console.error(error);
     }
     //#endregion
 }
@@ -280,59 +280,58 @@ export class QueryNode extends FuncBase {
     public SelectorAll(Selector: string) {
         return this.Dom.querySelectorAll(Selector);
     }
-    protected $RCS_QueryChildrens(TargetNode: QueryNode, DomName: PathType, Option: QueryOption): QueryNode[] {
-        if (DomName == null)
+    protected $RCS_QueryChildrens(targetNode: QueryNode, domNames: PathType, option: QueryOption): QueryNode[] {
+        if (domNames == null)
             return null;
 
-        DomName = this.Paths(DomName);
-        if (DomName.length == 1)
-            DomName = DomName[0];
+        domNames = this.Paths(domNames).filter(name => name != null && name != '');
+        if (domNames.length == 0)
+            return null;
 
-        let Results = [];
-        for (let NodeItem of TargetNode.Children) {
-            if (Array.isArray(DomName)) {
-                if (DomName.length == 0)
-                    continue;
+        const isTagRegex = /^(?<key>[^:]+):(?<name>.+)$/
+        let results = [];
+        for (let node of targetNode.Children) {
+            let tempNames: PathType = [...domNames];
+            let name = tempNames.shift() as string;
 
-                let Names: PathType = [...DomName];
-                let FirstName = Names.shift() as string;
-
-                const pathRegex = FirstName.match(/^(?<key>[^:]+):(?<name>.+)$/);
-                if (pathRegex) {
-                    const key = pathRegex.groups.key;
-                    const name = pathRegex.groups.name;
-                    switch (key) {
-                        case 'tag':
-                            //TargetNode.Dom.
-                            //Todo: 
-                            break;
-                        default:
-                            FirstName = name;
-                            break;
-                    }
+            let isMatchNode = false;
+            const tagPath = name.match(isTagRegex);
+            if (tagPath) {
+                const tagType = tagPath.groups.key;
+                const tagName = tagPath.groups.name.toUpperCase();
+                switch (tagType) {
+                    case '@':
+                    case 'tag':
+                        isMatchNode = node.Dom.tagName.toUpperCase() == tagName;
+                        break;
+                    default:
+                        break;
                 }
-                if (NodeItem.DomName == FirstName) {
-                    if (Names.length == 1)
-                        Names = Names[0];
+            }
+            else {
+                isMatchNode = node.DomName == name;
+            }
 
-                    let FindChildren = this.$RCS_QueryChildrens(NodeItem, Names, Option);
-                    if (FindChildren != null) {
-                        Results.push(...FindChildren);
+            if (isMatchNode) {
+                if (tempNames.length == 0) {
+                    results.push(node);
+                    if (option.Mode == 'Multi')
+                        continue;
+                }
+                else {
+                    let childrenNodes = this.$RCS_QueryChildrens(node, tempNames, option);
+                    if (childrenNodes != null && childrenNodes.length > 0) {
+                        results.push(...childrenNodes);
                         continue;
                     }
                 }
             }
-            else if (NodeItem.DomName == DomName) {
-                Results.push(NodeItem);
-                if (Option.Mode == 'Multi')
-                    continue;
-            }
 
-            let ChildrenResult = this.$RCS_QueryChildrens(NodeItem, DomName, Option);
-            if (ChildrenResult != null)
-                Results.push(...ChildrenResult);
+            let childrenResult = this.$RCS_QueryChildrens(node, domNames, option);
+            if (childrenResult != null && childrenResult.length > 0)
+                results.push(...childrenResult);
         }
-        return Results;
+        return results;
     }
     protected $RCS_QueryCssChildrens(TargetNode: QueryNode, Selector: string, Option: QueryOption): QueryNode[] {
         let Results = [];
@@ -493,11 +492,25 @@ type DateTimeTextOption = DateTextOption & {};
 //#region Store Data Type
 export type ApiCallback = {
     OnCalling?: Function,
-    OnSuccess?: Function,
-    OnError?: Function,
-    OnComplete?: Function,
+    OnSuccess?: (result: any, response: Response) => void,
+    OnError?: (result: any, response: Response) => void,
+    OnComplete?: (result: any, response: Response) => void,
     //ProcessResult?: 'json' | 'text' | 'buffer',
 };
+export class ApiError<T = any> extends Error {
+    response: Response;
+    result: T;
+
+    constructor(message: string, response: Response, result: T) {
+        super(message);
+        this.name = 'ApiError';
+        this.response = response;
+        this.result = result;
+
+        // 修正 TypeScript 繼承原生類別時 Prototype 斷裂的問題
+        Object.setPrototypeOf(this, ApiError.prototype);
+    }
+}
 type FileItemStore = {
     FileId?: string;
     File?: File;
@@ -686,13 +699,16 @@ type AddApiContent = {
     Export?: boolean | ((ApiResult: any, ApiResponse: Response) => any),
     IsUpdateStore?: boolean,
     DefaultStore?: any,
+    StorePath?: PathType,
 } & ApiCallback;
+type ApiStatus = 'IsCalling' | 'IsComplete' | 'IsError' | 'IsSuccess';
 type ApiStoreValue = {
     ApiKey: string,
     IsCalling?: boolean,
     IsComplete?: boolean,
     IsError?: boolean,
     IsSuccess?: boolean,
+    $sub?: AddSubApiStore[],
 } & AddApiContent;
 type ApiCallOption = {
     Query?: ApiCallQuery | (() => ApiCallQuery),
@@ -735,7 +751,7 @@ export type AddSubApiNotifyArg = {
     PropertyName: string,
     Value: any,
 };
-export type AddSubApiNotify = ((Arg: AddSubApiNotifyArg) => void);
+export type AddSubApiNotify = ((arg: AddSubApiNotifyArg) => void);
 export type AddSubApiOption = {
     PropertyName?: string,
     NotifyEvent: AddSubApiNotify,
@@ -757,10 +773,11 @@ export class ApiStore extends FuncBase {
         AddStore: 'AddStore',
         SetStore: 'SetStore',
     };
-    #OnSuccess: (Result: any, Reponse: Response) => void;
-    #OnError: (Except: any) => void;
-    #OnComplete: (Result: any, Reponse: Response) => void;
-    #ExportSuccessStore: (Result: any, Reponse: Response) => any;
+    #OnSuccess: (result: any, reponse: Response) => void;
+    #OnError: (except: string, reponse: Response) => void;
+    #OnComplete: (result: any, reponse: Response) => void;
+    #ApiExportSuccessStore: (result: any, reponse: Response) => any;
+    #ApiCheckSuccess: (result: any, reponse: Response) => boolean;
     #Store: StoreType = {
         FileStore: {},
     };
@@ -787,7 +804,7 @@ export class ApiStore extends FuncBase {
         this.#Store = Store;
     }
     get ApiStore() {
-        return this.GetStore('api');
+        return this.GetStore<Record<string, ApiStoreValue>>('api');
     }
 
     get FileStore(): FileStoreType {
@@ -828,8 +845,12 @@ export class ApiStore extends FuncBase {
         this.#OnComplete = CompleteFunc;
         return this;
     }
-    public WithExportSuccessStore(ExportSuccessStoreFunc: (Result: any, Reponse: Response) => any) {
-        this.#ExportSuccessStore = ExportSuccessStoreFunc;
+    public WithApiExportSuccessStore(apiExportSuccessStoreFunc: (result: any, reponse: Response) => any) {
+        this.#ApiExportSuccessStore = apiExportSuccessStoreFunc;
+        return this;
+    }
+    public WithApiCheckSuccess(apiCheckSuccessFunc: (result: any, reponse: Response) => boolean) {
+        this.#ApiCheckSuccess = apiCheckSuccessFunc;
         return this;
     }
     //#endregion
@@ -857,13 +878,14 @@ export class ApiStore extends FuncBase {
 
     //#region Api Method
     public AddApi(apis: Record<string, AddApiContent>) {
-        for (let apiKey in apis) {
-            let option = apis[apiKey];
-            let setApi: ApiStoreValue = {
+        for (const apiKey in apis) {
+            const option = apis[apiKey];
+            const setApi: ApiStoreValue = {
                 ApiKey: apiKey,
                 ...option,
             };
-            this.AddStore(apiKey, option.DefaultStore ?? {});
+            const targetStorePath = option.StorePath ?? apiKey;
+            this.AddStore(targetStorePath, option.DefaultStore ?? {});
             this.UpdateStoreFrom(this.ApiStore, apiKey, setApi);
             this.$EventTrigger(this.#OnEventName.AddApi, setApi);
         }
@@ -877,15 +899,15 @@ export class ApiStore extends FuncBase {
         this.$BaseApiCall(ApiKey, Option, true);
         return this;
     }
-    protected $BaseApiCall(ApiKey: string, Option: ApiCallOption, IsFormRequest: boolean) {
+    protected $BaseApiCall(apiKey: string, option: ApiCallOption, isFormRequest: boolean) {
 
-        let Api = this.ApiStore[ApiKey];
-        if (Api == null)
-            this.$Throw(`Api setting not found of "${ApiKey}"`);
+        let api = this.ApiStore[apiKey];
+        if (api == null)
+            this.$Throw(`Api setting not found of "${apiKey}"`);
 
-        let ParamQuery = Option?.Query ?? Api.Query;
-        let ParamBody = Option?.Body ?? Api.Body;
-        let ParamFile = Option?.File ?? Api.File;
+        let ParamQuery = option?.Query ?? api.Query;
+        let ParamBody = option?.Body ?? api.Body;
+        let ParamFile = option?.File ?? api.File;
         if (typeof (ParamQuery) == 'function')
             ParamQuery = ParamQuery();
         if (typeof (ParamBody) == 'function')
@@ -893,124 +915,130 @@ export class ApiStore extends FuncBase {
         if (typeof (ParamFile) == 'function')
             ParamFile = ParamFile();
 
-        let IsUpdateStore = Option?.IsUpdateStore ?? Api.IsUpdateStore ?? true;
-        let Url = this.ConvertTo_ApiUrl(Api.Url, ParamQuery);
-        let FetchRequest = this.$GenerateFetchRequest(Api, ParamBody, ParamFile, IsFormRequest);
+        let IsUpdateStore = option?.IsUpdateStore ?? api.IsUpdateStore ?? true;
+        let Url = this.ConvertTo_ApiUrl(api.Url, ParamQuery);
+        let FetchRequest = this.$GenerateFetchRequest(api, ParamBody, ParamFile, isFormRequest);
 
-        this.PubApi(ApiKey, 'IsCalling', true);
-        Api.OnCalling?.call(this, FetchRequest);
-        Option?.OnCalling?.call(this, FetchRequest);
+        this.PubApi(apiKey, 'IsCalling', true);
+        api.OnCalling?.call(this, FetchRequest);
+        option?.OnCalling?.call(this, FetchRequest);
         fetch(Url, FetchRequest)
-            .then(async ApiResponse => {
-                if (!ApiResponse.ok)
-                    throw ApiResponse;
+            .then(async response => {
+                let result = await this.$ProcessApiReturn(response);
+                if (!response.ok)
+                    throw new ApiError(`[ApiCall: ${apiKey}]`, response, result);
 
-                let ConvertResult = await this.$ProcessApiReturn(ApiResponse);
+                if (this.#ApiCheckSuccess != null) {
+                    const isSuccess = this.#ApiCheckSuccess(result, response);
+                    if (!isSuccess)
+                        throw new ApiError(`[ApiCall: ${apiKey}]`, response, result);
+                }
                 if (IsUpdateStore) {
-                    if (Api.Export != false) {
-                        if (typeof Api.Export === 'function') {
-                            ConvertResult = Api.Export?.call(this, ConvertResult, ApiResponse);
+                    if (api.Export != false) {
+                        if (typeof api.Export === 'function') {
+                            result = api.Export?.call(this, result, response);
                         }
-                        else if (this.#ExportSuccessStore != null) {
-                            ConvertResult = this.#ExportSuccessStore?.call(this, ConvertResult, ApiResponse);
+                        else if (this.#ApiExportSuccessStore != null) {
+                            result = this.#ApiExportSuccessStore?.call(this, result, response);
                         }
                     }
-                    let StoreKey = Api.ApiKey;
-                    this.UpdateStore(StoreKey, ConvertResult);
+                    const storeKey = api.StorePath ?? api.ApiKey;
+                    this.UpdateStore(storeKey, result);
                 }
 
-                this.PubApi(ApiKey, 'IsSuccess', true);
-                this.PubApi(ApiKey, 'IsError', false);
-                Api.OnSuccess?.call(this, ConvertResult, ApiResponse);
-                Option?.OnSuccess?.call(this, ConvertResult, ApiResponse);
-                this.#OnSuccess?.call(this, ConvertResult, ApiResponse);
-                return { ConvertResult, ApiResponse };
+                this.PubApi(apiKey, 'IsSuccess', true);
+                this.PubApi(apiKey, 'IsError', false);
+                api.OnSuccess?.call(this, result, response);
+                option?.OnSuccess?.call(this, result, response);
+                this.#OnSuccess?.call(this, result, response);
+                return {
+                    result,
+                    response,
+                };
             })
-            .catch(ex => {
-                this.PubApi(ApiKey, 'IsError', true);
-                this.PubApi(ApiKey, 'IsSuccess', false);
-                this.$Error(ex.message);
-                Api.OnError?.call(this, ex);
-                Option?.OnError?.call(this, ex);
-                this.#OnError?.call(this, ex);
+            .catch((error: ApiError) => {
+                this.PubApi(apiKey, 'IsError', true);
+                this.PubApi(apiKey, 'IsSuccess', false);
+                this.$Error(error);
+                api.OnError?.call(this, error.result, error.response);
+                option?.OnError?.call(this, error.result, error.response);
+                this.#OnError?.call(this, error.result, error.response);
+                return {
+                    result: error.result,
+                    response: error.response
+                }
             })
-            .then(Result => {
-                this.PubApi(ApiKey, 'IsCalling', false);
-                this.PubApi(ApiKey, 'IsComplete', true);
-                if (Result instanceof Object) {
-                    Api.OnComplete?.call(this, Result.ConvertResult, Result.ApiResponse);
-                    Option?.OnComplete?.call(this, Result.ConvertResult, Result.ApiResponse);
-                    this.#OnComplete?.call(this, Result.ConvertResult, Result.ApiResponse);
-                }
-                else {
-                    Api.OnComplete?.call(this);
-                    Option?.OnComplete?.call(this);
-                    this.#OnComplete?.call(this, null, null);
-                }
+            .then(apiResult => {
+                this.PubApi(apiKey, 'IsCalling', false);
+                this.PubApi(apiKey, 'IsComplete', true);
+                api.OnComplete?.call(this, apiResult.result, apiResult.response);
+                option?.OnComplete?.call(this, apiResult.result, apiResult.response);
+                this.#OnComplete?.call(this, apiResult.result, apiResult.response);
+
+                return apiResult;
             });
     }
-    protected $GenerateFetchRequest(Api: ApiStoreValue, ParamBody: ApiCallBody, ParamFile: ApiCallFile, IsFormRequest: boolean): RequestInit {
+    protected $GenerateFetchRequest(api: ApiStoreValue, paramBody: ApiCallBody, paramFile: ApiCallFile, isFormRequest: boolean): RequestInit {
 
-        let Header: HeadersInit = new Headers();
-        Header.set('Authorization', `Bearer ${this.#AccessToken}`);
+        let header: HeadersInit = new Headers();
+        header.set('Authorization', `Bearer ${this.#AccessToken}`);
 
         if (this.#HeaderFuncs.length > 0) {
             for (let Func of this.#HeaderFuncs) {
-                Func(Header);
+                Func(header);
             }
         }
 
-        let FetchRequest: RequestInit = {
-            method: Api.Method,
-            headers: Header,
+        const fetchRequest: RequestInit = {
+            method: api.Method,
+            headers: header,
         };
 
-        if (IsFormRequest) {
-            let SendForm = this.$ConvertTo_FormData(ParamBody, new FormData());
-            SendForm = this.$ConvertTo_FormFile(ParamFile, SendForm);
-            FetchRequest.body = SendForm;
-            FetchRequest.method = 'POST';
+        if (isFormRequest) {
+            let sendForm = this.$ConvertTo_FormData(paramBody, new FormData());
+            sendForm = this.$ConvertTo_FormFile(paramFile, sendForm);
+            fetchRequest.body = sendForm;
+            fetchRequest.method = 'POST';
         }
         else {
-            Header.set('content-type', 'application/json');
-            if (Api.Method != 'GET')
-                FetchRequest.body = JSON.stringify(ParamBody ?? {})
+            header.set('content-type', 'application/json');
+            if (api.Method != 'GET')
+                fetchRequest.body = JSON.stringify(paramBody ?? {})
         }
 
-        return FetchRequest;
+        return fetchRequest;
     }
     //#endregion
 
     //#region Api Sub/Pub Method
-    public AddSubApi(ApiKey: string, Option: AddSubApiOption | AddSubApiNotify) {
-        if (typeof Option === 'function')
-            Option = {
-                NotifyEvent: Option,
+    public AddSubApi(apiKey: string, option: AddSubApiOption | AddSubApiNotify) {
+        if (typeof option === 'function')
+            option = {
+                NotifyEvent: option,
             };
-        let SubApiStore: AddSubApiStore = {
-            ...Option,
+        const SubApiStore: AddSubApiStore = {
+            ...option,
         };
-        this.AddStoreFrom(this.ApiStore, ApiKey, {});
-        let GetApiStore = this.ApiStore[ApiKey];
-        GetApiStore.$sub ??= [];
-        GetApiStore.$sub.push(SubApiStore);
+        this.AddStoreFrom(this.ApiStore, apiKey, {});
+        const api = this.ApiStore[apiKey];
+        api.$sub ??= [];
+        api.$sub.push(SubApiStore);
         return this;
     }
-    public PubApi(ApiKey: string, PropertyName: string, Value: any) {
-        let GetApiStore = this.ApiStore[ApiKey];
-        GetApiStore[PropertyName] = Value;
-        if (GetApiStore.$sub == null || !Array.isArray(GetApiStore.$sub))
+
+    public PubApi(ApiKey: string, propertyName: ApiStatus, value: any) {
+        const api = this.ApiStore[ApiKey];
+        api[propertyName] = value;
+        if (api.$sub == null || !Array.isArray(api.$sub))
             return this;
 
-        for (let Sub of GetApiStore.$sub) {
-            let SubStore = Sub as AddSubApiStore;
-            if (SubStore.PropertyName != null && SubStore.PropertyName != PropertyName)
+        for (let sub of api.$sub) {
+            if (sub.PropertyName != null && sub.PropertyName != propertyName)
                 continue;
-
-            SubStore.NotifyEvent({
-                PropertyName: PropertyName,
-                ApiStore: GetApiStore,
-                Value: GetApiStore[PropertyName],
+            sub.NotifyEvent({
+                PropertyName: propertyName,
+                ApiStore: api,
+                Value: value,
             });
         }
         return this;
@@ -1410,17 +1438,15 @@ export class ApiStore extends FuncBase {
     //#endregion
 
     //#region Protected Process
-    protected $ProcessApiReturn(ApiResponse: Response): Promise<any> {
-        let GetContentType = ApiResponse.headers.get("content-type");
-        if (GetContentType.includes('application/json')) {
-            return ApiResponse.json();
-        }
+    protected $ProcessApiReturn(apiResponse: Response): Promise<any> {
+        const contentType = apiResponse.headers.get("content-type") ?? "";
+        if (!apiResponse.ok)
+            return apiResponse.text();
 
-        if (GetContentType.includes('text')) {
-            return ApiResponse.text();
-        }
+        if (contentType.includes('application/json'))
+            return apiResponse.json();
 
-        return new Promise(reslove => { reslove(ApiResponse) });
+        return apiResponse.text();
     }
     //#endregion
 
@@ -1594,61 +1620,61 @@ type AddCommandOption = PathType | Function | CommandOption;
 export type TreeSetType = {
     'using'?: UsingFunctionType,
     'store'?: any,
-    [StoreWithName: `store:${string}`]: any,
+    [storePath: `store:${string}`]: any,
 
-    [DomName: `:${string}`]: UsingFunctionType | TreeSetType,
-    [TagName: `@${string}`]: UsingFunctionType | TreeSetType,
-    [TagName: `tag:${string}`]: UsingFunctionType | TreeSetType,
+    [domName: `:${string}`]: UsingFunctionType | TreeSetType,
+    [tagName: `@${string}`]: UsingFunctionType | TreeSetType,
+    [tagName: `tag:${string}`]: UsingFunctionType | TreeSetType,
 
     'watch'?: WatchCallback | TreeWatchOption,
-    [WatchTargetCmd: `watch:${string}`]: WatchCallback | TreeWatchOption,
+    [watchPath: `watch:${string}`]: WatchCallback | TreeWatchOption,
 
     'func'?: Function,
-    [FuncNameCmd: `func:${string}`]: Function,
+    [funcName: `func:${string}`]: Function,
 
     'v-text'?: '.' | PathType | Function | TreeSetFuncOption,
-    [VForTextCmd: `v-text(${string})`]: Function | TreeSetFuncOption,
+    [args: `v-text(${string})`]: Function | TreeSetFuncOption,
 
     'v-model'?: '.' | PathType,
-    [VModelArgsCmd: `v-model:${string}`]: '.' | PathType,
+    [modelKey: `v-model:${string}`]: '.' | PathType,
 
     'v-for'?: '.' | PathType | Function | TreeSetFuncOption,
-    [VForKeyCmd: `v-for<${string}>`]: PathType | Function | TreeSetFuncOption,
-    [VForKeyArgsCmd: `v-for<${string}>(${string})`]: Function | TreeSetFuncOption,
-    [VForArgsCmd: `v-for(${string})`]: Function | TreeSetFuncOption,
-    [VForArgsKeyCmd: `v-for(${string})<${string}>`]: Function | TreeSetFuncOption,
+    [forKey: `v-for<${string}>`]: PathType | Function | TreeSetFuncOption,
+    [forKeyWithArgs: `v-for<${string}>(${string})`]: Function | TreeSetFuncOption,
+    [args: `v-for(${string})`]: Function | TreeSetFuncOption,
+    [argsWithForKey: `v-for(${string})<${string}>`]: Function | TreeSetFuncOption,
 
     'v-show'?: '.' | PathType | Function | TreeSetFuncOption | boolean,
-    [VShowArgsCmd: `v-show(${string})`]: Function | TreeSetFuncOption,
+    [args: `v-show(${string})`]: Function | TreeSetFuncOption,
 
     'v-if'?: '.' | PathType | Function | TreeSetFuncOption | boolean,
     'v-else-if'?: '.' | PathType | Function | TreeSetFuncOption | boolean,
     'v-else'?: null,
-    [VIfArgsCmd: `v-if(${string})`]: Function | TreeSetFuncOption,
-    [VElseIfArgsCmd: `v-else-if(${string})`]: Function | TreeSetFuncOption,
+    [args: `v-if(${string})`]: Function | TreeSetFuncOption,
+    [args: `v-else-if(${string})`]: Function | TreeSetFuncOption,
 
     'v-slot'?: PathType | Function | TreeSetFuncOption,
-    [VSlotArgsCmd: `v-slot(${string})`]: Function | TreeSetFuncOption,
-    [VSlotKeyCmd: `v-slot:${string}`]: PathType | Function | TreeSetFuncOption,
-    [VSlotKeyArgsCmd: `v-slot:${string}(${string})`]: Function | TreeSetFuncOption,
+    [args: `v-slot(${string})`]: Function | TreeSetFuncOption,
+    [slotKey: `v-slot:${string}`]: PathType | Function | TreeSetFuncOption,
+    [slotKeyWithArgs: `v-slot:${string}(${string})`]: Function | TreeSetFuncOption,
 
     'v-bind'?: PathType | Function | TreeSetFuncOption | boolean,
-    [VBindCmd: `v-bind:${string}`]: PathType | Function | TreeSetFuncOption,
-    [VBindArgsCmd: `v-bind:${string}(${string})`]: Function | TreeSetFuncOption,
+    [bindKey: `v-bind:${string}`]: PathType | Function | TreeSetFuncOption,
+    [bindKeyWithArgs: `v-bind:${string}(${string})`]: Function | TreeSetFuncOption,
 
     'v-on:change'?: PathType | Function | TreeSetFuncOption,
     'v-on:click'?: PathType | Function | TreeSetFuncOption,
-    [VOnCmd: `v-on:${string}`]: PathType | Function | TreeSetFuncOption,
-    [VOnArgsCmd: `v-on:${string}(${string})`]: Function | TreeSetFuncOption,
+    [onKey: `v-on:${string}`]: PathType | Function | TreeSetFuncOption,
+    [onKeyWithArgs: `v-on:${string}(${string})`]: Function | TreeSetFuncOption,
 
     'v-on-mounted'?: PathType | Function | TreeSetFuncOption,
-    [VOnMountedArgsCmd: `v-on-mounted(${string})`]: Function | TreeSetFuncOption,
+    [args: `v-on-mounted(${string})`]: Function | TreeSetFuncOption,
 
     'v-on-unmounted'?: PathType | Function | TreeSetFuncOption,
-    [VOnUnMountedArgsCmd: `v-on-unmounted(${string})`]: Function | TreeSetFuncOption,
+    [args: `v-on-unmounted(${string})`]: Function | TreeSetFuncOption,
 
     'v-on-ready'?: PathType | Function | TreeSetFuncOption,
-    [VOnReadyArgsCmd: `v-on-ready(${string})`]: Function | TreeSetFuncOption,
+    [args: `v-on-ready(${string})`]: Function | TreeSetFuncOption,
 };
 type TreeSetFuncOption = {
     TargetFunc: PathType | Function,
@@ -1955,6 +1981,7 @@ export class VueCommand extends VueStore {
             const queryOption: QueryOption = {
                 Mode: 'Multi',
             };
+
             let needQuery = info.Command == 'using';
             if (usingRootNode) {
                 needQuery = true;
@@ -1965,13 +1992,11 @@ export class VueCommand extends VueStore {
                 queryOption.Mode = 'DeepMulti';
             }
             if (needQuery) {
-                let queryNodes = [rootNode];
-                if (info.DomPaths.length > 0)
-                    queryNodes = Queryer.Query(info.DomPaths, queryOption);
-
+                if (info.DomPaths.length == 0)
+                    continue;
+                let queryNodes = Queryer.Query(info.DomPaths, queryOption);
                 if (queryNodes.length == 0)
                     continue;
-
                 info.Nodes = queryNodes;
             }
 
@@ -2016,32 +2041,54 @@ export class VueCommand extends VueStore {
         }
         return this;
     }
-    private $ParseTreeSet(Paths: string[], TreeSet: TreeSetType, Result: TreeSetInfo[]) {
-        const TreeNodeReges = /^:(?<next>.+)$/;
+    private $ParseTreeSet(paths: string[], TreeSet: TreeSetType, result: TreeSetInfo[]) {
+        const nextTreeRegex = /^:(?<next>.*)$/;
+        const atTreeRegex = /^@(?<next>.*)$/;
+        const tagTreeRegex = /^tag:(?<next>.*)$/;
+
         const AllKeys = Object.keys(TreeSet);
 
         for (let i = 0; i < AllKeys.length; i++) {
-            const Command = AllKeys[i];
-            const SetPair = TreeSet[Command as any];
+            const command = AllKeys[i];
+            const setPair = TreeSet[command as any];
 
-            const DomPaths = [...Paths];
-            const TreePaths = [...Paths];
-            const DomName = TreePaths.pop();
+            const domPaths = [...paths];
+            const treePaths = [...paths];
+            const lastPath = treePaths.pop();
 
-            const TreeNodeResult = Command.match(TreeNodeReges);
-            if (TreeNodeResult) {
-                const NextDomName = TreeNodeResult.groups.next;
-                if (typeof SetPair === 'function') {
-                    Result.push({
+            const nextDomTree = command.match(nextTreeRegex);
+            if (nextDomTree) {
+                const nextDomName = nextDomTree.groups.next;
+                if (typeof setPair === 'function') {
+                    result.push({
                         Command: 'using',
-                        StoreValue: SetPair,
-                        TreePaths: [...DomPaths],
-                        DomPaths: [...DomPaths, NextDomName],
-                        DomName: NextDomName,
+                        StoreValue: setPair,
+                        TreePaths: [...domPaths],
+                        DomPaths: [...domPaths, nextDomName],
+                        DomName: nextDomName,
                     });
                 }
                 else {
-                    this.$ParseTreeSet([...Paths, NextDomName], SetPair as any, Result);
+                    this.$ParseTreeSet([...paths, nextDomName], setPair as any, result);
+                }
+                continue;
+            }
+
+            const nextTagTree = command.match(atTreeRegex) ?? command.match(tagTreeRegex);
+            if (nextTagTree) {
+                const nextTag = nextTagTree.groups.next;
+                const tagPath = `tag:${nextTag}`;
+                if (typeof setPair === 'function') {
+                    result.push({
+                        Command: 'using',
+                        StoreValue: setPair,
+                        TreePaths: [...domPaths],
+                        DomPaths: [...domPaths, tagPath],
+                        DomName: tagPath,
+                    });
+                }
+                else {
+                    this.$ParseTreeSet([...paths, tagPath], setPair as any, result);
                 }
                 continue;
             }
@@ -2088,18 +2135,18 @@ export class VueCommand extends VueStore {
                     CommandKey: CommandKey?.trim(),
                 }
             };
-            const Args = GetCommandPart(Command, '(', ')');
-            const ForKey = GetCommandPart(Command, '<', '>');
-            const CommandWithKey = GetCommandWithKey(Command);
-            Result.push({
+            const args = GetCommandPart(command, '(', ')');
+            const forKey = GetCommandPart(command, '<', '>');
+            const CommandWithKey = GetCommandWithKey(command);
+            result.push({
                 Command: CommandWithKey?.Command,
                 CommandKey: CommandWithKey?.CommandKey,
-                ForKey: ForKey,
-                Args: Args,
-                StoreValue: SetPair,
-                TreePaths: TreePaths,
-                DomPaths: DomPaths,
-                DomName: DomName,
+                ForKey: forKey,
+                Args: args,
+                StoreValue: setPair,
+                TreePaths: treePaths,
+                DomPaths: domPaths,
+                DomName: lastPath,
             });
             continue;
         }
@@ -2231,7 +2278,7 @@ export class VueCommand extends VueStore {
                     }
                     Model.UpdateStore(targetPath, info.StoreValue);
                 },
-            }
+            },
         }
     }
     //#endregion
@@ -2422,6 +2469,9 @@ export class VueCommand extends VueStore {
         const funcName = this.$RandomFuncName(`${command}_`);
         domName = this.Paths(domName);
         const funcPaths = [this.$EventStore, ...domName, funcName]
+            .map(item => {
+                return (item as string).replace(/[-:.]/g, '_');
+            })
             .filter(item => item != null && item != '');
         const fullFuncPath = this.ToJoin(funcPaths);
         Model.UpdateStore(fullFuncPath, eventFunc);

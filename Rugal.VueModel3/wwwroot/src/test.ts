@@ -6,14 +6,21 @@ import { ref } from 'vue';
 Model.WithQueryDomName('pv-name');
 
 Model.AddV_Tree('testFor', {
-    'func:/aaa': (a: number, b: number) => {
-        return a + b;
-    },
-    'v-on:click': () => {
-        const s = Model.Func('aaa', ...[1, 2]);
-        debugger;
-    },
-});
+    ':test': {
+        // 'v-on:click': () => {
 
+        // },
+        // using: () => {
+        //     debugger;
+        // },
+        'tag:button': {
+            'v-on:click($el)': (el: any) => {
+               
+            },
+        },
+    },
+}, {
+    UseDeepQuery: true,
+});
 
 Model.Init();

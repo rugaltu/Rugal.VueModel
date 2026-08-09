@@ -25,7 +25,7 @@ export declare class FuncBase {
     Paths<T = any>(...Value: any[]): T[];
     IsPathType(CheckPathType: any): boolean;
     protected $Throw(Message: string): void;
-    protected $Error(Data: any): void;
+    protected $Error(error: any): void;
 }
 type QueryModeType = 'Multi' | 'DeepMulti';
 type QueryOption = {
@@ -45,7 +45,7 @@ export declare class QueryNode extends FuncBase {
     QueryCss(Selector: string, Option?: QueryOption): QueryNode[];
     Selector(Selector: string): Element;
     SelectorAll(Selector: string): NodeListOf<Element>;
-    protected $RCS_QueryChildrens(TargetNode: QueryNode, DomName: PathType, Option: QueryOption): QueryNode[];
+    protected $RCS_QueryChildrens(targetNode: QueryNode, domNames: PathType, option: QueryOption): QueryNode[];
     protected $RCS_QueryCssChildrens(TargetNode: QueryNode, Selector: string, Option: QueryOption): QueryNode[];
 }
 export declare class DomQueryer {
@@ -82,10 +82,15 @@ type DateTextOption = {
 type DateTimeTextOption = DateTextOption & {};
 export type ApiCallback = {
     OnCalling?: Function;
-    OnSuccess?: Function;
-    OnError?: Function;
-    OnComplete?: Function;
+    OnSuccess?: (result: any, response: Response) => void;
+    OnError?: (result: any, response: Response) => void;
+    OnComplete?: (result: any, response: Response) => void;
 };
+export declare class ApiError<T = any> extends Error {
+    response: Response;
+    result: T;
+    constructor(message: string, response: Response, result: T);
+}
 type FileItemStore = {
     FileId?: string;
     File?: File;
@@ -138,13 +143,16 @@ type AddApiContent = {
     Export?: boolean | ((ApiResult: any, ApiResponse: Response) => any);
     IsUpdateStore?: boolean;
     DefaultStore?: any;
+    StorePath?: PathType;
 } & ApiCallback;
+type ApiStatus = 'IsCalling' | 'IsComplete' | 'IsError' | 'IsSuccess';
 type ApiStoreValue = {
     ApiKey: string;
     IsCalling?: boolean;
     IsComplete?: boolean;
     IsError?: boolean;
     IsSuccess?: boolean;
+    $sub?: AddSubApiStore[];
 } & AddApiContent;
 type ApiCallOption = {
     Query?: ApiCallQuery | (() => ApiCallQuery);
@@ -184,7 +192,7 @@ export type AddSubApiNotifyArg = {
     PropertyName: string;
     Value: any;
 };
-export type AddSubApiNotify = ((Arg: AddSubApiNotifyArg) => void);
+export type AddSubApiNotify = ((arg: AddSubApiNotifyArg) => void);
 export type AddSubApiOption = {
     PropertyName?: string;
     NotifyEvent: AddSubApiNotify;
@@ -197,7 +205,7 @@ export declare class ApiStore extends FuncBase {
     set ApiDomain(ApiDomain: string);
     get Store(): StoreType;
     protected set Store(Store: StoreType);
-    get ApiStore(): any;
+    get ApiStore(): Record<string, ApiStoreValue>;
     get FileStore(): FileStoreType;
     WithAccessToken(AccessToken: string): this;
     WithRefreshToken(RefreshToken: string): this;
@@ -207,17 +215,18 @@ export declare class ApiStore extends FuncBase {
     WithOnSuccess(SuccessFunc: (Result: any, Reponse: Response) => void): this;
     WithOnError(ErrorFunc: (Exception: any) => void): this;
     WithOnComplete(CompleteFunc: (Result: any, Reponse: Response) => void): this;
-    WithExportSuccessStore(ExportSuccessStoreFunc: (Result: any, Reponse: Response) => any): this;
+    WithApiExportSuccessStore(apiExportSuccessStoreFunc: (result: any, reponse: Response) => any): this;
+    WithApiCheckSuccess(apiCheckSuccessFunc: (result: any, reponse: Response) => boolean): this;
     WithConvertTo_FormParam(ConvertToFunc: (ConvertData: object, Form: FormData) => object): this;
     ClearConvertTo_FormParam(): this;
     ConvertTo_ApiUrl(Url: string, Param?: string | object): string;
     AddApi(apis: Record<string, AddApiContent>): this;
     ApiCall(ApiKey: string, Option?: ApiCallOption): this;
     ApiCall_Form(ApiKey: string, Option?: ApiCallOption): this;
-    protected $BaseApiCall(ApiKey: string, Option: ApiCallOption, IsFormRequest: boolean): void;
-    protected $GenerateFetchRequest(Api: ApiStoreValue, ParamBody: ApiCallBody, ParamFile: ApiCallFile, IsFormRequest: boolean): RequestInit;
-    AddSubApi(ApiKey: string, Option: AddSubApiOption | AddSubApiNotify): this;
-    PubApi(ApiKey: string, PropertyName: string, Value: any): this;
+    protected $BaseApiCall(apiKey: string, option: ApiCallOption, isFormRequest: boolean): void;
+    protected $GenerateFetchRequest(api: ApiStoreValue, paramBody: ApiCallBody, paramFile: ApiCallFile, isFormRequest: boolean): RequestInit;
+    AddSubApi(apiKey: string, option: AddSubApiOption | AddSubApiNotify): this;
+    PubApi(ApiKey: string, propertyName: ApiStatus, value: any): this;
     UseFormJsonBody(JsonBodyKey?: string): this;
     EventAdd_AddApi(EventFunc: (EventArg: EventArg_AddApi) => void): this;
     EventAdd_UpdateStore(EventFunc: (EventArg: EventArg_UpdateStore) => void): this;
@@ -250,7 +259,7 @@ export declare class ApiStore extends FuncBase {
     AddFile(FileStoreKey: string, AddFile: FilesType, ConvertType?: FileConvertType | FileConvertType[]): this;
     RemoveFile(FileStoreKey: string, DeleteFileId: string | string[]): this;
     ClearFile(FileStoreKey: string): this;
-    protected $ProcessApiReturn(ApiResponse: Response): Promise<any>;
+    protected $ProcessApiReturn(apiResponse: Response): Promise<any>;
     NavigateToRoot(): this;
     protected $ConvertTo_FormData(ConvertFormData: FormData | Record<string, any>, Form: FormData): FormData;
     protected $ConvertTo_FormFile(FileParam: FormDataFileType, Form: FormData): FormData;
@@ -298,47 +307,47 @@ type AddCommandOption = PathType | Function | CommandOption;
 export type TreeSetType = {
     'using'?: UsingFunctionType;
     'store'?: any;
-    [StoreWithName: `store:${string}`]: any;
-    [DomName: `:${string}`]: UsingFunctionType | TreeSetType;
-    [TagName: `@${string}`]: UsingFunctionType | TreeSetType;
-    [TagName: `tag:${string}`]: UsingFunctionType | TreeSetType;
+    [storePath: `store:${string}`]: any;
+    [domName: `:${string}`]: UsingFunctionType | TreeSetType;
+    [tagName: `@${string}`]: UsingFunctionType | TreeSetType;
+    [tagName: `tag:${string}`]: UsingFunctionType | TreeSetType;
     'watch'?: WatchCallback | TreeWatchOption;
-    [WatchTargetCmd: `watch:${string}`]: WatchCallback | TreeWatchOption;
+    [watchPath: `watch:${string}`]: WatchCallback | TreeWatchOption;
     'func'?: Function;
-    [FuncNameCmd: `func:${string}`]: Function;
+    [funcName: `func:${string}`]: Function;
     'v-text'?: '.' | PathType | Function | TreeSetFuncOption;
-    [VForTextCmd: `v-text(${string})`]: Function | TreeSetFuncOption;
+    [args: `v-text(${string})`]: Function | TreeSetFuncOption;
     'v-model'?: '.' | PathType;
-    [VModelArgsCmd: `v-model:${string}`]: '.' | PathType;
+    [modelKey: `v-model:${string}`]: '.' | PathType;
     'v-for'?: '.' | PathType | Function | TreeSetFuncOption;
-    [VForKeyCmd: `v-for<${string}>`]: PathType | Function | TreeSetFuncOption;
-    [VForKeyArgsCmd: `v-for<${string}>(${string})`]: Function | TreeSetFuncOption;
-    [VForArgsCmd: `v-for(${string})`]: Function | TreeSetFuncOption;
-    [VForArgsKeyCmd: `v-for(${string})<${string}>`]: Function | TreeSetFuncOption;
+    [forKey: `v-for<${string}>`]: PathType | Function | TreeSetFuncOption;
+    [forKeyWithArgs: `v-for<${string}>(${string})`]: Function | TreeSetFuncOption;
+    [args: `v-for(${string})`]: Function | TreeSetFuncOption;
+    [argsWithForKey: `v-for(${string})<${string}>`]: Function | TreeSetFuncOption;
     'v-show'?: '.' | PathType | Function | TreeSetFuncOption | boolean;
-    [VShowArgsCmd: `v-show(${string})`]: Function | TreeSetFuncOption;
+    [args: `v-show(${string})`]: Function | TreeSetFuncOption;
     'v-if'?: '.' | PathType | Function | TreeSetFuncOption | boolean;
     'v-else-if'?: '.' | PathType | Function | TreeSetFuncOption | boolean;
     'v-else'?: null;
-    [VIfArgsCmd: `v-if(${string})`]: Function | TreeSetFuncOption;
-    [VElseIfArgsCmd: `v-else-if(${string})`]: Function | TreeSetFuncOption;
+    [args: `v-if(${string})`]: Function | TreeSetFuncOption;
+    [args: `v-else-if(${string})`]: Function | TreeSetFuncOption;
     'v-slot'?: PathType | Function | TreeSetFuncOption;
-    [VSlotArgsCmd: `v-slot(${string})`]: Function | TreeSetFuncOption;
-    [VSlotKeyCmd: `v-slot:${string}`]: PathType | Function | TreeSetFuncOption;
-    [VSlotKeyArgsCmd: `v-slot:${string}(${string})`]: Function | TreeSetFuncOption;
+    [args: `v-slot(${string})`]: Function | TreeSetFuncOption;
+    [slotKey: `v-slot:${string}`]: PathType | Function | TreeSetFuncOption;
+    [slotKeyWithArgs: `v-slot:${string}(${string})`]: Function | TreeSetFuncOption;
     'v-bind'?: PathType | Function | TreeSetFuncOption | boolean;
-    [VBindCmd: `v-bind:${string}`]: PathType | Function | TreeSetFuncOption;
-    [VBindArgsCmd: `v-bind:${string}(${string})`]: Function | TreeSetFuncOption;
+    [bindKey: `v-bind:${string}`]: PathType | Function | TreeSetFuncOption;
+    [bindKeyWithArgs: `v-bind:${string}(${string})`]: Function | TreeSetFuncOption;
     'v-on:change'?: PathType | Function | TreeSetFuncOption;
     'v-on:click'?: PathType | Function | TreeSetFuncOption;
-    [VOnCmd: `v-on:${string}`]: PathType | Function | TreeSetFuncOption;
-    [VOnArgsCmd: `v-on:${string}(${string})`]: Function | TreeSetFuncOption;
+    [onKey: `v-on:${string}`]: PathType | Function | TreeSetFuncOption;
+    [onKeyWithArgs: `v-on:${string}(${string})`]: Function | TreeSetFuncOption;
     'v-on-mounted'?: PathType | Function | TreeSetFuncOption;
-    [VOnMountedArgsCmd: `v-on-mounted(${string})`]: Function | TreeSetFuncOption;
+    [args: `v-on-mounted(${string})`]: Function | TreeSetFuncOption;
     'v-on-unmounted'?: PathType | Function | TreeSetFuncOption;
-    [VOnUnMountedArgsCmd: `v-on-unmounted(${string})`]: Function | TreeSetFuncOption;
+    [args: `v-on-unmounted(${string})`]: Function | TreeSetFuncOption;
     'v-on-ready'?: PathType | Function | TreeSetFuncOption;
-    [VOnReadyArgsCmd: `v-on-ready(${string})`]: Function | TreeSetFuncOption;
+    [args: `v-on-ready(${string})`]: Function | TreeSetFuncOption;
 };
 type TreeSetFuncOption = {
     TargetFunc: PathType | Function;
