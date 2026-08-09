@@ -1992,12 +1992,13 @@ export class VueCommand extends VueStore {
                 queryOption.Mode = 'DeepMulti';
             }
             if (needQuery) {
-                if (info.DomPaths.length == 0)
+                let nodes = [rootNode];
+                if (info.DomPaths.length > 0)
+                    nodes = Queryer.Query(info.DomPaths, queryOption);
+
+                if (nodes.length == 0)
                     continue;
-                let queryNodes = Queryer.Query(info.DomPaths, queryOption);
-                if (queryNodes.length == 0)
-                    continue;
-                info.Nodes = queryNodes;
+                info.Nodes = nodes;
             }
 
             const targetDom: PathType | QueryNode[] = needQuery ? info.Nodes : info.DomPaths;
