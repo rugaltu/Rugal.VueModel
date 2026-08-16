@@ -172,27 +172,24 @@ export class FuncBase {
         let ClearUrl = ApiUrl.replace(/^\/+|\/+$/g, '');
         return ClearUrl;
     }
-    ToJoin(Value, Separator = '.') {
-        let ConvertArray = this.Paths(Value);
-        let Result = ConvertArray.join(Separator);
-        return Result;
+    ToJoin(value, separator = '.') {
+        let convertArray = this.Paths(value);
+        let result = convertArray.join(separator);
+        return result;
     }
-    Paths(...Value) {
-        if (!Array.isArray(Value))
-            return [Value];
-        let Result = [];
-        for (let Item of Value) {
-            if (Item == null)
+    Paths(...value) {
+        const result = [];
+        for (const item of value) {
+            if (item == null)
                 continue;
-            if (!Array.isArray(Item)) {
-                Result.push(Item);
-                continue;
+            if (Array.isArray(item)) {
+                if (item.length > 0)
+                    result.push(...this.Paths(...item));
             }
-            if (Item.length == 0)
-                continue;
-            Result.push(...this.Paths(...Item));
+            else
+                result.push(item);
         }
-        return Result;
+        return result;
     }
     IsPathType(CheckPathType) {
         if (Array.isArray(CheckPathType)) {
@@ -947,6 +944,13 @@ export class ApiStore extends FuncBase {
         }
         return findStore;
     }
+    GetStoreFromLite(sourceStore, storePath) {
+        if (!sourceStore || !storePath)
+            return null;
+        const paths = Model.ToJoin(storePath).replace(/\[['"]?([^'"]+?)['"]?\]/g, '.$1').replace(/^\./, '');
+        const result = paths.split('.').reduce((acc, key) => acc?.[key], sourceStore) ?? null;
+        return result;
+    }
     AddStoreFrom(SourceStore, StorePath, StoreData = null) {
         StorePath = this.ToJoin(StorePath);
         if (this.GetStoreFrom(SourceStore, StorePath) != null)
@@ -1042,6 +1046,8 @@ export class ApiStore extends FuncBase {
             FindStore[StorePath] = StoreData;
             return StoreData;
         }
+        if (Array.isArray(StoreData) && !Array.isArray(FindStore[StorePath]))
+            FindStore[StorePath] = [];
         return this.$RCS_SetStore(null, StoreData, FindStore[StorePath]);
     }
     $RCS_ClearStore(targetStore, option) {

@@ -21,8 +21,8 @@ export declare class FuncBase {
     protected $CreateDateInfo(DateOrText: Date | string | DateTimeInfo): DateTimeInfo;
     ConvertTo_UrlQuery(Param: string | Record<string, any>): string;
     ClearUrl(ApiUrl: string): string;
-    ToJoin(Value: any, Separator?: string): string;
-    Paths<T = any>(...Value: any[]): T[];
+    ToJoin(value: any, separator?: string): string;
+    Paths<T = any>(...value: any[]): T[];
     IsPathType(CheckPathType: any): boolean;
     protected $Throw(Message: string): void;
     protected $Error(error: any): void;
@@ -240,6 +240,7 @@ export declare class ApiStore extends FuncBase {
     UpdateStore<TStore = any>(StorePath: PathType, StoreData: TStore): this;
     ClearStore(StorePath: PathType, Option?: boolean | ClearStoreOption): this;
     GetStoreFrom<TStore = any>(sourceStore: any, storePath: PathType, option?: GetStoreOption<TStore> | boolean): TStore;
+    GetStoreFromLite(sourceStore: any, storePath: PathType): any;
     AddStoreFrom<TStore = any>(SourceStore: any, StorePath: PathType, StoreData?: TStore): this;
     SetStoreFrom<TStore = any>(SourceStore: any, StorePath: PathType, StoreData: TStore): this;
     UpdateStoreFrom<TStore = any>(SourceStore: any, StorePath: PathType, StoreData: TStore): this;
