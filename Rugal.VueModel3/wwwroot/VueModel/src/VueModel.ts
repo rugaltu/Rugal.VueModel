@@ -759,7 +759,11 @@ export class ApiStore extends FuncBase {
     #RootRoute: string = null;
     #AccessToken: string = null;
     #RefreshToken: string = null;
-    #HeaderFuncs: ((Header: Headers) => void)[] = [];
+    #RefreshTokenHeader: string = null;
+
+    #UseFetchCredentials: RequestCredentials = 'same-origin';
+
+    #ApiHeaderFuncs: ((header: Headers) => void)[] = [];
     #OnEventFunc: Record<string, Function[]> = {};
     #OnEventName = {
         AddApi: 'AddApi',
@@ -807,14 +811,20 @@ export class ApiStore extends FuncBase {
     //#endregion
 
     //#region Public With Method
-    public WithAccessToken(AccessToken: string) {
-        this.#AccessToken = AccessToken;
+    public WithAccessToken(accessToken: string) {
+        this.#AccessToken = accessToken;
         return this;
     }
-    public WithRefreshToken(RefreshToken: string) {
-        this.#RefreshToken = RefreshToken;
+    public WithRefreshToken(refreshToken: string, refreshTokenHeader?: string) {
+        this.#RefreshToken = refreshToken;
+        this.WithRefreshTokenHeader(refreshTokenHeader);
         return this;
     }
+    public WithRefreshTokenHeader(refreshTokenHeader: string) {
+        this.#RefreshTokenHeader = refreshTokenHeader;
+        return this;
+    }
+
     public WithApiDomain(ApiDomain: string) {
         this.ApiDomain = ApiDomain;
         return this;
@@ -823,8 +833,8 @@ export class ApiStore extends FuncBase {
         this.#RootRoute = Route;
         return this;
     }
-    public WithHeader(Func: (Headers: Headers) => void) {
-        this.#HeaderFuncs.push(Func);
+    public WithApiHeader(func: (headers: Headers) => void) {
+        this.#ApiHeaderFuncs.push(func);
         return this;
     }
     public WithOnSuccess(SuccessFunc: (Result: any, Reponse: Response) => void) {
@@ -845,6 +855,10 @@ export class ApiStore extends FuncBase {
     }
     public WithApiCheckSuccess(apiCheckSuccessFunc: (result: any, reponse: Response) => boolean) {
         this.#ApiCheckSuccess = apiCheckSuccessFunc;
+        return this;
+    }
+    public WithFetchCredentials(requestCredentials: RequestCredentials) {
+        this.#UseFetchCredentials = requestCredentials;
         return this;
     }
     //#endregion
@@ -899,24 +913,24 @@ export class ApiStore extends FuncBase {
         if (api == null)
             this.$Throw(`Api setting not found of "${apiKey}"`);
 
-        let ParamQuery = option?.Query ?? api.Query;
-        let ParamBody = option?.Body ?? api.Body;
-        let ParamFile = option?.File ?? api.File;
-        if (typeof (ParamQuery) == 'function')
-            ParamQuery = ParamQuery();
-        if (typeof (ParamBody) == 'function')
-            ParamBody = ParamBody();
-        if (typeof (ParamFile) == 'function')
-            ParamFile = ParamFile();
+        let query = option?.Query ?? api.Query;
+        let body = option?.Body ?? api.Body;
+        let file = option?.File ?? api.File;
+        if (typeof (query) == 'function')
+            query = query();
+        if (typeof (body) == 'function')
+            body = body();
+        if (typeof (file) == 'function')
+            file = file();
 
-        let IsUpdateStore = option?.IsUpdateStore ?? api.IsUpdateStore ?? true;
-        let Url = this.ConvertTo_ApiUrl(api.Url, ParamQuery);
-        let FetchRequest = this.$GenerateFetchRequest(api, ParamBody, ParamFile, isFormRequest);
+        let isUpdateStore = option?.IsUpdateStore ?? api.IsUpdateStore ?? true;
+        let url = this.ConvertTo_ApiUrl(api.Url, query);
+        let request = this.$GenerateFetchRequest(api, body, file, isFormRequest);
 
         this.PubApi(apiKey, 'IsCalling', true);
-        api.OnCalling?.call(this, FetchRequest);
-        option?.OnCalling?.call(this, FetchRequest);
-        fetch(Url, FetchRequest)
+        api.OnCalling?.call(this, request);
+        option?.OnCalling?.call(this, request);
+        fetch(url, request)
             .then(async response => {
                 let result = await this.$ProcessApiReturn(response);
                 if (!response.ok)
@@ -927,7 +941,7 @@ export class ApiStore extends FuncBase {
                     if (!isSuccess)
                         throw new ApiError(`[ApiCall: ${apiKey}]`, response, result);
                 }
-                if (IsUpdateStore) {
+                if (isUpdateStore) {
                     if (api.Export != false) {
                         if (typeof api.Export === 'function') {
                             result = api.Export?.call(this, result, response);
@@ -968,24 +982,27 @@ export class ApiStore extends FuncBase {
                 api.OnComplete?.call(this, apiResult.result, apiResult.response);
                 option?.OnComplete?.call(this, apiResult.result, apiResult.response);
                 this.#OnComplete?.call(this, apiResult.result, apiResult.response);
-
                 return apiResult;
             });
     }
     protected $GenerateFetchRequest(api: ApiStoreValue, paramBody: ApiCallBody, paramFile: ApiCallFile, isFormRequest: boolean): RequestInit {
 
         let header: HeadersInit = new Headers();
-        header.set('Authorization', `Bearer ${this.#AccessToken}`);
+        if (this.#AccessToken != null && this.#AccessToken != '')
+            header.set('Authorization', `Bearer ${this.#AccessToken}`);
 
-        if (this.#HeaderFuncs.length > 0) {
-            for (let Func of this.#HeaderFuncs) {
-                Func(header);
-            }
+        if (this.#RefreshToken != null && this.#RefreshTokenHeader != null)
+            header.set(this.#RefreshTokenHeader, this.#RefreshToken);
+
+        if (this.#ApiHeaderFuncs.length > 0) {
+            for (let func of this.#ApiHeaderFuncs)
+                func(header);
         }
 
         const fetchRequest: RequestInit = {
             method: api.Method,
             headers: header,
+            credentials: this.#UseFetchCredentials,
         };
 
         if (isFormRequest) {
@@ -999,7 +1016,6 @@ export class ApiStore extends FuncBase {
             if (api.Method != 'GET')
                 fetchRequest.body = JSON.stringify(paramBody ?? {})
         }
-
         return fetchRequest;
     }
     //#endregion

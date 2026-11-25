@@ -576,7 +576,9 @@ export class ApiStore extends FuncBase {
     #RootRoute = null;
     #AccessToken = null;
     #RefreshToken = null;
-    #HeaderFuncs = [];
+    #RefreshTokenHeader = null;
+    #UseFetchCredentials = 'same-origin';
+    #ApiHeaderFuncs = [];
     #OnEventFunc = {};
     #OnEventName = {
         AddApi: 'AddApi',
@@ -621,12 +623,17 @@ export class ApiStore extends FuncBase {
     }
     //#endregion
     //#region Public With Method
-    WithAccessToken(AccessToken) {
-        this.#AccessToken = AccessToken;
+    WithAccessToken(accessToken) {
+        this.#AccessToken = accessToken;
         return this;
     }
-    WithRefreshToken(RefreshToken) {
-        this.#RefreshToken = RefreshToken;
+    WithRefreshToken(refreshToken, refreshTokenHeader) {
+        this.#RefreshToken = refreshToken;
+        this.WithRefreshTokenHeader(refreshTokenHeader);
+        return this;
+    }
+    WithRefreshTokenHeader(refreshTokenHeader) {
+        this.#RefreshTokenHeader = refreshTokenHeader;
         return this;
     }
     WithApiDomain(ApiDomain) {
@@ -637,8 +644,8 @@ export class ApiStore extends FuncBase {
         this.#RootRoute = Route;
         return this;
     }
-    WithHeader(Func) {
-        this.#HeaderFuncs.push(Func);
+    WithApiHeader(func) {
+        this.#ApiHeaderFuncs.push(func);
         return this;
     }
     WithOnSuccess(SuccessFunc) {
@@ -659,6 +666,10 @@ export class ApiStore extends FuncBase {
     }
     WithApiCheckSuccess(apiCheckSuccessFunc) {
         this.#ApiCheckSuccess = apiCheckSuccessFunc;
+        return this;
+    }
+    WithFetchCredentials(requestCredentials) {
+        this.#UseFetchCredentials = requestCredentials;
         return this;
     }
     //#endregion
@@ -707,22 +718,22 @@ export class ApiStore extends FuncBase {
         let api = this.ApiStore[apiKey];
         if (api == null)
             this.$Throw(`Api setting not found of "${apiKey}"`);
-        let ParamQuery = option?.Query ?? api.Query;
-        let ParamBody = option?.Body ?? api.Body;
-        let ParamFile = option?.File ?? api.File;
-        if (typeof (ParamQuery) == 'function')
-            ParamQuery = ParamQuery();
-        if (typeof (ParamBody) == 'function')
-            ParamBody = ParamBody();
-        if (typeof (ParamFile) == 'function')
-            ParamFile = ParamFile();
-        let IsUpdateStore = option?.IsUpdateStore ?? api.IsUpdateStore ?? true;
-        let Url = this.ConvertTo_ApiUrl(api.Url, ParamQuery);
-        let FetchRequest = this.$GenerateFetchRequest(api, ParamBody, ParamFile, isFormRequest);
+        let query = option?.Query ?? api.Query;
+        let body = option?.Body ?? api.Body;
+        let file = option?.File ?? api.File;
+        if (typeof (query) == 'function')
+            query = query();
+        if (typeof (body) == 'function')
+            body = body();
+        if (typeof (file) == 'function')
+            file = file();
+        let isUpdateStore = option?.IsUpdateStore ?? api.IsUpdateStore ?? true;
+        let url = this.ConvertTo_ApiUrl(api.Url, query);
+        let request = this.$GenerateFetchRequest(api, body, file, isFormRequest);
         this.PubApi(apiKey, 'IsCalling', true);
-        api.OnCalling?.call(this, FetchRequest);
-        option?.OnCalling?.call(this, FetchRequest);
-        fetch(Url, FetchRequest)
+        api.OnCalling?.call(this, request);
+        option?.OnCalling?.call(this, request);
+        fetch(url, request)
             .then(async (response) => {
             let result = await this.$ProcessApiReturn(response);
             if (!response.ok)
@@ -732,7 +743,7 @@ export class ApiStore extends FuncBase {
                 if (!isSuccess)
                     throw new ApiError(`[ApiCall: ${apiKey}]`, response, result);
             }
-            if (IsUpdateStore) {
+            if (isUpdateStore) {
                 if (api.Export != false) {
                     if (typeof api.Export === 'function') {
                         result = api.Export?.call(this, result, response);
@@ -777,15 +788,18 @@ export class ApiStore extends FuncBase {
     }
     $GenerateFetchRequest(api, paramBody, paramFile, isFormRequest) {
         let header = new Headers();
-        header.set('Authorization', `Bearer ${this.#AccessToken}`);
-        if (this.#HeaderFuncs.length > 0) {
-            for (let Func of this.#HeaderFuncs) {
-                Func(header);
-            }
+        if (this.#AccessToken != null && this.#AccessToken != '')
+            header.set('Authorization', `Bearer ${this.#AccessToken}`);
+        if (this.#RefreshToken != null && this.#RefreshTokenHeader != null)
+            header.set(this.#RefreshTokenHeader, this.#RefreshToken);
+        if (this.#ApiHeaderFuncs.length > 0) {
+            for (let func of this.#ApiHeaderFuncs)
+                func(header);
         }
         const fetchRequest = {
             method: api.Method,
             headers: header,
+            credentials: this.#UseFetchCredentials,
         };
         if (isFormRequest) {
             let sendForm = this.$ConvertTo_FormData(paramBody, new FormData());
